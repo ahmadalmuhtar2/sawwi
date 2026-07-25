@@ -1,0 +1,496 @@
+// Sawwi — core domain model (Milestone 2).
+// See AGENT_GUIDE.md §4 and docs/PRD.md §4 for the authoritative rules.
+// Prisma 7: the new engine-free `prisma-client` generator (client emitted to src/generated).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: the connection URL lives in prisma.config.ts (migrations) and is
+  // passed to PrismaClient via a driver adapter at runtime (see src/lib/db.ts).
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+/// Platform-wide flag. Everything else is contextual (workspace/site scoped).
+enum PlatformRole {
+  user
+  admin
+}
+
+enum MemberRole {
+  owner
+  member
+}
+
+enum AccessLevel {
+  editor
+  viewer
+}
+
+enum SiteLanguage {
+  ar
+  en
+}
+
+/// Stored site lifecycle. `grace` is billing-derived (see Subscription) and is
+/// NOT stored here — a live site is `published`; billing decides if it's served.
+enum SiteStatus {
+  draft
+  published
+  suspended
+}
+
+enum PageType {
+  landing
+  about
+  contact
+  services
+  custom
+}
+
+enum ColorScheme {
+  primary
+  bold
+  dark
+  light
+  muted
+  accent
+  soft
+}
+
+enum SubscriptionStatus {
+  active
+  grace
+  suspended
+}
+
+enum PaymentMethod {
+  cash
+  mobile_money
+  bank_transfer
+  other
+}
+
+enum Currency {
+  SYP
+  USD
+  EUR
+}
+
+enum CommissionStatus {
+  owed
+  settled
+}
+
+// ============================================================================
+// Identity
+// NOTE: provisional. Better Auth will own the auth tables (Session/Account/
+// Verification) and may reconcile this User shape via its CLI. Fields here
+// match Better Auth conventions so migration is low-friction. See src/lib/auth.ts.
+// ============================================================================
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  emailVerified Boolean      @default(false)
+  image         String?
+  platformRole  PlatformRole @default(user)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  memberships WorkspaceMember[]
+  siteAccess  SiteAccess[]
+  pageLocks   PageLock[]
+  sessions    Session[]
+  accounts    Account[]
+
+  @@map("users")
+}
+
+// ---- Better Auth tables (managed by Better Auth via src/lib/auth.ts) --------
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
+// ============================================================================
+// Workspace & access
+// ============================================================================
+
+model Workspace {
+  id            String   @id @default(cuid())
+  name          String
+  commissionPct Float    @default(0)
+  status        String   @default("active")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members     WorkspaceMember[]
+  invites     WorkspaceInvite[]
+  sites       Site[]
+  commissions CommissionEntry[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(member)
+  joinedAt    DateTime   @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+model WorkspaceInvite {
+  id          String    @id @default(cuid())
+  workspaceId String
+  token       String    @unique
+  createdBy   String
+  expiresAt   DateTime // 72h from creation (enforced in app)
+  usedBy      String?
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("workspace_invites")
+}
+
+// ============================================================================
+// Site
+// ============================================================================
+
+model Site {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  slug         String       @unique // validated [a-z0-9-]{3,40}, see src/server/slug.ts
+  businessName String
+  verticalKey  String // e.g. "barbershop"
+  templateKey  String?
+  language     SiteLanguage @default(ar)
+  status       SiteStatus   @default(draft)
+  logoUrl      String? // uploaded logo/avatar — shown in the dashboard list and the site header
+  seo          Json         @default("{}") // site-wide SEO defaults, see src/shared/seo.ts
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  settings     SiteSettings?
+  theme        SiteTheme?
+  subscription Subscription?
+  access       SiteAccess[]
+  services     Service[]
+  team         TeamMember[]
+  testimonials Testimonial[]
+  faq          FaqItem[]
+  pages        Page[]
+  snapshots    PublishSnapshot[]
+
+  @@index([workspaceId])
+  @@map("sites")
+}
+
+/// Site-scoped invite: how a business owner edits ONLY their one site.
+model SiteAccess {
+  id           String      @id @default(cuid())
+  siteId       String
+  userId       String? // null until the invite is accepted
+  invitedEmail String
+  level        AccessLevel @default(editor)
+  builderAccess Boolean    @default(false) // editors edit settings; builder (pages/sections) + publish require this
+  invitedBy    String
+  acceptedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime    @default(now())
+
+  site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([siteId])
+  @@index([userId])
+  @@map("site_access")
+}
+
+model SiteSettings {
+  id             String  @id @default(cuid())
+  siteId         String  @unique
+  whatsappNumber String?
+  phone          String?
+  socials        Json    @default("{}")
+  googleMapsUrl  String?
+  address        String?
+  openingHours   Json    @default("{}") // structured, see src/server/hours.ts
+  currency       String  @default("SYP") // site-wide price currency, see src/shared/currency.ts
+  logoMediaId    String?
+  loadingIconId  String?
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("site_settings")
+}
+
+model SiteTheme {
+  id           String  @id @default(cuid())
+  siteId       String  @unique
+  paletteKey   String? // curated palette key
+  primaryColor String?
+  secondaryColor String?
+  bgColor      String?
+  fontKey      String  @default("readex")
+  headerVariant String? // universal header layout: A|B|C
+  headerScheme  String? // header color scheme: light|dark|glass
+  footerVariant String? // universal footer layout: A|B|C
+  footerScheme  String? // footer color scheme: dark|light|accent
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@map("site_themes")
+}
+
+// ============================================================================
+// Structured content (reused across sections)
+// ============================================================================
+
+model Service {
+  id          String  @id @default(cuid())
+  siteId      String
+  name        String
+  description String?
+  price       String? // free text, e.g. "من 5000 ل.س"
+  duration    String?
+  imageMediaId String?
+  order       Int     @default(0)
+  visible     Boolean @default(true)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("services")
+}
+
+model TeamMember {
+  id           String  @id @default(cuid())
+  siteId       String
+  name         String
+  roleTitle    String?
+  photoMediaId String?
+  order        Int     @default(0)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("team_members")
+}
+
+model Testimonial {
+  id     String @id @default(cuid())
+  siteId String
+  author String
+  text   String
+  order  Int    @default(0)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("testimonials")
+}
+
+model FaqItem {
+  id       String @id @default(cuid())
+  siteId   String
+  question String
+  answer   String
+  order    Int    @default(0)
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@map("faq_items")
+}
+
+// ============================================================================
+// Pages & sections (the configurator core)
+// ============================================================================
+
+model Page {
+  id       String   @id @default(cuid())
+  siteId   String
+  path     String // "/", "/about", ...
+  pageType PageType @default(landing)
+  title    String
+  seo      Json     @default("{}")
+  order    Int      @default(0) // drives auto navigation
+
+  site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  sections SectionInstance[]
+  locks    PageLock[]
+
+  @@unique([siteId, path])
+  @@index([siteId])
+  @@map("pages")
+}
+
+model SectionInstance {
+  id          String      @id @default(cuid())
+  pageId      String
+  sectionType String // from the frozen library, see src/server/sections.ts
+  variant     String      @default("A") // A|B|C
+  colorScheme ColorScheme @default(primary)
+  order       Int         @default(0)
+  content     Json        @default("{}")
+  dataSource  Json        @default("{}") // which structured entities to show
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+  @@map("section_instances")
+}
+
+/// Immutable full-site payload; append-only history. Rollback = new snapshot
+/// copying an old payload.
+model PublishSnapshot {
+  id        String   @id @default(cuid())
+  siteId    String
+  version   Int
+  payload   Json
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, version])
+  @@index([siteId])
+  @@map("publish_snapshots")
+}
+
+/// Soft lock, 2-min heartbeat auto-release, force take-over allowed.
+model PageLock {
+  id          String   @id @default(cuid())
+  pageId      String   @unique
+  lockedById  String
+  heartbeatAt DateTime @default(now())
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [lockedById], references: [id], onDelete: Cascade)
+
+  @@map("page_locks")
+}
+
+// ============================================================================
+// Billing
+// ============================================================================
+
+model Subscription {
+  id        String             @id @default(cuid())
+  siteId    String             @unique
+  plan      String             @default("annual")
+  price     Float?
+  currency  Currency           @default(SYP)
+  expiry    DateTime
+  status    SubscriptionStatus @default(active)
+  /// Smallest renewal-reminder threshold (days) already emailed for the CURRENT
+  /// expiry; reset to null whenever expiry is extended. Prevents duplicate sends.
+  lastReminderDay Int?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  site     Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  payments PaymentRecord[]
+
+  @@map("subscriptions")
+}
+
+model PaymentRecord {
+  id             String        @id @default(cuid())
+  subscriptionId String
+  amount         Float
+  currency       Currency      @default(SYP)
+  method         PaymentMethod @default(cash)
+  payerName      String? // who paid (the client/restaurant), free text
+  collectedBy    String? // userId of the reseller who recorded it
+  note           String?
+  createdAt      DateTime      @default(now())
+
+  subscription Subscription     @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  commission   CommissionEntry?
+
+  @@index([subscriptionId])
+  @@map("payment_records")
+}
+
+model CommissionEntry {
+  id          String           @id @default(cuid())
+  workspaceId String
+  paymentId   String           @unique
+  pct         Float
+  amount      Float
+  status      CommissionStatus @default(owed)
+  createdAt   DateTime         @default(now())
+  settledAt   DateTime?
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  payment   PaymentRecord @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("commission_entries")
+}

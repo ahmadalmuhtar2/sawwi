@@ -1,0 +1,21 @@
+# Keep the build context small and secret-free.
+node_modules
+.next
+.git
+.gitignore
+
+# Never ship env files into the image (they're injected at runtime by compose).
+.env
+.env.*
+
+# Not needed for the build.
+infra
+docs
+*.md
+coverage
+.vscode
+.idea
+Dockerfile
+.dockerignore
+npm-debug.log*
+.pnpm-debug.log*

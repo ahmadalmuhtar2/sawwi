@@ -1,0 +1,63 @@
+import { withRoute } from "@/lib/http";
+import { requireSessionClaims } from "@/lib/auth";
+import { requireSiteSettingsEdit } from "@/server/sites/sites.service";
+import { getPrisma } from "@/lib/db";
+import { putObject, isStorageConfigured } from "@/lib/storage";
+import { errors } from "@/shared/errors";
+
+// POST /api/sites/:id/logo — multipart { file } → uploads the site logo and sets
+// Site.logoUrl. Small images, uploaded through the server (no browser↔storage CORS).
+const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+const EXT_BY_TYPE: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+};
+
+type Ctx = { params: Promise<{ id: string }> };
+
+export const POST = withRoute(async (req, { params }: Ctx) => {
+  const claims = await requireSessionClaims();
+  const { id } = await params;
+  await requireSiteSettingsEdit(claims, id); // authorization
+
+  if (!isStorageConfigured()) {
+    throw errors.internal("خدمة تخزين الصور غير مُهيّأة");
+  }
+
+  const form = await req.formData();
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    throw errors.validation("لم يتم إرفاق صورة", { file: "اختر صورة" });
+  }
+
+  const ext = EXT_BY_TYPE[file.type];
+  if (!ext) {
+    throw errors.validation("صيغة غير مدعومة", {
+      file: "الصيغ المدعومة: JPG أو PNG أو WEBP أو SVG",
+    });
+  }
+  if (file.size > MAX_BYTES) {
+    throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ٢ ميغابايت" });
+  }
+
+  // Stable key per site → a new upload overwrites the old (no orphan buildup).
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const stored = await putObject(`logos/${id}.${ext}`, buffer, file.type);
+
+  // Cache-bust so an overwritten logo refreshes in the browser.
+  const url = `${stored}?v=${Date.now()}`;
+  await getPrisma().site.update({ where: { id }, data: { logoUrl: url } });
+
+  return { url };
+});
+
+// DELETE /api/sites/:id/logo — remove the logo.
+export const DELETE = withRoute(async (_req, { params }: Ctx) => {
+  const claims = await requireSessionClaims();
+  const { id } = await params;
+  await requireSiteSettingsEdit(claims, id);
+  await getPrisma().site.update({ where: { id }, data: { logoUrl: null } });
+  return { ok: true };
+});

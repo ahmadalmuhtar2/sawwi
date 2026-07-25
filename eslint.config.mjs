@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated / tooling output / design handoff — never lint these:
+    "coverage/**",
+    "src/generated/**",
+    "handoff/**",
   ]),
 ]);
 

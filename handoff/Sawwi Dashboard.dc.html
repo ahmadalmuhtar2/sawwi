@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/broadsheet-aac69e4f-afc8-4828-b6b6-0e281f05ecf0/styles.css">
+<script src="_ds/broadsheet-aac69e4f-afc8-4828-b6b6-0e281f05ecf0/_ds_bundle.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Cairo:wght@600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0}
+  button{font-family:inherit}
+  input,select,textarea{font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none}
+  input::placeholder,textarea::placeholder{color:var(--color-neutral-500)}
+  ::selection{background:color-mix(in srgb, var(--color-accent) 20%, transparent)}
+  a{color:var(--color-accent-700);text-decoration:none}
+  a:hover{color:var(--color-accent-800)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:var(--color-neutral-300);border-radius:99px;border:3px solid var(--color-bg)}
+  @keyframes sw-spin{to{transform:rotate(360deg)}}
+  @keyframes sw-toast{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes sw-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+
+  /* ===== Re-skin to the Component Gallery's own components (overrides Broadsheet) ===== */
+  :root{
+    --color-bg: oklch(0.978 0.004 95); --color-surface:#ffffff; --color-text: oklch(0.26 0.012 70);
+    --color-divider: oklch(0.9 0.006 85);
+    --color-neutral-100: oklch(0.984 0.003 95); --color-neutral-200: oklch(0.955 0.004 85);
+    --color-neutral-300: oklch(0.9 0.006 85); --color-neutral-400: oklch(0.8 0.006 85);
+    --color-neutral-500: oklch(0.66 0.008 80); --color-neutral-600: oklch(0.58 0.009 78);
+    --color-neutral-700: oklch(0.52 0.01 75); --color-neutral-800: oklch(0.4 0.012 72);
+    --color-neutral-900: oklch(0.28 0.012 70);
+    --color-accent: oklch(0.45 0.085 155); --color-accent-100: oklch(0.95 0.028 155);
+    --color-accent-200: oklch(0.9 0.05 155); --color-accent-300: oklch(0.82 0.07 155);
+    --color-accent-400: oklch(0.68 0.09 155); --color-accent-500: oklch(0.55 0.09 155);
+    --color-accent-600: oklch(0.48 0.088 155); --color-accent-700: oklch(0.42 0.08 155);
+    --color-accent-800: oklch(0.35 0.065 155); --color-accent-900: oklch(0.28 0.05 155);
+    --color-accent-2-100: oklch(0.96 0.03 25); --color-accent-2-200: oklch(0.92 0.055 25);
+    --color-accent-2-300: oklch(0.86 0.09 25); --color-accent-2-700: oklch(0.53 0.15 25);
+    --color-accent-2-800: oklch(0.45 0.14 25);
+    --color-process-yellow: oklch(0.72 0.13 75);
+    --radius-sm:6px; --radius-md:10px; --radius-lg:14px;
+    --shadow-sm: 0 1px 2px rgba(40,35,30,.06); --shadow-md: 0 6px 18px -10px rgba(40,35,30,.22);
+    --shadow-lg: 0 18px 46px -18px rgba(40,35,30,.30);
+    --font-body:'Readex Pro', system-ui, sans-serif; --font-heading:'Cairo','Readex Pro', sans-serif;
+  }
+  body{ background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; height:42px; padding:0 20px; border-radius:var(--radius-md); font-family:var(--font-body); font-weight:600; font-size:14px; line-height:1; cursor:pointer; border:1px solid transparent; transition:background .16s, border-color .16s, transform .12s, box-shadow .16s; }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{ background:var(--color-accent); color:#fff; box-shadow:var(--shadow-sm); }
+  .btn-primary:hover{ background:var(--color-accent-700); }
+  .btn-secondary{ background:var(--color-surface); color:var(--color-text); border-color:var(--color-divider); }
+  .btn-secondary:hover{ background:var(--color-neutral-200); border-color:var(--color-neutral-400); }
+  .btn-ghost{ background:transparent; color:var(--color-text); }
+  .btn-ghost:hover{ background:var(--color-neutral-200); }
+  .btn-block{ width:100%; }
+  .btn-icon{ display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:var(--radius-md); border:1px solid var(--color-divider); background:var(--color-surface); color:var(--color-text); cursor:pointer; transition:background .16s, border-color .16s; }
+  .btn-icon:hover{ background:var(--color-neutral-200); }
+  .tag{ display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 10px; border-radius:999px; font-size:12px; font-weight:600; font-family:var(--font-body); white-space:nowrap; }
+  .tag-accent{ background:var(--color-accent-100); color:var(--color-accent-800); }
+  .tag-accent-2{ background:var(--color-accent-2-100); color:var(--color-accent-2-800); }
+  .tag-neutral{ background:var(--color-neutral-200); color:var(--color-neutral-700); }
+  .tag-outline{ background:transparent; border:1px solid var(--color-divider); color:var(--color-neutral-700); }
+  .field{ display:flex; flex-direction:column; gap:7px; }
+  .field label{ font-size:13px; font-weight:600; color:var(--color-text); }
+  .input{ height:44px; padding:0 14px; border-radius:var(--radius-md); border:1px solid var(--color-divider); background:var(--color-surface); color:var(--color-text); font-family:var(--font-body); font-size:14px; transition:border-color .16s, box-shadow .16s; }
+  .input:focus{ border-color:var(--color-accent); box-shadow:0 0 0 3px var(--color-accent-100); }
+  textarea.input{ min-height:84px; resize:vertical; padding-top:12px; line-height:1.5; }
+  select.input{ appearance:none; cursor:pointer; background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none'%3E%3Cpath d='M4 6l4 4 4-4' stroke='%237d7979' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-inline-end:40px; }
+  .seg{ display:inline-flex; padding:3px; gap:4px; background:var(--color-neutral-200); border:none; border-radius:var(--radius-md); overflow:visible; }
+  .seg-opt{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; font-size:13px; font-weight:600; font-family:var(--font-body); cursor:pointer; border:none; border-radius:calc(var(--radius-md) - 3px); color:var(--color-neutral-700); transition:background .14s, color .14s, box-shadow .14s; }
+  .seg-opt input{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .seg-opt + .seg-opt{ border:none; }
+  .seg-opt:has(input:checked){ background:var(--color-surface); color:var(--color-text); box-shadow:var(--shadow-sm); }
+  .seg-opt:not(:has(input:checked)):hover{ background:color-mix(in srgb, var(--color-text) 5%, transparent); }
+  .card{ background:var(--color-surface); border:1px solid var(--color-neutral-200); border-radius:var(--radius-lg); }
+  .elev-sm{ box-shadow:var(--shadow-sm); } .elev-md{ box-shadow:var(--shadow-md); } .elev-lg{ box-shadow:var(--shadow-lg); }
+  .table{ width:100%; border-collapse:collapse; font-size:14px; }
+  .table th{ text-align:start; padding:12px 16px; font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:500; letter-spacing:.06em; text-transform:uppercase; color:var(--color-neutral-600); border-bottom:1px solid var(--color-neutral-200); }
+  .table td{ padding:14px 16px; border-bottom:1px solid var(--color-neutral-200); }
+  .table tbody tr:last-child td{ border-bottom:none; }
+  .dialog-backdrop{ position:fixed; inset:0; z-index:90; background:rgba(40,35,30,.42); backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:24px; }
+  .dialog{ width:100%; background:var(--color-surface); border:1px solid var(--color-neutral-200); border-radius:calc(var(--radius-lg) + 6px); box-shadow:var(--shadow-lg); padding:28px; }
+  .dialog-title{ margin:0; font-size:20px; font-weight:800; font-family:var(--font-heading); }
+  .dialog-body{ margin-top:4px; }
+  .dialog-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+</style>
+</helmet>
+<div style="direction: {{ dir }}; --ar: 'Readex Pro', system-ui, sans-serif; --serif: 'JetBrains Mono', monospace; --display: 'Cairo', 'Readex Pro', sans-serif; background: var(--color-bg); color: var(--color-text); min-height: 100vh; font-family: var(--ar); -webkit-font-smoothing: antialiased; font-size: 15px;">
+
+  <!-- ONBOARDING -->
+  <div style="min-height: 100vh; display: {{ onbDisplay }}; align-items: center; justify-content: center; padding: 32px;">
+    <div style="width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 30px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center;">
+        <div style="display: flex; align-items: baseline; gap: 10px;">
+          <span style="font-family: var(--display); font-size: 30px; font-weight: 800; letter-spacing: -0.01em; color: var(--color-text);">سوّي</span>
+          <span style="font-family: var(--serif); font-size: 14px; color: var(--color-accent-700); letter-spacing: .02em;">Sawwi</span>
+        </div>
+        <span style="color: var(--color-neutral-700); font-size: 15px; max-width: 42ch; line-height: 1.6;">{{ t.onbLead }}</span>
+      </div>
+      <div class="card elev-md" style="padding: 34px; display: flex; flex-direction: column; gap: 26px; background: var(--color-neutral-100);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <sc-for list="{{ onbSteps }}" as="s" hint-placeholder-count="3">
+            <div style="flex: 1; height: 3px; border-radius: 99px; background: {{ s.bg }};"></div>
+          </sc-for>
+        </div>
+        <div style="display: {{ onb1Show }}; flex-direction: column; gap: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: var(--serif); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent-700);">01 — 03</span>
+            <h2 style="margin: 0; font-family: var(--display); font-size: 25px; font-weight: 700;">{{ t.onbT1 }}</h2>
+            <p style="margin: 0; color: var(--color-neutral-700); font-size: 14px; line-height: 1.6;">{{ t.onbD1 }}</p>
+          </div>
+          <div class="field"><label>{{ t.wsName }}</label><input class="input" value="{{ onbName }}" onInput="{{ onOnbName }}" placeholder="{{ t.wsNamePh }}" /></div>
+          <div style="display: flex; gap: 14px;">
+            <div class="field" style="flex: 1;"><label>{{ t.city }}</label><select class="input"><option>دمشق</option><option>حلب</option><option>حمص</option><option>اللاذقية</option><option>حماة</option><option>طرطوس</option></select></div>
+            <div class="field" style="flex: 1;"><label>{{ t.whatsapp }}</label><input class="input" placeholder="+963 9xx xxx xxx" style="direction: ltr; text-align: start;" /></div>
+          </div>
+        </div>
+        <div style="display: {{ onb2Show }}; flex-direction: column; gap: 20px;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: var(--serif); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent-700);">02 — 03</span>
+            <h2 style="margin: 0; font-family: var(--display); font-size: 25px; font-weight: 700;">{{ t.onbT2 }}</h2>
+            <p style="margin: 0; color: var(--color-neutral-700); font-size: 14px; line-height: 1.6;">{{ t.onbD2 }}</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <sc-for list="{{ intents }}" as="it" hint-placeholder-count="3">
+              <button onClick="{{ it.onClick }}" style="display: flex; align-items: center; gap: 13px; padding: 15px; border-radius: var(--radius-md); border: 1px solid {{ it.border }}; background: {{ it.bg }}; cursor: pointer; text-align: start; transition: border-color .15s, background .15s;">
+                <span style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid {{ it.dot }}; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 9px; border-radius: 50%; background: {{ it.fill }};"></span></span>
+                <span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-weight: 600; font-size: 15px;">{{ it.label }}</span><span style="font-size: 13px; color: var(--color-neutral-700);">{{ it.desc }}</span></span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: {{ onb3Show }}; flex-direction: column; gap: 16px; align-items: center; text-align: center; padding: 8px 0;">
+          <span style="width: 58px; height: 58px; border-radius: 50%; background: var(--color-accent-100); color: var(--color-accent-700); display: inline-flex; align-items: center; justify-content: center;"><svg width="28" height="28" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <h2 style="margin: 0; font-family: var(--display); font-size: 25px; font-weight: 700;">{{ t.onbT3 }}</h2>
+            <p style="margin: 0; color: var(--color-neutral-700); font-size: 14px; max-width: 40ch; line-height: 1.6;">{{ t.onbD3 }}</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <button class="btn btn-ghost" onClick="{{ onOnbBack }}" style="opacity: {{ onbBackOpacity }};">{{ t.back }}</button>
+          <button class="btn btn-primary" onClick="{{ onOnbNext }}">{{ onbNextLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div style="display: {{ appDisplay }}; min-height: 100vh;">
+
+    <aside style="width: 244px; flex-shrink: 0; background: var(--color-neutral-100); border-inline-end: 1px solid var(--color-divider); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh;">
+      <div style="padding: 22px 20px 18px; display: flex; align-items: baseline; gap: 9px;">
+        <span style="font-family: var(--display); font-size: 22px; font-weight: 800; letter-spacing: -0.01em;">سوّي</span>
+        <span style="font-family: var(--serif); font-size: 12px; color: var(--color-accent-700);">Sawwi</span>
+        <span style="margin-inline-start: auto; font-family: var(--serif); font-size: 11px; color: var(--color-neutral-600);">v2</span>
+      </div>
+      <nav style="flex: 1; overflow-y: auto; padding: 8px 12px;">
+        <div style="display: {{ wsNavShow }}; flex-direction: column; gap: 2px;">
+          <button onClick="{{ navGo.home }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navHome.bg }}; color: {{ navHome.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navHome.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navHome.bar }};"></span><span style="display: inline-flex; opacity: {{ navHome.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M2.5 7L8 2.5 13.5 7V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5V7z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>{{ t.navHome }}</button>
+          <button onClick="{{ navGo.sites }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navSites.bg }}; color: {{ navSites.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navSites.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navSites.bar }};"></span><span style="display: inline-flex; opacity: {{ navSites.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="3" width="11" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M2.5 6h11" stroke="currentColor" stroke-width="1.4"/></svg></span>{{ t.navSites }}</button>
+          <button onClick="{{ navGo.analytics }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navAnalytics.bg }}; color: {{ navAnalytics.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navAnalytics.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navAnalytics.bar }};"></span><span style="display: inline-flex; opacity: {{ navAnalytics.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M3 13V9M6.5 13V4M10 13V7M13.5 13V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>{{ t.navAnalytics }}</button>
+          <button onClick="{{ navGo.billing }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navBilling.bg }}; color: {{ navBilling.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navBilling.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navBilling.bar }};"></span><span style="display: inline-flex; opacity: {{ navBilling.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M2 6.5h12" stroke="currentColor" stroke-width="1.4"/></svg></span>{{ t.navBilling }}<span class="tag tag-accent-2" style="margin-inline-start: auto;">٢</span></button>
+          <button onClick="{{ navGo.members }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navMembers.bg }}; color: {{ navMembers.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navMembers.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navMembers.bar }};"></span><span style="display: inline-flex; opacity: {{ navMembers.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.4"/><path d="M2 13c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4.5a2 2 0 0 1 0 4M11.5 9.6c1.5.3 2.5 1.4 2.5 3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>{{ t.navMembers }}</button>
+        </div>
+        <div style="display: {{ adminNavShow }}; flex-direction: column; gap: 2px;">
+          <button onClick="{{ navGo.adminWs }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navAdminWs.bg }}; color: {{ navAdminWs.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navAdminWs.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navAdminWs.bar }};"></span><span style="display: inline-flex; opacity: {{ navAdminWs.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.4"/><path d="M2 13c0-2.2 1.8-3.5 4-3.5s4 1.3 4 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 4.5a2 2 0 0 1 0 4M11.5 9.6c1.5.3 2.5 1.4 2.5 3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>{{ t.navWorkspaces }}</button>
+          <button onClick="{{ navGo.billing }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navBilling.bg }}; color: {{ navBilling.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navBilling.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navBilling.bar }};"></span><span style="display: inline-flex; opacity: {{ navBilling.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M2 6.5h12" stroke="currentColor" stroke-width="1.4"/></svg></span>{{ t.navAdminBilling }}</button>
+        </div>
+        <div style="display: {{ clientNavShow }}; flex-direction: column; gap: 2px;">
+          <button onClick="{{ navGo.client }}" style="position: relative; display: flex; align-items: center; gap: 11px; height: 40px; padding: 0 12px; border: none; background: {{ navClient.bg }}; color: {{ navClient.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: {{ navClient.weight }}; text-align: start;"><span style="position: absolute; inset-inline-start: 0; top: 8px; bottom: 8px; width: 2px; background: var(--color-accent); display: {{ navClient.bar }};"></span><span style="display: inline-flex; opacity: {{ navClient.op }};"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="3" width="11" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="7" r="1.6" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 11c.4-1.1 1.4-1.6 2.5-1.6s2.1.5 2.5 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>{{ t.navMySite }}</button>
+        </div>
+      </nav>
+      <div style="padding: 12px; border-top: 1px solid var(--color-divider);">
+        <div style="display: flex; flex-direction: column; gap: 7px; padding: 4px;">
+          <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .12em; color: var(--color-neutral-600); text-transform: uppercase;">{{ t.viewAs }}</span>
+          <div class="seg">
+            <sc-for list="{{ roleTabs }}" as="r" hint-placeholder-count="3">
+              <label class="seg-opt" style="flex: 1; justify-content: center;"><input type="radio" name="sw-role" checked="{{ r.checked }}" onChange="{{ r.onClick }}" />{{ r.label }}</label>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+      <header style="height: 62px; flex-shrink: 0; background: color-mix(in srgb, var(--color-bg) 82%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--color-divider); display: flex; align-items: center; gap: 16px; padding: 0 24px; position: sticky; top: 0; z-index: 40;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <span style="width: 24px; height: 24px; border-radius: var(--radius-sm); background: var(--color-accent-200); color: var(--color-accent-800); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">م</span>
+          <span style="font-size: 14px; font-weight: 600;">{{ wsName }}</span>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="color: var(--color-neutral-600);"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="margin-inline-start: auto; display: flex; align-items: center; gap: 10px;">
+          <button class="btn btn-ghost" onClick="{{ toggleLang }}" style="height: 36px; gap: 6px;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" stroke="currentColor" stroke-width="1.3"/><path d="M1.7 8h12.6M8 1.7c1.8 1.7 2.7 3.9 2.7 6.3S9.8 12.6 8 14.3C6.2 12.6 5.3 10.4 5.3 8S6.2 3.4 8 1.7z" stroke="currentColor" stroke-width="1.3"/></svg>{{ langLabel }}</button>
+          <div ref="{{ notifRefCb }}" style="position: relative;">
+            <button class="btn-icon" onClick="{{ toggleNotif }}" style="position: relative;"><svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2a4 4 0 0 0-4 4c0 3-1.2 4-1.2 4h10.4S12 9 12 6a4 4 0 0 0-4-4zM6.5 13a1.6 1.6 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="position: absolute; top: 8px; inset-inline-end: 9px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-2); border: 2px solid var(--color-bg);"></span></button>
+            <div class="card elev-lg" style="position: absolute; top: calc(100% + 10px); inset-inline-end: 0; width: 320px; padding: 8px; z-index: 50; display: {{ notifShow }}; animation: sw-pop .14s ease;">
+              <div style="padding: 8px 12px; font-weight: 700; font-size: 14px;">{{ t.alerts }}</div>
+              <sc-for list="{{ notifs }}" as="a" hint-placeholder-count="3">
+                <div style="display: flex; gap: 10px; padding: 11px 12px; border-radius: var(--radius-md);" style-hover="background: var(--color-neutral-200);">
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ a.dot }}; margin-top: 6px; flex-shrink: 0;"></span>
+                  <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">{{ a.title }}</span><span style="font-size: 12px; color: var(--color-neutral-700);">{{ a.msg }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <button style="width: 36px; height: 36px; border-radius: 50%; border: none; background: var(--color-accent-2-200); color: var(--color-accent-2-800); cursor: pointer; font-weight: 700; font-size: 14px;">أ</button>
+        </div>
+      </header>
+
+      <main style="flex: 1; overflow-y: auto;">
+        <div style="max-width: 1180px; margin: 0 auto; padding: 34px; display: {{ padWrap }}; flex-direction: column;">
+
+          <!-- HOME -->
+          <div style="display: {{ homeShow }}; flex-direction: column; gap: 30px;">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800; letter-spacing: -0.01em;">{{ t.greeting }}</h1>
+                <p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.homeSub }}</p>
+              </div>
+              <button class="btn btn-primary" onClick="{{ openCreate }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.newSite }}</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider);">
+              <sc-for list="{{ stats }}" as="st" hint-placeholder-count="4">
+                <div style="background: var(--color-bg); padding: 20px; display: flex; flex-direction: column; gap: 8px;"><span style="font-family: var(--serif); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: {{ st.kicker }};">{{ st.label }}</span><span style="font-family: var(--serif); font-size: 34px; font-weight: 600; letter-spacing: -0.01em;">{{ st.value }}</span></div>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: 1.7fr 1fr; gap: 30px;">
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; align-items: baseline; justify-content: space-between;">
+                  <span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.recentSites }}</span>
+                  <button onClick="{{ goSites }}" style="border: none; background: transparent; color: var(--color-accent-700); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">{{ t.viewAll }}</button>
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <sc-for list="{{ recentSites }}" as="s" hint-placeholder-count="4">
+                    <div onClick="{{ s.onOpen }}" style="display: flex; align-items: center; gap: 13px; padding: 13px 0; border-bottom: 1px solid var(--color-divider); cursor: pointer;">
+                      <span style="width: 34px; height: 34px; border-radius: var(--radius-md); background: {{ s.avBg }}; color: {{ s.avFg }}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;">{{ s.initial }}</span>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600; font-size: 14px;">{{ s.name }}</span><span style="font-family: var(--serif); direction: ltr; font-size: 12px; color: var(--color-neutral-600); text-align: start;">{{ s.slug }}.sawwi.com · {{ s.vertical }}</span></div>
+                      <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: {{ s.stColor }};"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ s.stColor }};"></span>{{ s.stLabel }}</span>
+                      <span style="font-family: var(--serif); font-size: 13px; color: var(--color-neutral-600); min-width: 56px; text-align: end;">{{ s.visits }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.renewals }}</span>
+                <sc-for list="{{ renewals }}" as="r" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: flex-start; gap: 11px; padding: 13px 0; border-bottom: 1px solid var(--color-divider);">
+                    <span style="color: {{ r.color }}; margin-top: 1px; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 4.5V8l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <div style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">{{ r.name }}</span><span style="font-size: 12px; color: var(--color-neutral-700);">{{ r.msg }}</span></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <!-- MY SITES -->
+          <div style="display: {{ sitesShow }}; flex-direction: column; gap: 26px;">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800; letter-spacing: -0.01em;">{{ t.mySites }}</h1>
+                <p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ sitesCountLabel }}</p>
+              </div>
+              <button class="btn btn-primary" onClick="{{ openCreate }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.newSite }}</button>
+            </div>
+            <div class="seg" style="width: fit-content;">
+              <sc-for list="{{ siteFilters }}" as="f" hint-placeholder-count="4">
+                <label class="seg-opt"><input type="radio" name="sw-filter" checked="{{ f.checked }}" onChange="{{ f.onClick }}" />{{ f.label }}</label>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+              <sc-for list="{{ filteredSites }}" as="s" hint-placeholder-count="6">
+                <div class="card" style="overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+                  <div style="height: 116px; background: {{ s.cover }}; position: relative; display: flex; align-items: flex-end; padding: 12px;">
+                    <span style="position: absolute; top: 12px; inset-inline-start: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: {{ s.stColor }}; background: color-mix(in srgb, var(--color-bg) 88%, transparent); padding: 3px 9px; border-radius: 99px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: {{ s.stColor }};"></span>{{ s.stLabel }}</span>
+                    <span style="width: 46px; height: 46px; border-radius: var(--radius-md); background: var(--color-bg); color: {{ s.avFg }}; display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 18px; box-shadow: var(--shadow-sm);">{{ s.initial }}</span>
+                  </div>
+                  <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1;">
+                    <div style="display: flex, flex-direction: column; gap: 3px;">
+                      <span style="font-family: var(--display); font-weight: 700; font-size: 16px;">{{ s.name }}</span>
+                      <span style="font-family: var(--serif); direction: ltr; font-size: 12px; color: var(--color-neutral-600); text-align: start; display: block;">{{ s.slug }}.sawwi.com</span>
+                    </div>
+                    <span class="tag tag-outline" style="width: fit-content;">{{ s.vertical }}</span>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 4px;">
+                      <span style="font-size: 12px; color: var(--color-neutral-700);">{{ s.expiryLabel }}</span>
+                      <span style="font-family: var(--serif); font-size: 12px; color: var(--color-neutral-600);">{{ s.visits }} {{ t.visitsShort }}</span>
+                    </div>
+                    <button class="btn btn-secondary btn-block" onClick="{{ s.onOpen }}">{{ t.openBuilder }}</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- CONTENT / SETTINGS / THEME / SEO — shared header + tabs -->
+          <div style="display: {{ manageShow }}; flex-direction: column; gap: 24px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <span style="font-family: var(--serif); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-accent-700);">صالون قاسيون · qasioun-cuts.sawwi.com</span>
+              <h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ manageTitle }}</h1>
+            </div>
+            <div class="seg" style="width: fit-content;">
+              <sc-for list="{{ manageTabs }}" as="s" hint-placeholder-count="4">
+                <label class="seg-opt"><input type="radio" name="sw-manage" checked="{{ s.checked }}" onChange="{{ s.onClick }}" />{{ s.label }}</label>
+              </sc-for>
+            </div>
+
+            <!-- CONTENT: services manager -->
+            <div style="display: {{ contentShow }}; flex-direction: column; gap: 14px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between;"><span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.servicesManager }}</span><button class="btn btn-secondary" style="height: 34px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.addService }}</button></div>
+              <p style="margin: 0; font-size: 13px; color: var(--color-neutral-700); max-width: 60ch;">{{ t.contentNote }}</p>
+              <table class="table">
+                <thead><tr><th style="text-align: start;">{{ t.service }}</th><th style="text-align: start;">{{ t.duration }}</th><th style="text-align: start;">{{ t.price }}</th><th></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ services }}" as="s" hint-placeholder-count="4">
+                    <tr><td style="font-weight: 600;">{{ s.name }}</td><td style="color: var(--color-neutral-700);">{{ s.dur }}</td><td style="font-family: var(--serif); direction: ltr; text-align: start;">{{ s.price }}</td><td style="text-align: end;"><button class="btn-icon" style="width: 30px; height: 30px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button></td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- THEME -->
+            <div style="display: {{ themeShow }}; grid-template-columns: 1.4fr 1fr; gap: 30px;">
+              <div style="display: flex; flex-direction: column; gap: 24px;">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <span style="font-family: var(--display); font-weight: 700; font-size: 15px;">{{ t.palette }}</span>
+                  <p style="margin: 0; font-size: 13px; color: var(--color-neutral-700); max-width: 52ch;">{{ t.paletteNote }}</p>
+                  <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <sc-for list="{{ palettes }}" as="p" hint-placeholder-count="6">
+                      <button onClick="{{ p.onClick }}" style="display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radius-md); border: 1px solid {{ p.border }}; background: var(--color-neutral-100); cursor: pointer; text-align: start;">
+                        <span style="display: flex; gap: 4px;"><span style="width: 22px; height: 22px; border-radius: var(--radius-sm); background: {{ p.c1 }};"></span><span style="width: 22px; height: 22px; border-radius: var(--radius-sm); background: {{ p.c2 }};"></span><span style="width: 22px; height: 22px; border-radius: var(--radius-sm); background: {{ p.c3 }};"></span></span>
+                        <span style="font-size: 13px; font-weight: 600;">{{ p.name }}</span>
+                      </button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <span style="font-family: var(--display); font-weight: 700; font-size: 15px;">{{ t.font }}</span>
+                  <select class="input" style="max-width: 300px;"><option>Cairo — كايرو</option><option>Tajawal — تجوال</option><option>Almarai — المراعي</option><option>Readex Pro — ريدكس</option><option>Noto Kufi Arabic</option></select>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <span style="font-family: var(--serif); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--color-neutral-600);">{{ t.livePreview }}</span>
+                <div class="card" style="padding: 0; overflow: hidden;"><div style="padding: 28px 20px; background: var(--color-accent-800); color: var(--color-accent-100); text-align: center; display: flex; flex-direction: column; gap: 10px;"><span style="font-family: var(--display); font-weight: 800; font-size: 20px; color: #fff;">صالون قاسيون</span><span style="font-size: 12px; opacity: .85;">حلاقة كلاسيكية في قلب دمشق</span><span style="display: inline-block; margin: 4px auto 0; padding: 8px 18px; border-radius: var(--radius-md); background: var(--color-accent); color: #fff; font-size: 12px; font-weight: 700;">احجز موعد</span></div></div>
+              </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div style="display: {{ settingsShow }}; grid-template-columns: 1fr 1fr; gap: 18px 24px; max-width: 800px;">
+              <sc-for list="{{ settingFields }}" as="f" hint-placeholder-count="6">
+                <div class="field" style="grid-column: {{ f.span }};"><label>{{ f.label }}</label><input class="input" defaultValue="{{ f.value }}" placeholder="{{ f.ph }}" style="direction: {{ f.dir }}; text-align: start;" /></div>
+              </sc-for>
+            </div>
+
+            <!-- SEO -->
+            <div style="display: {{ seoShow }}; flex-direction: column; gap: 18px; max-width: 700px;">
+              <div class="field"><label>{{ t.metaTitle }}</label><input class="input" defaultValue="صالون قاسيون — حلاقة رجالية كلاسيكية في دمشق" /></div>
+              <div class="field"><label>{{ t.metaDesc }}</label><textarea class="input" style="min-height: 84px; resize: vertical;">قصّات كلاسيكية وحلاقة تقليدية بأيدي حلاقين محترفين في قلب دمشق. احجز موعدك الآن.</textarea></div>
+              <div class="card" style="padding: 14px; background: var(--color-neutral-100);"><span style="font-family: var(--serif); direction: ltr; display: block; font-size: 12px; color: var(--color-accent-700); text-align: start;">qasioun-cuts.sawwi.com</span><span style="display: block; font-family: var(--serif); font-size: 17px; color: var(--color-accent-800); margin-top: 3px;">صالون قاسيون — حلاقة رجالية كلاسيكية في دمشق</span><span style="display: block; font-size: 12px; color: var(--color-neutral-700); margin-top: 3px;">قصّات كلاسيكية وحلاقة تقليدية بأيدي حلاقين محترفين…</span></div>
+            </div>
+          </div>
+
+          <!-- MEMBERS -->
+          <div style="display: {{ membersShow }}; flex-direction: column; gap: 24px;">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ t.members }}</h1><p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.membersSub }}</p></div>
+              <button class="btn btn-primary" onClick="{{ openInvite }}"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.invite }}</button>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ members }}" as="m" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: 14px; padding: 15px 0; border-bottom: 1px solid var(--color-divider);">
+                  <span style="width: 40px; height: 40px; border-radius: 50%; background: {{ m.avBg }}; color: {{ m.avFg }}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">{{ m.initial }}</span>
+                  <div style="flex: 1; display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600; font-size: 14px;">{{ m.name }}</span><span style="font-family: var(--serif); direction: ltr; font-size: 12px; color: var(--color-neutral-600); text-align: start;">{{ m.email }}</span></div>
+                  <span class="tag {{ m.roleTag }}">{{ m.role }}</span>
+                  <span style="font-size: 12px; color: var(--color-neutral-600); min-width: 90px; text-align: end;">{{ m.joined }}</span>
+                  <button class="btn-icon" onClick="{{ m.onRemove }}" style="width: 32px; height: 32px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.commissionLedger }}</span>
+              <table class="table">
+                <thead><tr><th style="text-align: start;">{{ t.site }}</th><th style="text-align: start;">{{ t.amount }}</th><th style="text-align: start;">{{ t.pct }}</th><th style="text-align: end;">{{ t.status }}</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ ledger }}" as="l" hint-placeholder-count="3">
+                    <tr><td style="font-weight: 600;">{{ l.site }}</td><td style="font-family: var(--serif); direction: ltr; text-align: start;">{{ l.amount }}</td><td style="color: var(--color-neutral-700);">{{ l.pct }}</td><td style="text-align: end;"><span class="tag {{ l.tag }}">{{ l.statusLabel }}</span></td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ANALYTICS -->
+          <div style="display: {{ analyticsShow }}; flex-direction: column; gap: 26px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ t.analytics }}</h1><p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.analyticsSub }}</p></div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider);">
+              <sc-for list="{{ anStats }}" as="a" hint-placeholder-count="3">
+                <div style="background: var(--color-bg); padding: 20px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; color: var(--color-neutral-700);">{{ a.label }}</span><span style="font-family: var(--serif); font-size: 32px; font-weight: 600;">{{ a.value }}</span><span style="font-size: 12px; color: {{ a.trendColor }}; font-weight: 600;">{{ a.trend }}</span></div>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 18px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;"><span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.dailyVisits }}</span><div class="seg"><sc-for list="{{ anRanges }}" as="r" hint-placeholder-count="3"><label class="seg-opt"><input type="radio" name="sw-range" checked="{{ r.checked }}" onChange="{{ r.onClick }}" />{{ r.label }}</label></sc-for></div></div>
+              <div style="display: flex; align-items: flex-end; gap: 6px; height: 190px; border-bottom: 1px solid var(--color-divider); padding-bottom: 2px;">
+                <sc-for list="{{ chartBars }}" as="b" hint-placeholder-count="14">
+                  <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end;"><div style="width: 100%; height: {{ b.height }}; background: {{ b.bg }};"></div><span style="font-family: var(--serif); font-size: 10px; color: var(--color-neutral-600);">{{ b.day }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <span style="font-family: var(--display); font-weight: 700; font-size: 17px;">{{ t.topPages }}</span>
+              <sc-for list="{{ topPages }}" as="p" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--color-divider);"><span style="font-family: var(--serif); direction: ltr; flex: 1; font-size: 13px; text-align: start;">{{ p.path }}</span><div style="width: 40%; height: 6px; background: var(--color-neutral-200); overflow: hidden;"><div style="height: 100%; width: {{ p.pct }}; background: var(--color-accent);"></div></div><span style="font-family: var(--serif); font-size: 13px; font-weight: 600; min-width: 56px; text-align: end;">{{ p.visits }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- BILLING -->
+          <div style="display: {{ billingShow }}; flex-direction: column; gap: 24px;">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ t.billing }}</h1><p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.billingSub }}</p></div>
+              <button class="btn btn-primary" onClick="{{ openPay }}" style="display: {{ adminBtnShow }};"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.recordPayment }}</button>
+            </div>
+            <table class="table">
+              <thead><tr><th style="text-align: start;">{{ t.site }}</th><th style="text-align: start;">{{ t.plan }}</th><th style="text-align: start;">{{ t.price }}</th><th style="text-align: start;">{{ t.expiry }}</th><th style="text-align: end;">{{ t.status }}</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ subscriptions }}" as="s" hint-placeholder-count="5">
+                  <tr><td><span style="display: inline-flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: var(--radius-md); background: {{ s.avBg }}; color: {{ s.avFg }}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">{{ s.initial }}</span><span style="font-weight: 600;">{{ s.name }}</span></span></td><td style="color: var(--color-neutral-700);">{{ s.plan }}</td><td style="font-family: var(--serif); direction: ltr; text-align: start;">{{ s.price }}</td><td style="font-family: var(--serif); color: var(--color-neutral-700);">{{ s.expiry }}</td><td style="text-align: end;"><span class="tag {{ s.tag }}">{{ s.stLabel }}</span></td></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ADMIN WORKSPACES -->
+          <div style="display: {{ adminWsShow }}; flex-direction: column; gap: 24px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ t.workspaces }}</h1><p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.workspacesSub }}</p></div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider);">
+              <sc-for list="{{ adminStats }}" as="a" hint-placeholder-count="4">
+                <div style="background: var(--color-bg); padding: 20px; display: flex; flex-direction: column; gap: 6px;"><span style="font-size: 13px; color: var(--color-neutral-700);">{{ a.label }}</span><span style="font-family: var(--serif); font-size: 30px; font-weight: 600;">{{ a.value }}</span></div>
+              </sc-for>
+            </div>
+            <table class="table">
+              <thead><tr><th style="text-align: start;">{{ t.workspace }}</th><th style="text-align: start;">{{ t.city }}</th><th style="text-align: start;">{{ t.sitesCol }}</th><th style="text-align: start;">{{ t.commission }}</th><th style="text-align: end;">{{ t.status }}</th></tr></thead>
+              <tbody>
+                <sc-for list="{{ workspaces }}" as="w" hint-placeholder-count="4">
+                  <tr><td><span style="display: inline-flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: var(--radius-md); background: {{ w.avBg }}; color: {{ w.avFg }}; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">{{ w.initial }}</span><span style="font-weight: 600;">{{ w.name }}</span></span></td><td style="color: var(--color-neutral-700);">{{ w.city }}</td><td style="font-family: var(--serif);">{{ w.sites }}</td><td style="color: var(--color-neutral-700);">{{ w.commission }}</td><td style="text-align: end;"><span class="tag {{ w.tag }}">{{ w.stLabel }}</span></td></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- CLIENT -->
+          <div style="display: {{ clientShow }}; flex-direction: column; gap: 24px; max-width: 700px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;"><h1 style="margin: 0; font-family: var(--display); font-size: 30px; font-weight: 800;">{{ t.mySite }}</h1><p style="margin: 0; color: var(--color-neutral-700); font-size: 15px;">{{ t.clientSub }}</p></div>
+            <div class="card" style="padding: 0; overflow: hidden;">
+              <div style="height: 120px; background: var(--color-accent-800); display: flex; align-items: flex-end; padding: 16px;"><span style="width: 54px; height: 54px; border-radius: var(--radius-md); background: var(--color-bg); color: var(--color-accent-800); display: inline-flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 800; font-size: 22px; box-shadow: var(--shadow-md);">ق</span></div>
+              <div style="padding: 20px; display: flex; flex-direction: column; gap: 18px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;"><div style="display: flex; flex-direction: column; gap: 3px;"><span style="font-family: var(--display); font-weight: 800; font-size: 20px;">صالون قاسيون</span><a href="#" style="font-family: var(--serif); direction: ltr; font-size: 13px; text-align: start;">qasioun-cuts.sawwi.com</a></div><span style="display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--color-accent-700);"><span style="width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent-700);"></span>{{ t.stLive }}</span></div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--color-divider); border: 1px solid var(--color-divider);">
+                  <div style="background: var(--color-bg); padding: 16px; display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 12px; color: var(--color-neutral-700);">{{ t.expiry }}</span><span style="font-family: var(--serif); font-weight: 600; font-size: 15px;">١ ديسمبر ٢٠٢٦</span></div>
+                  <div style="background: var(--color-bg); padding: 16px; display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 12px; color: var(--color-neutral-700);">{{ t.visitsMonth }}</span><span style="font-family: var(--serif); font-weight: 600; font-size: 15px;">١٬٢٤٠</span></div>
+                  <div style="background: var(--color-bg); padding: 16px; display: flex; flex-direction: column; gap: 4px;"><span style="font-size: 12px; color: var(--color-neutral-700);">{{ t.pagesCol }}</span><span style="font-family: var(--serif); font-weight: 600; font-size: 15px;">٤</span></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-accent-100); color: var(--color-accent-800); font-size: 13px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.clientNote }}</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- CONFIGURATOR (full-bleed, own layout) -->
+        <div style="display: {{ builderShow }}; flex-direction: column; height: calc(100vh - 62px);">
+          <div style="height: 56px; flex-shrink: 0; border-bottom: 1px solid var(--color-divider); display: flex; align-items: center; gap: 14px; padding: 0 18px; background: var(--color-neutral-100);">
+            <button class="btn-icon" onClick="{{ goSites }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="transform: {{ backFlip }};"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div style="display: flex; flex-direction: column; gap: 1px;"><span style="font-family: var(--display); font-weight: 700; font-size: 14px;">صالون قاسيون</span><span style="font-size: 11px; color: var(--color-accent-700); display: inline-flex; align-items: center; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--color-accent-700);"></span>{{ t.savedDraft }}</span></div>
+            <div class="seg" style="margin-inline: auto;">
+              <label class="seg-opt"><input type="radio" name="sw-device" checked="{{ devDesktop }}" onChange="{{ setDevice.desktop }}" /><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M6 13.5h4M8 11v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></label>
+              <label class="seg-opt"><input type="radio" name="sw-device" checked="{{ devMobile }}" onChange="{{ setDevice.mobile }}" /><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="5" y="2" width="6" height="12" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg></label>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <button class="btn btn-ghost" style="height: 36px;">{{ t.preview }}</button>
+              <button class="btn btn-primary" onClick="{{ doPublish }}" style="height: 36px; min-width: 110px;"><span style="display: {{ publishSpin }}; width: 14px; height: 14px; border: 2px solid color-mix(in srgb, #fff 40%, transparent); border-top-color: #fff; border-radius: 50%; animation: sw-spin .7s linear infinite;"></span>{{ publishBtnLabel }}</button>
+            </div>
+          </div>
+
+          <div style="flex: 1; display: flex; min-height: 0;">
+            <!-- LEFT: pages + sections list -->
+            <div style="width: 240px; flex-shrink: 0; border-inline-end: 1px solid var(--color-divider); overflow-y: auto; padding: 16px; background: var(--color-neutral-100);">
+              <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-neutral-600); display: block; margin-bottom: 8px;">{{ t.pages }}</span>
+              <div style="display: flex; flex-direction: column; gap: 3px; margin-bottom: 18px;">
+                <sc-for list="{{ pages }}" as="p" hint-placeholder-count="4">
+                  <button onClick="{{ p.onClick }}" style="display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px; border: none; background: {{ p.bg }}; color: {{ p.color }}; border-radius: var(--radius-md); cursor: pointer; font-family: inherit; font-size: 13px; font-weight: {{ p.weight }}; text-align: start;"><span style="opacity: .6;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="3" y="2" width="10" height="12" rx="1" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>{{ p.name }}</button>
+                </sc-for>
+              </div>
+              <button class="btn btn-ghost btn-block" onClick="{{ openAddPage }}" style="height: 34px; justify-content: flex-start; gap: 8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>{{ t.addPage }}</button>
+              <div style="height: 1px; background: var(--color-divider); margin: 16px 0;"></div>
+              <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--color-neutral-600); display: block; margin-bottom: 8px;">{{ t.sectionsOnPage }}</span>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <sc-for list="{{ pageSections }}" as="s" hint-placeholder-count="6">
+                  <div onClick="{{ s.onSelect }}" style="display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: var(--radius-md); border: 1px solid {{ s.border }}; background: {{ s.bg }}; cursor: pointer;">
+                    <span style="color: {{ s.iconColor }}; display: inline-flex;">{{ s.dragDots }}</span>
+                    <span style="flex: 1; font-size: 13px; font-weight: {{ s.weight }};">{{ s.label }}</span>
+                    <span class="tag tag-neutral" style="font-family: var(--serif);">{{ s.variant }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <button class="btn btn-secondary btn-block" onClick="{{ openAddSection }}" style="margin-top: 12px; gap: 8px;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>{{ t.addSection }}</button>
+            </div>
+
+            <!-- CENTER: live preview -->
+            <div style="flex: 1; min-width: 0; overflow-y: auto; background: var(--color-neutral-200); padding: 26px; display: flex; justify-content: center;">
+              <div style="width: {{ canvasWidth }}; max-width: 100%; background: var(--color-bg); box-shadow: var(--shadow-lg); overflow: hidden; transition: width .25s ease; height: fit-content;">
+                <sc-for list="{{ previewSections }}" as="s" hint-placeholder-count="6">
+                  <div onClick="{{ s.onSelect }}" style="position: relative; padding: {{ s.pad }}; background: {{ s.bg }}; color: {{ s.fg }}; outline: {{ s.outline }}; outline-offset: -2px; cursor: pointer; display: flex; flex-direction: column; gap: 14px; align-items: {{ s.align }}; text-align: {{ s.textAlign }};">
+                    <span style="position: absolute; top: 6px; inset-inline-start: 6px; font-family: var(--serif); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; background: var(--color-accent); color: #fff; padding: 2px 7px; border-radius: var(--radius-sm); display: {{ s.tagShow }};">{{ s.typeEn }}</span>
+                    <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; display: {{ s.kickerShow }};">{{ s.kicker }}</span>
+                    <span style="font-family: var(--display); font-weight: 800; font-size: {{ s.titleSize }}; line-height: 1.15;">{{ s.title }}</span>
+                    <span style="font-size: 14px; opacity: .8; max-width: 46ch; display: {{ s.subShow }};">{{ s.sub }}</span>
+                    <span style="display: {{ s.ctaShow }}; padding: 10px 20px; border-radius: var(--radius-md); background: {{ s.ctaBg }}; color: {{ s.ctaFg }}; font-weight: 700; font-size: 13px;">{{ s.ctaText }}</span>
+                    <div style="display: {{ s.tilesShow }}; width: 100%; grid-template-columns: {{ s.gridCols }}; gap: 12px;">
+                      <div style="display: {{ s.t1 }}; flex-direction: column; gap: 6px; padding: 14px; background: {{ s.tileBg }}; border-radius: var(--radius-md);"><span style="width: 28px; height: 28px; border-radius: var(--radius-sm); background: {{ s.tileAccent }};"></span><span style="height: 8px; width: 70%; background: {{ s.lineBg }}; border-radius: 2px;"></span><span style="height: 7px; width: 90%; background: {{ s.lineBg }}; opacity: .6; border-radius: 2px;"></span></div>
+                      <div style="display: {{ s.t2 }}; flex-direction: column; gap: 6px; padding: 14px; background: {{ s.tileBg }}; border-radius: var(--radius-md);"><span style="width: 28px; height: 28px; border-radius: var(--radius-sm); background: {{ s.tileAccent }};"></span><span style="height: 8px; width: 70%; background: {{ s.lineBg }}; border-radius: 2px;"></span><span style="height: 7px; width: 90%; background: {{ s.lineBg }}; opacity: .6; border-radius: 2px;"></span></div>
+                      <div style="display: {{ s.t3 }}; flex-direction: column; gap: 6px; padding: 14px; background: {{ s.tileBg }}; border-radius: var(--radius-md);"><span style="width: 28px; height: 28px; border-radius: var(--radius-sm); background: {{ s.tileAccent }};"></span><span style="height: 8px; width: 70%; background: {{ s.lineBg }}; border-radius: 2px;"></span><span style="height: 7px; width: 90%; background: {{ s.lineBg }}; opacity: .6; border-radius: 2px;"></span></div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- RIGHT: section inspector -->
+            <div style="width: 288px; flex-shrink: 0; border-inline-start: 1px solid var(--color-divider); overflow-y: auto; padding: 18px; background: var(--color-neutral-100);">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="tag tag-accent" style="font-family: var(--serif);">{{ inspType }}</span>
+                <span style="font-size: 13px; color: var(--color-neutral-700);">{{ inspLabel }}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 20px;">
+                <button class="btn btn-ghost" onClick="{{ moveUp }}" style="height: 30px; padding: 0 10px; font-size: 12px;">↑ {{ t.moveUp }}</button>
+                <button class="btn btn-ghost" onClick="{{ moveDown }}" style="height: 30px; padding: 0 10px; font-size: 12px;">↓ {{ t.moveDown }}</button>
+                <button class="btn-icon" onClick="{{ removeSection }}" style="width: 30px; height: 30px; margin-inline-start: auto; color: var(--color-accent-2-700);"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+              <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--color-neutral-600); display: block; margin-bottom: 8px;">{{ t.variant }}</span>
+              <div class="seg" style="margin-bottom: 20px; width: 100%;">
+                <sc-for list="{{ variantTabs }}" as="v" hint-placeholder-count="3">
+                  <label class="seg-opt" style="flex: 1; justify-content: center;"><input type="radio" name="sw-variant" checked="{{ v.checked }}" onChange="{{ v.onClick }}" />{{ v.label }}</label>
+                </sc-for>
+              </div>
+              <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--color-neutral-600); display: block; margin-bottom: 8px;">{{ t.colorScheme }}</span>
+              <div style="display: flex; gap: 8px; margin-bottom: 22px;">
+                <sc-for list="{{ schemeSwatches }}" as="c" hint-placeholder-count="4">
+                  <button onClick="{{ c.onClick }}" title="{{ c.label }}" style="flex: 1; height: 40px; border-radius: var(--radius-md); border: 2px solid {{ c.ring }}; background: {{ c.bg }}; cursor: pointer; display: flex; align-items: flex-end; justify-content: flex-end; padding: 4px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{ c.dot }};"></span></button>
+                </sc-for>
+              </div>
+              <span style="font-family: var(--serif); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--color-neutral-600); display: block; margin-bottom: 8px;">{{ t.content }}</span>
+              <div style="display: flex; flex-direction: column; gap: 14px;">
+                <sc-for list="{{ inspFields }}" as="f" hint-placeholder-count="3">
+                  <div class="field"><label>{{ f.label }}</label><input class="input" defaultValue="{{ f.value }}" style="height: 36px;" /></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- CREATE SITE MODAL (template picker) -->
+  <div class="dialog-backdrop" onClick="{{ closeCreate }}" style="display: {{ createShow }};">
+    <div class="dialog" onClick="{{ stopProp }}" style="direction: {{ dir }}; max-width: 560px; animation: sw-pop .18s ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;"><h3 class="dialog-title" style="font-family: var(--display);">{{ t.createSite }}</h3><button class="btn-icon" onClick="{{ closeCreate }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+      <div class="dialog-body" style="display: flex; flex-direction: column; gap: 18px;">
+        <div class="field"><label>{{ t.businessName }}</label><input class="input" value="{{ newName }}" onInput="{{ onNewName }}" placeholder="{{ t.businessNamePh }}" /></div>
+        <div class="field"><label>{{ t.subdomain }}</label><div style="direction: ltr; display: flex; align-items: center; border: 1px solid var(--color-divider); border-radius: var(--radius-md); overflow: hidden;"><input value="{{ newSlug }}" onInput="{{ onNewSlug }}" placeholder="my-site" style="flex: 1; height: 42px; padding: 0 12px; border: none; background: transparent; font-family: var(--serif); font-size: 14px; text-align: start;" /><span style="padding: 0 12px; height: 42px; display: inline-flex; align-items: center; font-family: var(--serif); font-size: 13px; color: var(--color-neutral-600); background: var(--color-neutral-200);">.sawwi.com</span></div></div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 13px; font-weight: 600;">{{ t.chooseTemplate }}</label>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <sc-for list="{{ templateChoices }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.onClick }}" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 12px; border-radius: var(--radius-md); border: 1px solid {{ c.border }}; background: {{ c.bg }}; cursor: pointer; align-items: center; text-align: center;"><span style="color: {{ c.iconColor }};">{{ c.icon }}</span><span style="font-size: 13px; font-weight: 600;">{{ c.label }}</span></button>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-actions"><button class="btn btn-ghost" onClick="{{ closeCreate }}">{{ t.cancel }}</button><button class="btn btn-primary" onClick="{{ doCreate }}">{{ t.createAndBuild }}</button></div>
+    </div>
+  </div>
+
+  <!-- ADD SECTION MODAL (gallery) -->
+  <div class="dialog-backdrop" onClick="{{ closeAddSection }}" style="display: {{ addSectionShow }};">
+    <div class="dialog" onClick="{{ stopProp }}" style="direction: {{ dir }}; max-width: 720px; animation: sw-pop .18s ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;"><h3 class="dialog-title" style="font-family: var(--display);">{{ t.addSection }}</h3><button class="btn-icon" onClick="{{ closeAddSection }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+      <div class="dialog-body">
+        <p style="margin: 0 0 16px; font-size: 13px; color: var(--color-neutral-700);">{{ t.addSectionNote }}</p>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          <sc-for list="{{ sectionGallery }}" as="g" hint-placeholder-count="9">
+            <button onClick="{{ g.onClick }}" class="card" style="padding: 0; overflow: hidden; cursor: pointer; text-align: start; border: 1px solid var(--color-divider);">
+              <div style="height: 76px; background: {{ g.thumbBg }}; display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; padding: 12px;"><span style="height: 7px; width: 46%; background: {{ g.thumbInk }}; border-radius: 2px;"></span><span style="height: 6px; width: 66%; background: {{ g.thumbInk }}; opacity: .5; border-radius: 2px;"></span><span style="height: 12px; width: 34%; background: {{ g.thumbAccent }}; border-radius: 2px; margin-top: 2px;"></span></div>
+              <div style="padding: 10px 12px; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13px; font-weight: 600;">{{ g.label }}</span><span style="font-family: var(--serif); font-size: 11px; color: var(--color-neutral-600);">{{ g.typeEn }}</span></div>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVITE MODAL -->
+  <div class="dialog-backdrop" onClick="{{ closeInvite }}" style="display: {{ inviteShow }};">
+    <div class="dialog" onClick="{{ stopProp }}" style="direction: {{ dir }}; max-width: 460px; animation: sw-pop .18s ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;"><h3 class="dialog-title" style="font-family: var(--display);">{{ t.inviteMember }}</h3><button class="btn-icon" onClick="{{ closeInvite }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+      <div class="dialog-body"><p style="margin: 0 0 16px; color: var(--color-neutral-700); font-size: 14px;">{{ t.inviteDesc }}</p><div style="direction: ltr; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border-radius: var(--radius-md); border: 1px solid var(--color-divider); background: var(--color-neutral-100);"><span style="flex: 1; font-family: var(--serif); font-size: 12px; color: var(--color-neutral-700); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: start;">app.sawwi.com/join/wx7k2p9a</span><button class="btn btn-primary" onClick="{{ copyInvite }}" style="height: 34px;">{{ t.copy }}</button></div><span style="display: block; margin-top: 10px; font-size: 12px; color: var(--color-neutral-600);">{{ t.inviteExpiry }}</span></div>
+    </div>
+  </div>
+
+  <!-- RECORD PAYMENT MODAL -->
+  <div class="dialog-backdrop" onClick="{{ closePay }}" style="display: {{ payShow }};">
+    <div class="dialog" onClick="{{ stopProp }}" style="direction: {{ dir }}; max-width: 480px; animation: sw-pop .18s ease;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;"><h3 class="dialog-title" style="font-family: var(--display);">{{ t.recordPayment }}</h3><button class="btn-icon" onClick="{{ closePay }}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+      <div class="dialog-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="field"><label>{{ t.site }}</label><select class="input"><option>صالون قاسيون</option><option>مطعم بيت الكرم</option><option>مخبز التنور</option></select></div>
+        <div style="display: flex; gap: 12px;"><div class="field" style="flex: 1;"><label>{{ t.amount }}</label><input class="input" defaultValue="1500000" style="direction: ltr; text-align: start;" /></div><div class="field" style="width: 120px;"><label>{{ t.currency }}</label><select class="input"><option>SYP</option><option>USD</option><option>EUR</option></select></div></div>
+        <div class="field"><label>{{ t.method }}</label><div class="seg" style="width: 100%;"><sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="3"><label class="seg-opt" style="flex: 1; justify-content: center;"><input type="radio" name="sw-pay" checked="{{ m.checked }}" onChange="{{ m.onClick }}" />{{ m.label }}</label></sc-for></div></div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-accent-100); color: var(--color-accent-800); font-size: 13px;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>{{ t.payNote }}</div>
+      </div>
+      <div class="dialog-actions"><button class="btn btn-ghost" onClick="{{ closePay }}">{{ t.cancel }}</button><button class="btn btn-primary" onClick="{{ doPay }}">{{ t.confirmPayment }}</button></div>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div style="position: fixed; inset-inline-end: 24px; bottom: 24px; z-index: 100; display: flex; flex-direction: column-reverse; gap: 12px; width: 340px; max-width: calc(100vw - 40px);">
+    <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+      <div class="card elev-lg" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 14px 14px 16px; animation: sw-toast .22s cubic-bezier(.2,.8,.2,1);">
+        <span style="width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; color: {{ t.color }}; background: {{ t.iconBg }};">
+          <span style="display: {{ t.successDisplay }}; align-items: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span style="display: {{ t.infoDisplay }}; align-items: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 7v4M8 5h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        </span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 700;">{{ t.title }}</span><span style="font-size: 13px; color: var(--color-neutral-700);">{{ t.msg }}</span></div>
+        <button class="btn-icon" onClick="{{ t.onClose }}" style="width: 24px; height: 24px; flex-shrink: 0;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      </div>
+    </sc-for>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+const T = {
+  ar: {
+    onbLead: "منصّة سوّي — ابنِ موقعًا احترافيًا لعملك بالأقسام الجاهزة، خلال ١٠ دقائق.", onbT1: "أنشئ مساحة عملك", onbD1: "المساحة تجمع كل المواقع التي تديرها لعملائك.",
+    onbT2: "ما الذي يصفك؟", onbD2: "لأغراض إحصائية فقط — لن يؤثر على حسابك.", onbT3: "كل شيء جاهز!", onbD3: "مساحة عملك أصبحت جاهزة. لننشئ موقعك الأول من قالب.",
+    wsName: "اسم مساحة العمل", wsNamePh: "مثال: استوديو المدى", city: "المدينة", whatsapp: "واتساب",
+    back: "رجوع", next: "التالي", finish: "ابدأ الآن",
+    intentAgency: "وكالة", intentAgencyD: "أعمل ضمن فريق لعدة عملاء", intentFree: "مستقل", intentFreeD: "أعمل بمفردي على مشاريع", intentBiz: "صاحب عمل", intentBizD: "أبني موقع عملي الخاص",
+    viewAs: "العرض كـ", roleWorkspace: "وكالة", roleAdmin: "مشرف", roleClient: "عميل",
+    navHome: "الرئيسية", navSites: "المواقع", navAnalytics: "التحليلات", navBilling: "الفواتير", navMembers: "الأعضاء", navWorkspaces: "مساحات العمل", navAdminBilling: "الفواتير", navMySite: "موقعي",
+    alerts: "التنبيهات",
+    greeting: "مرحبًا، أحمد", homeSub: "إليك نظرة سريعة على مساحة عملك اليوم.", newSite: "موقع جديد",
+    statSites: "المواقع", statPublished: "منشورة", statVisits: "زيارات الشهر", statRenewals: "تجديدات قادمة",
+    recentSites: "أحدث المواقع", viewAll: "عرض الكل", renewals: "تنبيهات التجديد",
+    mySites: "المواقع", openBuilder: "افتح المُنشئ", visitsShort: "زيارة", allSites: "الكل", published: "منشورة", draft: "مسودة", needsRenew: "بحاجة تجديد",
+    savedDraft: "تم حفظ المسودة", preview: "معاينة", publish: "نشر", rePublish: "إعادة النشر",
+    pages: "الصفحات", addPage: "صفحة جديدة", sectionsOnPage: "أقسام هذه الصفحة", addSection: "إضافة قسم", addSectionNote: "اختر قسمًا جاهزًا لإضافته إلى الصفحة — بتصاميم متعددة وألوان تتبع هوية الموقع.",
+    variant: "التصميم", colorScheme: "نظام الألوان", content: "المحتوى", moveUp: "أعلى", moveDown: "أسفل",
+    schemePrimary: "أساسي", schemeLight: "فاتح", schemeDark: "داكن", schemeAccent: "مميّز",
+    manageContent: "المحتوى", manageSettings: "معلومات العمل", manageTheme: "الهوية", manageSeo: "SEO",
+    servicesManager: "الخدمات", addService: "إضافة خدمة", contentNote: "أدخل خدماتك مرة واحدة — تظهر تلقائيًا في أقسام «الخدمات» و«قائمة الأسعار» بكل صفحاتك.", service: "الخدمة", duration: "المدة", price: "السعر",
+    palette: "لوحة الألوان", paletteNote: "ألوان منسّقة مسبقًا لتبقى النتيجة أنيقة دائمًا. تُطبَّق على كل الأقسام.", font: "الخط", livePreview: "معاينة حية",
+    metaTitle: "عنوان الصفحة", metaDesc: "وصف الصفحة",
+    members: "الأعضاء والدعوات", membersSub: "أدر فريق مساحة عملك وروابط الدعوة.", invite: "دعوة عضو", commissionLedger: "سجل العمولات",
+    site: "الموقع", amount: "المبلغ", pct: "النسبة", status: "الحالة", owed: "مستحقة", settled: "مسوّاة",
+    analytics: "التحليلات", analyticsSub: "زيارات موقع صالون قاسيون.", visitsToday: "زيارات اليوم", visitsWeek: "هذا الأسبوع", visitsMonthTotal: "هذا الشهر", dailyVisits: "الزيارات اليومية", topPages: "أكثر الصفحات زيارة", rDay: "يومي", rWeek: "أسبوعي", rMonth: "شهري",
+    billing: "الفواتير والاشتراكات", billingSub: "اشتراكات سنوية تُحصّل نقدًا وتُسجّل يدويًا.", recordPayment: "تسجيل دفعة", plan: "الخطة", expiry: "الانتهاء", planAnnual: "سنوي",
+    workspaces: "مساحات العمل", workspacesSub: "جميع الوكالات والمستقلين على المنصّة.", workspace: "مساحة العمل", sitesCol: "المواقع", commission: "العمولة", totalWs: "مساحات العمل", totalSites: "المواقع", activeSites: "مواقع فعّالة", revenue: "إيراد الشهر",
+    mySite: "موقعي", clientSub: "عرض حالة موقعك (للقراءة فقط).", stLive: "منشور", visitsMonth: "زيارات الشهر", pagesCol: "الصفحات", clientNote: "لتعديل الموقع، تواصل مع الوكالة التي تديره.",
+    createSite: "إنشاء موقع جديد", businessName: "اسم العمل", businessNamePh: "مثال: صالون قاسيون", subdomain: "النطاق الفرعي", chooseTemplate: "اختر القالب", cancel: "إلغاء", createAndBuild: "إنشاء وبناء",
+    tplBarber: "حلاقة", tplRestaurant: "مطعم", tplServices: "خدمات",
+    inviteMember: "دعوة عضو", inviteDesc: "شارك هذا الرابط لينضم عضو جديد إلى مساحة عملك.", copy: "نسخ", inviteExpiry: "الرابط صالح لمدة 72 ساعة.",
+    currency: "العملة", method: "طريقة الدفع", mCash: "نقدًا", mBank: "حوالة", mMobile: "موبايل", payNote: "تسجيل الدفعة يمدّد الاشتراك سنة ويعيد تفعيل الموقع.", confirmPayment: "تأكيد الدفعة",
+  },
+  en: {
+    onbLead: "Sawwi — build a professional site for your business from ready-made sections, in 10 minutes.", onbT1: "Create your workspace", onbD1: "A workspace holds all the sites you manage for clients.",
+    onbT2: "What describes you?", onbD2: "For analytics only — won't affect your account.", onbT3: "All set!", onbD3: "Your workspace is ready. Let's create your first site from a template.",
+    wsName: "Workspace name", wsNamePh: "e.g. Al Mada Studio", city: "City", whatsapp: "WhatsApp",
+    back: "Back", next: "Next", finish: "Get started",
+    intentAgency: "Agency", intentAgencyD: "I work in a team for several clients", intentFree: "Freelancer", intentFreeD: "I work solo on projects", intentBiz: "Business owner", intentBizD: "I'm building my own site",
+    viewAs: "View as", roleWorkspace: "Agency", roleAdmin: "Admin", roleClient: "Client",
+    navHome: "Home", navSites: "Sites", navAnalytics: "Analytics", navBilling: "Billing", navMembers: "Members", navWorkspaces: "Workspaces", navAdminBilling: "Billing", navMySite: "My Site",
+    alerts: "Alerts",
+    greeting: "Welcome, Ahmad", homeSub: "Here's a quick look at your workspace today.", newSite: "New site",
+    statSites: "Sites", statPublished: "Published", statVisits: "Visits / month", statRenewals: "Renewals due",
+    recentSites: "Recent sites", viewAll: "View all", renewals: "Renewal alerts",
+    mySites: "Sites", openBuilder: "Open builder", visitsShort: "visits", allSites: "All", published: "Published", draft: "Draft", needsRenew: "Needs renewal",
+    savedDraft: "Draft saved", preview: "Preview", publish: "Publish", rePublish: "Re-publish",
+    pages: "Pages", addPage: "New page", sectionsOnPage: "Sections on page", addSection: "Add section", addSectionNote: "Pick a ready-made section to add — multiple designs, colors that follow the site palette.",
+    variant: "Design", colorScheme: "Color scheme", content: "Content", moveUp: "Up", moveDown: "Down",
+    schemePrimary: "Primary", schemeLight: "Light", schemeDark: "Dark", schemeAccent: "Accent",
+    manageContent: "Content", manageSettings: "Business info", manageTheme: "Brand", manageSeo: "SEO",
+    servicesManager: "Services", addService: "Add service", contentNote: "Enter your services once — they appear automatically in Services and PriceList sections across all pages.", service: "Service", duration: "Duration", price: "Price",
+    palette: "Palette", paletteNote: "Pre-tuned palettes that always look sharp. Applied across every section.", font: "Font", livePreview: "Live preview",
+    metaTitle: "Meta title", metaDesc: "Meta description",
+    members: "Members & invites", membersSub: "Manage your workspace team and invite links.", invite: "Invite member", commissionLedger: "Commission ledger",
+    site: "Site", amount: "Amount", pct: "Rate", status: "Status", owed: "Owed", settled: "Settled",
+    analytics: "Analytics", analyticsSub: "Visits for Qasioun Salon.", visitsToday: "Today", visitsWeek: "This week", visitsMonthTotal: "This month", dailyVisits: "Daily visits", topPages: "Top pages", rDay: "Daily", rWeek: "Weekly", rMonth: "Monthly",
+    billing: "Billing & subscriptions", billingSub: "Annual subscriptions, collected in cash, recorded manually.", recordPayment: "Record payment", plan: "Plan", expiry: "Expiry", planAnnual: "Annual",
+    workspaces: "Workspaces", workspacesSub: "All agencies and freelancers on the platform.", workspace: "Workspace", sitesCol: "Sites", commission: "Commission", totalWs: "Workspaces", totalSites: "Sites", activeSites: "Active", revenue: "Month revenue",
+    mySite: "My Site", clientSub: "View your site status (read-only).", stLive: "Published", visitsMonth: "Visits / month", pagesCol: "Pages", clientNote: "To edit your site, contact the agency that manages it.",
+    createSite: "Create a new site", businessName: "Business name", businessNamePh: "e.g. Qasioun Salon", subdomain: "Subdomain", chooseTemplate: "Choose a template", cancel: "Cancel", createAndBuild: "Create & build",
+    tplBarber: "Barbershop", tplRestaurant: "Restaurant", tplServices: "Services",
+    inviteMember: "Invite a member", inviteDesc: "Share this link so a new member can join your workspace.", copy: "Copy", inviteExpiry: "Link valid for 72 hours.",
+    currency: "Currency", method: "Method", mCash: "Cash", mBank: "Transfer", mMobile: "Mobile", payNote: "Recording a payment extends the subscription by a year and reactivates the site.", confirmPayment: "Confirm payment",
+  },
+};
+
+// section type registry
+const SECTYPES = {
+  hero: { en: "Hero", ar: "البانر الرئيسي" },
+  about: { en: "About", ar: "من نحن" },
+  services: { en: "Services", ar: "الخدمات" },
+  pricelist: { en: "PriceList", ar: "قائمة الأسعار" },
+  gallery: { en: "Gallery", ar: "معرض الصور" },
+  testimonials: { en: "Testimonials", ar: "آراء العملاء" },
+  team: { en: "Team", ar: "الفريق" },
+  hours: { en: "OpeningHours", ar: "أوقات العمل" },
+  map: { en: "Map+Address", ar: "الموقع" },
+  whatsapp: { en: "WhatsAppCTA", ar: "زر واتساب" },
+  faq: { en: "FAQ", ar: "أسئلة شائعة" },
+  banner: { en: "Banner", ar: "شريط إعلان" },
+  contact: { en: "Contact", ar: "تواصل معنا" },
+};
+const SECORDER = ["hero", "about", "services", "pricelist", "gallery", "testimonials", "team", "hours", "map", "whatsapp", "faq", "banner", "contact"];
+
+class Component extends DCLogic {
+  state = {
+    lang: "ar", role: "workspace", route: "home",
+    onbStep: 1, onbName: "", intent: "agency",
+    createOpen: false, newName: "", newSlug: "", newSlugTouched: false, newTemplate: "barber",
+    addSectionOpen: false,
+    device: "desktop", manageTab: "content",
+    publishing: false, notifOpen: false, inviteOpen: false, payOpen: false, payMethod: "cash",
+    anRange: "day", siteFilter: "all", toasts: [],
+    sections: [
+      { id: 1, type: "hero", variant: "A", scheme: "dark" },
+      { id: 2, type: "about", variant: "A", scheme: "light" },
+      { id: 3, type: "services", variant: "B", scheme: "light" },
+      { id: 4, type: "gallery", variant: "A", scheme: "accent" },
+      { id: 5, type: "testimonials", variant: "A", scheme: "primary" },
+      { id: 6, type: "hours", variant: "B", scheme: "light" },
+      { id: 7, type: "whatsapp", variant: "A", scheme: "primary" },
+    ],
+    selSection: 1, activePage: "home", seq: 100,
+  };
+  pagesList = [
+    { id: "home", ar: "الرئيسية", en: "Home" },
+    { id: "services", ar: "الخدمات", en: "Services" },
+    { id: "about", ar: "من نحن", en: "About" },
+    { id: "contact", ar: "تواصل", en: "Contact" },
+  ];
+  sites = [
+    { id: 1, name: "صالون قاسيون", slug: "qasioun-cuts", vertical: "حلاقة", status: "published", expiry: "٢٠٢٦/١٢/٠١", visits: "١٬٢٤٠", tint: 0 },
+    { id: 2, name: "مطعم بيت الكرم", slug: "bayt-al-karam", vertical: "مطعم", status: "published", expiry: "٢٠٢٦/٠٨/٢٠", visits: "٨٦٠", tint: 1 },
+    { id: 3, name: "حلويات الأصيل", slug: "halawiyat-alaseel", vertical: "مطعم", status: "draft", expiry: "—", visits: "٠", tint: 2 },
+    { id: 4, name: "بوتيك ياسمين", slug: "boutique-yasmin", vertical: "خدمات", status: "grace", expiry: "٢٠٢٦/٠٧/١٠", visits: "٤٣٠", tint: 3 },
+    { id: 5, name: "مخبز التنور", slug: "mikhbaz-altannour", vertical: "مطعم", status: "published", expiry: "٢٠٢٧/٠٢/١٥", visits: "٢٬١١٠", tint: 4 },
+    { id: 6, name: "صالون الأناقة", slug: "elegance-salon", vertical: "حلاقة", status: "suspended", expiry: "٢٠٢٦/٠٥/٠١", visits: "١٢٠", tint: 0 },
+  ];
+  tints = [
+    { bg: "var(--color-accent-200)", fg: "var(--color-accent-800)", cover: "var(--color-accent-800)" },
+    { bg: "var(--color-accent-2-200)", fg: "var(--color-accent-2-800)", cover: "var(--color-accent-2-800)" },
+    { bg: "var(--color-neutral-300)", fg: "var(--color-neutral-800)", cover: "var(--color-neutral-800)" },
+    { bg: "var(--color-accent-100)", fg: "var(--color-accent-700)", cover: "var(--color-accent-700)" },
+    { bg: "var(--color-neutral-200)", fg: "var(--color-neutral-700)", cover: "var(--color-neutral-900)" },
+  ];
+  STATUS = {
+    published: { c: "var(--color-accent-700)", ar: "منشور", en: "Published", tag: "tag-accent" },
+    draft: { c: "var(--color-neutral-600)", ar: "مسودة", en: "Draft", tag: "tag-neutral" },
+    grace: { c: "var(--color-process-yellow)", ar: "مهلة", en: "Grace", tag: "tag-outline" },
+    suspended: { c: "var(--color-accent-2-700)", ar: "موقوف", en: "Suspended", tag: "tag-accent-2" },
+  };
+
+  componentDidMount() {
+    this._doc = (e) => { if (this.notifRef && !this.notifRef.contains(e.target)) this.setState({ notifOpen: false }); };
+    this._key = (e) => { if (e.key === "Escape") this.setState({ createOpen: false, inviteOpen: false, payOpen: false, addSectionOpen: false, notifOpen: false }); };
+    document.addEventListener("mousedown", this._doc);
+    document.addEventListener("keydown", this._key);
+  }
+  componentWillUnmount() { document.removeEventListener("mousedown", this._doc); document.removeEventListener("keydown", this._key); }
+
+  tr() { return T[this.state.lang]; }
+  toggleLang = () => this.setState(s => ({ lang: s.lang === "ar" ? "en" : "ar" }));
+  setRole = (role) => { const home = role === "admin" ? "adminWs" : role === "client" ? "client" : "home"; this.setState({ role, route: home, notifOpen: false }); };
+  go = (route) => this.setState({ route });
+  toggleNotif = () => this.setState(s => ({ notifOpen: !s.notifOpen }));
+  stopProp = (e) => e.stopPropagation();
+  addToast(t) { const id = Date.now() + Math.random(); this.setState(s => ({ toasts: [...s.toasts, { id, ...t }] })); setTimeout(() => this.setState(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), 4200); }
+  onOnbNext = () => { if (this.state.onbStep < 3) this.setState(s => ({ onbStep: s.onbStep + 1 })); else { this.setState({ route: "home" }); this.addToast({ type: "success", title: this.state.lang === "ar" ? "تم إنشاء مساحة العمل" : "Workspace created", msg: this.state.lang === "ar" ? "أهلًا بك في سوّي!" : "Welcome to Sawwi!" }); } };
+  onOnbBack = () => this.setState(s => ({ onbStep: Math.max(1, s.onbStep - 1) }));
+  openCreate = () => this.setState({ createOpen: true, newName: "", newSlug: "", newSlugTouched: false, newTemplate: "barber" });
+  slugify = (v) => v.trim().toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 40);
+  onNewName = (e) => this.setState(s => ({ newName: e.target.value, newSlug: s.newSlugTouched ? s.newSlug : this.slugify(e.target.value) }));
+  onNewSlug = (e) => this.setState({ newSlug: this.slugify(e.target.value), newSlugTouched: true });
+  doCreate = () => { this.setState({ createOpen: false, route: "builder" }); this.addToast({ type: "success", title: this.state.lang === "ar" ? "تم إنشاء الموقع" : "Site created", msg: this.state.lang === "ar" ? "اختر الأقسام واملأ المحتوى." : "Pick sections and fill in content." }); };
+  publishFlow = () => { if (this.state.publishing) return; this.setState({ publishing: true }); setTimeout(() => { this.setState({ publishing: false }); this.addToast({ type: "success", title: this.state.lang === "ar" ? "تم نشر الموقع" : "Site published", msg: this.state.lang === "ar" ? "الموقع الآن مباشر على النطاق." : "Your site is now live." }); }, 1400); };
+  openInvite = () => this.setState({ inviteOpen: true });
+  copyInvite = () => this.addToast({ type: "info", title: this.state.lang === "ar" ? "تم نسخ الرابط" : "Link copied", msg: this.state.lang === "ar" ? "شاركه مع العضو الجديد." : "Share it with the new member." });
+  removeMember = (n) => this.addToast({ type: "info", title: this.state.lang === "ar" ? "تمت الإزالة" : "Removed", msg: n });
+  openPay = () => this.setState({ payOpen: true });
+  doPay = () => { this.setState({ payOpen: false }); this.addToast({ type: "success", title: this.state.lang === "ar" ? "تم تسجيل الدفعة" : "Payment recorded", msg: this.state.lang === "ar" ? "تم تمديد الاشتراك سنة كاملة." : "Subscription extended by a year." }); };
+  // configurator
+  selectSection = (id) => this.setState({ selSection: id });
+  setVariant = (v) => this.setState(s => ({ sections: s.sections.map(x => x.id === s.selSection ? { ...x, variant: v } : x) }));
+  setScheme = (sc) => this.setState(s => ({ sections: s.sections.map(x => x.id === s.selSection ? { ...x, scheme: sc } : x) }));
+  removeSection = () => this.setState(s => { const remaining = s.sections.filter(x => x.id !== s.selSection); return { sections: remaining, selSection: remaining.length ? remaining[0].id : null }; });
+  moveSel = (dir) => this.setState(s => { const i = s.sections.findIndex(x => x.id === s.selSection); const j = i + dir; if (i < 0 || j < 0 || j >= s.sections.length) return null; const arr = s.sections.slice(); const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; return { sections: arr }; });
+  openAddSection = () => this.setState({ addSectionOpen: true });
+  addSection = (type) => this.setState(s => { const id = s.seq + 1; return { seq: id, sections: [...s.sections, { id, type, variant: "A", scheme: "light" }], selSection: id, addSectionOpen: false }; });
+  addPage = () => this.addToast({ type: "info", title: this.state.lang === "ar" ? "صفحة جديدة" : "New page", msg: this.state.lang === "ar" ? "أضف الأقسام إلى صفحتك الجديدة." : "Add sections to your new page." });
+
+  schemeStyle(scheme) {
+    switch (scheme) {
+      case "primary": return { bg: "var(--color-accent-800)", fg: "var(--color-accent-100)", tile: "color-mix(in srgb, var(--color-accent-100) 12%, transparent)", line: "var(--color-accent-100)", accent: "var(--color-accent-400)", ctaBg: "#fff", ctaFg: "var(--color-accent-800)" };
+      case "dark": return { bg: "var(--color-neutral-900)", fg: "var(--color-neutral-100)", tile: "color-mix(in srgb, #fff 8%, transparent)", line: "var(--color-neutral-100)", accent: "var(--color-accent-400)", ctaBg: "var(--color-accent)", ctaFg: "#fff" };
+      case "accent": return { bg: "var(--color-accent-100)", fg: "var(--color-accent-900)", tile: "#fff", line: "var(--color-accent-900)", accent: "var(--color-accent-500)", ctaBg: "var(--color-accent)", ctaFg: "#fff" };
+      default: return { bg: "var(--color-bg)", fg: "var(--color-text)", tile: "var(--color-neutral-100)", line: "var(--color-text)", accent: "var(--color-accent)", ctaBg: "var(--color-accent)", ctaFg: "#fff" };
+    }
+  }
+
+  renderVals() {
+    const t = this.tr();
+    const L = this.state.lang, ar = L === "ar", dir = ar ? "rtl" : "ltr", role = this.state.role, route = this.state.route;
+    const seg = (a) => ({ checked: a });
+    const st = (k) => this.STATUS[k];
+    const scr = (k) => route === k ? "flex" : "none";
+    const manageRoutes = ["content", "settings", "theme", "seo"];
+    const isManage = manageRoutes.includes(route);
+
+    const navStyle = (k) => { const a = route === k || (k === "sites" && (route === "builder" || isManage)); return { bg: a ? "var(--color-accent-100)" : "transparent", color: a ? "var(--color-accent-800)" : "var(--color-neutral-700)", weight: a ? 600 : 400, bar: a ? "block" : "none", op: a ? 1 : 0.65 }; };
+    const navGo = { home: () => this.go("home"), sites: () => this.go("sites"), analytics: () => this.go("analytics"), billing: () => this.go("billing"), members: () => this.go("members"), adminWs: () => this.go("adminWs"), client: () => this.go("client") };
+    const roleTabs = [["workspace", t.roleWorkspace], ["admin", t.roleAdmin], ["client", t.roleClient]].map(([k, label]) => ({ label, onClick: () => this.setRole(k), ...seg(role === k) }));
+
+    const onbSteps = [1, 2, 3].map(n => ({ bg: n <= this.state.onbStep ? "var(--color-accent)" : "var(--color-neutral-300)" }));
+    const intents = [["agency", t.intentAgency, t.intentAgencyD], ["freelancer", t.intentFree, t.intentFreeD], ["business", t.intentBiz, t.intentBizD]].map(([k, label, desc]) => {
+      const a = this.state.intent === k;
+      return { label, desc, onClick: () => this.setState({ intent: k }), border: a ? "var(--color-accent)" : "var(--color-divider)", bg: a ? "var(--color-accent-100)" : "var(--color-bg)", dot: a ? "var(--color-accent)" : "var(--color-neutral-400)", fill: a ? "var(--color-accent)" : "transparent" };
+    });
+
+    const svm = (s) => { const tn = this.tints[s.tint], stt = st(s.status); return { id: s.id, name: s.name, slug: s.slug, vertical: s.vertical, visits: s.visits, initial: s.name.replace(/^(مطعم|مقهى|حلويات|بوتيك|مخبز|صالون)\s/, "").charAt(0), avBg: tn.bg, avFg: tn.fg, cover: tn.cover, stColor: stt.c, stLabel: ar ? stt.ar : stt.en, expiryLabel: (ar ? "ينتهي " : "Expires ") + s.expiry, onOpen: () => this.go("builder") }; };
+    const recentSites = this.sites.slice(0, 4).map(svm);
+    const filteredSites = this.sites.filter(s => this.state.siteFilter === "all" || (this.state.siteFilter === "renew" ? (s.status === "grace" || s.status === "suspended") : s.status === this.state.siteFilter)).map(svm);
+    const siteFilters = [["all", t.allSites], ["published", t.published], ["draft", t.draft], ["renew", t.needsRenew]].map(([k, label]) => ({ label, onClick: () => this.setState({ siteFilter: k }), ...seg(this.state.siteFilter === k) }));
+
+    const stats = [
+      { label: t.statSites, value: "٦", kicker: "var(--color-accent-700)" },
+      { label: t.statPublished, value: "٣", kicker: "var(--color-neutral-600)" },
+      { label: t.statVisits, value: "٤٬٧٦٠", kicker: "var(--color-neutral-600)" },
+      { label: t.statRenewals, value: "٢", kicker: "var(--color-accent-2-700)" },
+    ];
+    const renewals = [
+      { name: "مطعم بيت الكرم", msg: ar ? "ينتهي خلال ١٤ يومًا" : "Expires in 14 days", color: "var(--color-process-yellow)" },
+      { name: "بوتيك ياسمين", msg: ar ? "في مهلة السماح — ٣ أيام" : "In grace — 3 days left", color: "var(--color-accent-2-700)" },
+      { name: "صالون الأناقة", msg: ar ? "موقوف — بانتظار التجديد" : "Suspended — awaiting renewal", color: "var(--color-neutral-600)" },
+    ];
+    const notifs = renewals.map(r => ({ title: r.name, msg: r.msg, dot: r.color }));
+
+    // configurator
+    const selId = this.state.selSection;
+    const secList = this.state.sections;
+    const pages = this.pagesList.map(p => { const a = this.state.activePage === p.id; return { name: ar ? p.ar : p.en, onClick: () => this.setState({ activePage: p.id }), bg: a ? "var(--color-accent-100)" : "transparent", color: a ? "var(--color-accent-800)" : "var(--color-neutral-700)", weight: a ? 600 : 400 }; });
+    const dragDots = React.createElement("svg", { width: 12, height: 12, viewBox: "0 0 16 16", fill: "currentColor" }, React.createElement("circle", { cx: 6, cy: 4, r: 1 }), React.createElement("circle", { cx: 10, cy: 4, r: 1 }), React.createElement("circle", { cx: 6, cy: 8, r: 1 }), React.createElement("circle", { cx: 10, cy: 8, r: 1 }), React.createElement("circle", { cx: 6, cy: 12, r: 1 }), React.createElement("circle", { cx: 10, cy: 12, r: 1 }));
+    const pageSections = secList.map(s => { const a = s.id === selId; const ty = SECTYPES[s.type]; return { label: ar ? ty.ar : ty.en, variant: s.variant, onSelect: () => this.selectSection(s.id), bg: a ? "var(--color-accent-100)" : "var(--color-bg)", border: a ? "var(--color-accent-400)" : "var(--color-divider)", weight: a ? 600 : 400, iconColor: "var(--color-neutral-500)", dragDots }; });
+
+    const heroCopy = { title: "صالون قاسيون", sub: "حلاقة كلاسيكية وعناية رجالية في قلب دمشق القديمة — بأيدي محترفين.", cta: "احجز موعدك" };
+    const previewSections = secList.map(s => {
+      const a = s.id === selId; const ty = SECTYPES[s.type]; const cs = this.schemeStyle(s.scheme);
+      const isHero = s.type === "hero" || s.type === "whatsapp" || s.type === "banner";
+      const centered = isHero || s.type === "testimonials";
+      const tileTypes = { services: 3, pricelist: 3, gallery: 3, team: 3, faq: 2, testimonials: 2, about: 0, hero: 0, whatsapp: 0, banner: 0, hours: 2, map: 2, contact: 2 };
+      const nRaw = tileTypes[s.type] === undefined ? 3 : tileTypes[s.type];
+      const n = s.variant === "B" ? Math.max(2, nRaw) : (s.variant === "C" ? Math.min(2, nRaw || 2) : nRaw);
+      const hasTiles = n > 0;
+      const cols = s.variant === "C" ? "1fr" : (n === 2 ? "1fr 1fr" : "1fr 1fr 1fr");
+      const isCTA = s.type === "whatsapp" || s.type === "banner";
+      const titleByType = { hero: heroCopy.title, whatsapp: "احجز عبر واتساب", banner: "خصم ٢٠٪ هذا الأسبوع", about: "قصّتنا", services: "خدماتنا", pricelist: "الأسعار", gallery: "أعمالنا", testimonials: "ماذا قال عملاؤنا", team: "فريق الحلاقين", hours: "أوقات العمل", map: "موقعنا", faq: "أسئلة شائعة", contact: "تواصل معنا" };
+      return {
+        onSelect: () => this.selectSection(s.id),
+        typeEn: ty.en, kicker: ar ? ty.ar : ty.en, tagShow: a ? "inline-block" : "none", kickerShow: isHero ? "none" : "block",
+        title: titleByType[s.type] || ty.ar, sub: s.type === "hero" ? heroCopy.sub : (isCTA ? "تواصل معنا مباشرة عبر واتساب لحجز موعدك." : "نص وصفي قصير يشرح هذا القسم لزوّار الموقع."),
+        subShow: (s.type === "hero" || isCTA || s.type === "about") ? "block" : "none",
+        ctaShow: (s.type === "hero" || isCTA) ? "inline-flex" : "none", ctaText: s.type === "whatsapp" ? "راسلنا على واتساب" : heroCopy.cta, ctaBg: cs.ctaBg, ctaFg: cs.ctaFg,
+        bg: cs.bg, fg: cs.fg, tileBg: cs.tile, lineBg: cs.line, tileAccent: cs.accent,
+        outline: a ? "2px solid var(--color-accent-2)" : "2px solid transparent",
+        align: centered ? "center" : "flex-start", textAlign: centered ? "center" : "start",
+        pad: isHero ? "44px 32px" : "32px",
+        titleSize: isHero ? "28px" : "20px",
+        tilesShow: hasTiles ? "grid" : "none", gridCols: cols,
+        t1: hasTiles ? "flex" : "none", t2: n >= 2 ? "flex" : "none", t3: n >= 3 ? "flex" : "none",
+      };
+    });
+    const selSec = secList.find(x => x.id === selId) || secList[0] || { type: "hero", variant: "A", scheme: "light" };
+    const selTy = SECTYPES[selSec.type];
+    const variantTabs = ["A", "B", "C"].map(v => ({ label: v, onClick: () => this.setVariant(v), ...seg(selSec.variant === v) }));
+    const schemeSwatches = [["primary", t.schemePrimary, "var(--color-accent-800)", "var(--color-accent-300)"], ["light", t.schemeLight, "var(--color-bg)", "var(--color-accent)"], ["dark", t.schemeDark, "var(--color-neutral-900)", "var(--color-accent-400)"], ["accent", t.schemeAccent, "var(--color-accent-100)", "var(--color-accent)"]].map(([k, label, bg, dot]) => ({ label, bg, dot, onClick: () => this.setScheme(k), ring: selSec.scheme === k ? "var(--color-accent)" : "transparent" }));
+    const inspFieldDefs = {
+      hero: [["العنوان", "صالون قاسيون"], ["الوصف", "حلاقة كلاسيكية في دمشق"], ["نص الزر", "احجز موعدك"]],
+      about: [["العنوان", "قصّتنا"], ["النص", "منذ ١٩٧٥ في دمشق القديمة"]],
+      services: [["عنوان القسم", "خدماتنا"], ["ملاحظة", "تُسحب من مدير الخدمات"]],
+      whatsapp: [["الرقم", "+963 11 222 3344"], ["نص الزر", "راسلنا على واتساب"]],
+    };
+    const inspFields = (inspFieldDefs[selSec.type] || [["العنوان", selTy.ar], ["نص وصفي", "نص القسم"]]).map(([label, value]) => ({ label, value }));
+
+    // manage
+    const manageTitleMap = { content: t.manageContent, settings: t.manageSettings, theme: t.manageTheme, seo: t.manageSeo };
+    const manageTabs = [["content", t.manageContent], ["settings", t.manageSettings], ["theme", t.manageTheme], ["seo", t.manageSeo]].map(([k, label]) => ({ label, onClick: () => this.go(k), ...seg(route === k) }));
+    const services = [
+      { name: "قصّة شعر كلاسيكية", dur: "٣٠ دقيقة", price: "٥٠٬٠٠٠ ل.س" },
+      { name: "حلاقة ذقن بالموسى", dur: "٢٠ دقيقة", price: "٣٥٬٠٠٠ ل.س" },
+      { name: "قصّة + حلاقة", dur: "٤٥ دقيقة", price: "٨٠٬٠٠٠ ل.س" },
+      { name: "عناية بالبشرة", dur: "٤٠ دقيقة", price: "٧٠٬٠٠٠ ل.س" },
+    ];
+    const palDefs = [
+      ["الأزرق الدمشقي", "var(--color-accent-700)", "var(--color-accent-300)", "var(--color-neutral-200)", true],
+      ["الوردي الحلبي", "var(--color-accent-2-700)", "var(--color-accent-2-300)", "var(--color-neutral-200)", false],
+      ["الفحمي", "var(--color-neutral-900)", "var(--color-neutral-500)", "var(--color-neutral-200)", false],
+      ["الرملي", "var(--color-process-yellow)", "var(--color-accent-2-300)", "var(--color-neutral-200)", false],
+      ["الزيتوني", "#5c6b3a", "#a8b57e", "var(--color-neutral-200)", false],
+      ["النحاسي", "#9a5b3a", "#d6a084", "var(--color-neutral-200)", false],
+    ];
+    const palettes = palDefs.map(([name, c1, c2, c3, active]) => ({ name, c1, c2, c3, onClick: () => {}, border: active ? "var(--color-accent)" : "var(--color-divider)" }));
+    const settingFields = [
+      { label: t.whatsapp, value: "+963 11 222 3344", dir: "ltr", ph: "+963", span: "auto" },
+      { label: ar ? "الهاتف" : "Phone", value: "+963 11 555 6677", dir: "ltr", ph: "+963", span: "auto" },
+      { label: ar ? "رابط خرائط جوجل" : "Google Maps URL", value: "https://maps.app.goo.gl/…", dir: "ltr", ph: "https://", span: "1 / -1" },
+      { label: ar ? "العنوان" : "Address", value: "دمشق، سوق الحميدية", dir: dir, ph: "", span: "1 / -1" },
+      { label: ar ? "إنستغرام" : "Instagram", value: "qasioun.cuts", dir: "ltr", ph: "@", span: "auto" },
+      { label: ar ? "أوقات العمل" : "Hours", value: "٩ص – ١٠م", dir: dir, ph: "", span: "auto" },
+    ];
+
+    const memberDefs = [
+      { name: "أحمد نصر", email: "ahmad@almada.studio", role: ar ? "مالك" : "Owner", owner: true, tint: 1 },
+      { name: "ليلى حداد", email: "layla@almada.studio", role: ar ? "عضو" : "Member", owner: false, tint: 0 },
+      { name: "عمر خليل", email: "omar@almada.studio", role: ar ? "عضو" : "Member", owner: false, tint: 2 },
+      { name: "نور فارس", email: "nour@almada.studio", role: ar ? "عضو" : "Member", owner: false, tint: 3 },
+    ];
+    const members = memberDefs.map(m => { const tn = this.tints[m.tint]; return { name: m.name, email: m.email, role: m.role, initial: m.name.charAt(0), avBg: tn.bg, avFg: tn.fg, roleTag: m.owner ? "tag-accent" : "tag-neutral", joined: ar ? "منذ ٣ أشهر" : "3 months ago", onRemove: () => this.removeMember(m.name) }; });
+    const ledger = [
+      { site: "صالون قاسيون", amount: "٢٢٥٬٠٠٠ ل.س", pct: "١٥٪", settled: false },
+      { site: "مخبز التنور", amount: "١٨٠٬٠٠٠ ل.س", pct: "١٢٪", settled: true },
+      { site: "مطعم بيت الكرم", amount: "١٥٠٬٠٠٠ ل.س", pct: "١٥٪", settled: false },
+    ].map(l => ({ ...l, statusLabel: l.settled ? t.settled : t.owed, tag: l.settled ? "tag-accent" : "tag-outline" }));
+
+    const anStats = [
+      { label: t.visitsToday, value: "٨٦", trend: "+١٢٪", trendColor: "var(--color-accent-700)" },
+      { label: t.visitsWeek, value: "٥٤٢", trend: "+٨٪", trendColor: "var(--color-accent-700)" },
+      { label: t.visitsMonthTotal, value: "١٬٢٤٠", trend: "-٣٪", trendColor: "var(--color-accent-2-700)" },
+    ];
+    const anRanges = [["day", t.rDay], ["week", t.rWeek], ["month", t.rMonth]].map(([k, label]) => ({ label, onClick: () => this.setState({ anRange: k }), ...seg(this.state.anRange === k) }));
+    const rawBars = [40, 62, 48, 70, 55, 88, 95, 60, 72, 50, 80, 66, 90, 78];
+    const days = ["١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩", "١٠", "١١", "١٢", "١٣", "١٤"];
+    const chartBars = rawBars.map((v, i) => ({ height: v + "%", bg: i === rawBars.length - 1 ? "var(--color-accent)" : "var(--color-accent-300)", day: days[i] }));
+    const topPages = [{ path: "/", visits: "٦٢٠", pct: "100%" }, { path: "/services", visits: "٣٤٠", pct: "55%" }, { path: "/about", visits: "١٦٠", pct: "26%" }, { path: "/contact", visits: "١٢٠", pct: "19%" }];
+
+    const subscriptions = this.sites.filter(s => s.status !== "draft").map(s => { const tn = this.tints[s.tint], stt = st(s.status); return { name: s.name, initial: s.name.replace(/^(مطعم|مقهى|حلويات|بوتيك|مخبز|صالون)\s/, "").charAt(0), avBg: tn.bg, avFg: tn.fg, plan: t.planAnnual, price: "١٬٥٠٠٬٠٠٠ ل.س", expiry: s.expiry, tag: stt.tag, stLabel: ar ? stt.ar : stt.en }; });
+    const payMethods = [["cash", t.mCash], ["bank", t.mBank], ["mobile", t.mMobile]].map(([k, label]) => ({ label, onClick: () => this.setState({ payMethod: k }), ...seg(this.state.payMethod === k) }));
+
+    const adminStats = [{ label: t.totalWs, value: "٢٤" }, { label: t.totalSites, value: "٨٧" }, { label: t.activeSites, value: "٦٣" }, { label: t.revenue, value: "٤٢٫٥ م" }];
+    const wsDefs = [
+      { name: "استوديو المدى", city: "دمشق", sites: "٦", commission: "١٥٪", status: "published", tint: 1 },
+      { name: "وكالة الشرق", city: "حلب", sites: "١٢", commission: "١٢٪", status: "published", tint: 2 },
+      { name: "نور ديزاين", city: "اللاذقية", sites: "٤", commission: "١٨٪", status: "grace", tint: 3 },
+      { name: "بيكسل حمص", city: "حمص", sites: "٣", commission: "١٥٪", status: "suspended", tint: 0 },
+    ];
+    const workspaces = wsDefs.map(w => { const tn = this.tints[w.tint], stt = st(w.status); return { name: w.name, city: w.city, sites: w.sites, commission: w.commission, initial: w.name.charAt(0), avBg: tn.bg, avFg: tn.fg, tag: stt.tag, stLabel: w.status === "published" ? (ar ? "فعّالة" : "Active") : (ar ? stt.ar : stt.en) }; });
+
+    const toasts = this.state.toasts.map(x => ({ title: x.title, msg: x.msg, color: x.type === "success" ? "var(--color-accent-700)" : "var(--color-accent-800)", iconBg: x.type === "success" ? "var(--color-accent-100)" : "var(--color-accent-100)", successDisplay: x.type === "success" ? "inline-flex" : "none", infoDisplay: x.type !== "success" ? "inline-flex" : "none", onClose: () => this.setState(s => ({ toasts: s.toasts.filter(y => y.id !== x.id) })) }));
+
+    const tplIcon = (paths) => React.createElement("svg", { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none" }, paths);
+    const templateChoices = [
+      { key: "barber", label: t.tplBarber, icon: tplIcon([React.createElement("path", { key: 1, d: "M6 6l12 12M18 6L6 18", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" }), React.createElement("circle", { key: 2, cx: 6, cy: 18, r: 2.2, stroke: "currentColor", strokeWidth: 1.5 }), React.createElement("circle", { key: 3, cx: 18, cy: 18, r: 2.2, stroke: "currentColor", strokeWidth: 1.5 })]) },
+      { key: "restaurant", label: t.tplRestaurant, icon: tplIcon([React.createElement("path", { key: 1, d: "M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10M15 3c-1.5 0-2.5 2-2.5 5s1 4 2.5 4v9", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round" })]) },
+      { key: "services", label: t.tplServices, icon: tplIcon([React.createElement("path", { key: 1, d: "M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3z", stroke: "currentColor", strokeWidth: 1.5, strokeLinejoin: "round" })]) },
+    ].map(c => { const a = this.state.newTemplate === c.key; return { label: c.label, icon: c.icon, onClick: () => this.setState({ newTemplate: c.key }), border: a ? "var(--color-accent)" : "var(--color-divider)", bg: a ? "var(--color-accent-100)" : "var(--color-bg)", iconColor: a ? "var(--color-accent-700)" : "var(--color-neutral-600)" }; });
+
+    const sectionGallery = SECORDER.map(type => { const ty = SECTYPES[type]; return { label: ar ? ty.ar : ty.en, typeEn: ty.en, onClick: () => this.addSection(type), thumbBg: "var(--color-neutral-100)", thumbInk: "var(--color-neutral-400)", thumbAccent: "var(--color-accent)" }; });
+
+    return {
+      dir, t, langLabel: ar ? "EN" : "ع", toggleLang: this.toggleLang, wsName: "استوديو المدى",
+      onbDisplay: route === "onboarding" ? "flex" : "none", appDisplay: route !== "onboarding" ? "flex" : "none",
+      padWrap: (route === "builder") ? "none" : "flex",
+      homeShow: scr("home"), sitesShow: scr("sites"), builderShow: route === "builder" ? "flex" : "none",
+      manageShow: isManage ? "flex" : "none", manageTitle: manageTitleMap[route] || "", manageTabs,
+      contentShow: route === "content" ? "flex" : "none", themeShow: route === "theme" ? "grid" : "none", settingsShow: route === "settings" ? "grid" : "none", seoShow: route === "seo" ? "flex" : "none",
+      membersShow: scr("members"), analyticsShow: scr("analytics"), billingShow: scr("billing"), adminWsShow: scr("adminWs"), clientShow: scr("client"),
+      wsNavShow: role === "workspace" ? "flex" : "none", adminNavShow: role === "admin" ? "flex" : "none", clientNavShow: role === "client" ? "flex" : "none",
+      adminBtnShow: role === "admin" ? "inline-flex" : "none",
+      navHome: navStyle("home"), navSites: navStyle("sites"), navAnalytics: navStyle("analytics"), navBilling: navStyle("billing"), navMembers: navStyle("members"), navAdminWs: navStyle("adminWs"), navClient: navStyle("client"), navGo, roleTabs,
+      onbSteps, onb1Show: this.state.onbStep === 1 ? "flex" : "none", onb2Show: this.state.onbStep === 2 ? "flex" : "none", onb3Show: this.state.onbStep === 3 ? "flex" : "none",
+      onbName: this.state.onbName, onOnbName: (e) => this.setState({ onbName: e.target.value }), intents,
+      onOnbNext: this.onOnbNext, onOnbBack: this.onOnbBack, onbBackOpacity: this.state.onbStep === 1 ? 0.4 : 1, onbNextLabel: this.state.onbStep === 3 ? t.finish : t.next,
+      notifShow: this.state.notifOpen ? "block" : "none", toggleNotif: this.toggleNotif, notifRefCb: (el) => this.notifRef = el, notifs,
+      greeting: t.greeting, stats, recentSites, renewals, openCreate: this.openCreate, goSites: () => this.go("sites"),
+      siteFilters, filteredSites, sitesCountLabel: ar ? "٦ مواقع في مساحة عملك" : "6 sites in your workspace",
+      // builder
+      backFlip: ar ? "scaleX(-1)" : "none", devDesktop: this.state.device === "desktop", devMobile: this.state.device === "mobile",
+      setDevice: { desktop: () => this.setState({ device: "desktop" }), mobile: () => this.setState({ device: "mobile" }) },
+      canvasWidth: this.state.device === "mobile" ? "380px" : "860px",
+      publishSpin: this.state.publishing ? "inline-block" : "none", publishBtnLabel: this.state.publishing ? (ar ? "جارٍ النشر…" : "Publishing…") : t.publish, doPublish: this.publishFlow,
+      pages, openAddPage: this.addPage, addPage: t.addPage, pageSections, previewSections, openAddSection: this.openAddSection,
+      inspType: selTy.en, inspLabel: ar ? selTy.ar : selTy.en, variantTabs, schemeSwatches, inspFields,
+      moveUp: () => this.moveSel(-1), moveDown: () => this.moveSel(1), removeSection: this.removeSection,
+      // manage
+      services, palettes, settingFields,
+      // members / billing / analytics / admin
+      members, ledger, openInvite: this.openInvite,
+      anStats, anRanges, chartBars, topPages,
+      subscriptions, openPay: this.openPay,
+      adminStats, workspaces,
+      // modals
+      createShow: this.state.createOpen ? "flex" : "none", closeCreate: () => this.setState({ createOpen: false }), stopProp: this.stopProp,
+      newName: this.state.newName, onNewName: this.onNewName, newSlug: this.state.newSlug, onNewSlug: this.onNewSlug, templateChoices, doCreate: this.doCreate,
+      addSectionShow: this.state.addSectionOpen ? "flex" : "none", closeAddSection: () => this.setState({ addSectionOpen: false }), sectionGallery,
+      inviteShow: this.state.inviteOpen ? "flex" : "none", closeInvite: () => this.setState({ inviteOpen: false }), copyInvite: this.copyInvite,
+      payShow: this.state.payOpen ? "flex" : "none", closePay: () => this.setState({ payOpen: false }), payMethods, doPay: this.doPay,
+      toasts,
+    };
+  }
+}
+</script>
+</body>
+</html>
