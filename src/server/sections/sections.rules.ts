@@ -18,6 +18,7 @@ export const SECTION_TYPES = [
   "MapAddress",
   "WhatsAppCTA",
   "Faq",
+  "Menu",
   "AnnouncementBanner",
   "ContactBlock",
 ] as const;

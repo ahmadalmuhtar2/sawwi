@@ -92,6 +92,13 @@ import {
   type FAQItem,
   type FAQVariant,
 } from "./faq/faq-data";
+import MenuUniversal from "./menu/menu-universal";
+import {
+  defaultMenuContent,
+  type MenuContent,
+  type MenuItem,
+  type MenuVariant,
+} from "./menu/menu-data";
 import ContactUniversal from "./contact/contact-universal";
 import {
   defaultContactContent,
@@ -393,6 +400,8 @@ export function fieldEffectiveValues(
     return whatsappFieldEffectiveValues(content, site);
   } else if (variant.startsWith("faq-")) {
     return faqFieldEffectiveValues(content);
+  } else if (variant.startsWith("menu-")) {
+    return menuFieldEffectiveValues(content);
   } else if (variant.startsWith("contact-")) {
     return contactFieldEffectiveValues(content);
   }
@@ -1019,6 +1028,78 @@ export function Faq(props: SectionProps) {
   );
 }
 
+// ── Menu (restaurant) ─────────────────────────────────────────────────────────
+// Plates are a per-section `items` group; each carries a category that drives the
+// menu's tabs. Prices render with the SITE currency + Arabic digits (formatPrice).
+
+const MENU_VARIANTS: Record<string, MenuVariant> = {
+  "menu-tabs": "A",
+  "menu-sections": "B",
+  "menu-cards": "C",
+  A: "A",
+  B: "B",
+  C: "C",
+};
+
+const DEFAULT_MENU_ROWS: Record<string, string>[] = [
+  { category: "المقبّلات", name: "حمّص بالطحينة", price: "٢٥٠٠٠", description: "حمّص كريمي بزيت الزيتون البلدي.", badge: "نباتي", image: "" },
+  { category: "المشاوي", name: "مشاوي مشكّلة", price: "٩٥٠٠٠", description: "شيش طاووق، كباب، وريش غنم مع خضار مشوية.", badge: "الأكثر طلبًا", image: "" },
+  { category: "الحلويات", name: "كنافة نابلسية", price: "٣٠٠٠٠", description: "بالجبن الطازج والقطر، تُقدَّم ساخنة.", image: "" },
+];
+
+function menuItems(site: SiteRenderData, content: Record<string, unknown>): MenuItem[] {
+  const rows = readGroup(content, "items");
+  const source = rows && rows.length ? rows : DEFAULT_MENU_ROWS;
+  const cur = site.settings.currency;
+  return source
+    .filter((r) => (r.name ?? "").trim())
+    .map((r) => ({
+      name: r.name,
+      price: r.price ? formatPrice(r.price, cur) : undefined,
+      description: r.description || undefined,
+      image: r.image || undefined,
+      category: r.category || undefined,
+      badge: r.badge || undefined,
+    }));
+}
+
+function menuContent(content: Record<string, unknown>, site: SiteRenderData): Partial<MenuContent> {
+  const d = defaultMenuContent;
+  const waDigits = (site.settings.whatsappNumber ?? "").replace(/[^0-9]/g, "");
+  return {
+    kicker: text(content, "kicker", d.kicker),
+    title: text(content, "title", d.title),
+    lede: text(content, "lede", d.lede ?? ""),
+    footnote: text(content, "footnote", d.footnote ?? ""),
+    ctaLabel: text(content, "ctaLabel", d.ctaLabel ?? ""),
+    whatsapp: waDigits || undefined,
+  };
+}
+
+function menuFieldEffectiveValues(content: Record<string, unknown>): Record<string, unknown> {
+  const d = defaultMenuContent;
+  return {
+    kicker: text(content, "kicker", d.kicker),
+    title: text(content, "title", d.title),
+    lede: text(content, "lede", d.lede ?? ""),
+    footnote: text(content, "footnote", d.footnote ?? ""),
+    ctaLabel: text(content, "ctaLabel", d.ctaLabel ?? ""),
+    items: readGroup(content, "items") ?? DEFAULT_MENU_ROWS,
+  };
+}
+
+export function Menu(props: SectionProps) {
+  const variant = MENU_VARIANTS[props.variant] ?? "A";
+  return (
+    <MenuUniversal
+      variant={variant}
+      scheme={schemeTriplet(props.scheme)}
+      items={menuItems(props.site, props.content)}
+      content={menuContent(props.content, props.site)}
+    />
+  );
+}
+
 // ── OpeningHours (shared, all verticals) ──────────────────────────────────────
 // Design-dispatch: four designs (table/status/week/address). The SCHEDULE comes
 // from site SETTINGS (not per-section) — only the section's copy is editable. The
@@ -1424,10 +1505,10 @@ export function Header({ site, variant, content }: SectionProps) {
   const status = openStatus(s.openingHours);
   const socialsRaw = (s.socials ?? {}) as Record<string, string>;
 
-  // A booking page (titled «احجز موعد» or at /book) becomes the header CTA — it
-  // still shows as a normal nav link too. Otherwise the CTA falls back to
-  // WhatsApp inside HeaderUniversal.
-  const bookPage = pages.find((p) => p.title === "احجز موعد" || p.path === "/book");
+  // A booking page (title starts with «احجز» — موعد/طاولة — or at /book) becomes
+  // the header CTA; it still shows as a normal nav link too. Otherwise the CTA
+  // falls back to WhatsApp inside HeaderUniversal.
+  const bookPage = pages.find((p) => p.title.startsWith("احجز") || p.path === "/book");
 
   return (
     <HeaderUniversal
@@ -1447,7 +1528,7 @@ export function Header({ site, variant, content }: SectionProps) {
         phone: s.phone ?? undefined,
         addressShort: s.address ?? undefined,
         hoursLabel: status?.label,
-        contactLabel: bookPage ? "احجز موعد" : "تواصل",
+        contactLabel: bookPage ? bookPage.title : "تواصل",
         contactHref: bookPage ? link(bookPage.path) : undefined,
       }}
     />
@@ -1515,6 +1596,7 @@ export const SECTION_COMPONENTS: Record<
   OpeningHours,
   MapAddress,
   Faq,
+  Menu,
   ContactBlock,
   AnnouncementBanner,
   WhatsAppCTA,
@@ -1535,6 +1617,7 @@ export const SECTION_ANCHORS: Record<string, string> = {
   OpeningHours: "hours",
   MapAddress: "location",
   Faq: "faq",
+  Menu: "menu",
   ContactBlock: "contact",
   WhatsAppCTA: "whatsapp",
 };

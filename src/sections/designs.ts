@@ -123,6 +123,12 @@ export const SECTION_DESIGNS: Record<string, readonly SectionDesign[]> = {
     { key: "faq-grouped", label: "مصنّف", verticals: "all" },
     { key: "faq-qa", label: "سؤال وجواب", verticals: "all" },
   ],
+  // Restaurant menu with category tabs + plate cards (photo/price/description).
+  Menu: [
+    { key: "menu-tabs", label: "تبويبات", verticals: ["restaurant"] },
+    { key: "menu-sections", label: "أقسام", verticals: ["restaurant"] },
+    { key: "menu-cards", label: "بطاقات بالصور", verticals: ["restaurant"] },
+  ],
   ContactBlock: [
     { key: "contact-simple", label: "بسيط", verticals: "all" },
     { key: "contact-rich", label: "كامل", verticals: "all" },
@@ -291,6 +297,25 @@ const FAQ_FIELDS: readonly DesignField[] = [
   { key: "helpCta", label: "نص زر المساعدة", type: "text" },
 ];
 
+// Restaurant Menu: plates are a per-section group; each carries a category that
+// drives the menu's tabs (like FAQ). Prices use the site-wide currency at render.
+const MENU_FIELDS: readonly DesignField[] = [
+  { key: "kicker", label: "سطر تمهيدي", type: "text" },
+  { key: "title", label: "العنوان", type: "text" },
+  { key: "lede", label: "المقدّمة", type: "textarea" },
+  { key: "items", label: "الأطباق", type: "group", addLabel: "إضافة طبق", inspectorGroup: "list",
+    fields: [
+      { key: "category", label: "التصنيف (تبويب)" },
+      { key: "name", label: "اسم الطبق" },
+      { key: "price", label: "السعر (رقم فقط)" },
+      { key: "description", label: "الوصف", textarea: true },
+      { key: "badge", label: "شارة (اختياري)" },
+      { key: "image", label: "صورة الطبق", type: "image" },
+    ] },
+  { key: "footnote", label: "ملاحظة أسفل القائمة", type: "textarea" },
+  { key: "ctaLabel", label: "نص زر الطلب", type: "text" },
+];
+
 // Contact: channels + hours + booking services come from site SETTINGS/services.
 // The section carries copy + a few pick-lists (subjects/days/times).
 const CONTACT_FIELDS: readonly DesignField[] = [
@@ -319,6 +344,9 @@ const DESIGN_FIELDS: Record<string, readonly DesignField[]> = {
   "faq-columns": FAQ_FIELDS,
   "faq-grouped": FAQ_FIELDS,
   "faq-qa": FAQ_FIELDS,
+  "menu-tabs": MENU_FIELDS,
+  "menu-sections": MENU_FIELDS,
+  "menu-cards": MENU_FIELDS,
   "wa-band": WHATSAPP_FIELDS,
   "wa-centered": WHATSAPP_FIELDS,
   "wa-chat": WHATSAPP_FIELDS,

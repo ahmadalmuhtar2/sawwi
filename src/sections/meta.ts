@@ -13,6 +13,7 @@ export const SECTION_LABELS: Record<string, string> = {
   MapAddress: "الخريطة والعنوان",
   WhatsAppCTA: "زر واتساب",
   Faq: "الأسئلة الشائعة",
+  Menu: "قائمة الطعام",
   AnnouncementBanner: "شريط إعلان",
   ContactBlock: "تواصل",
 };

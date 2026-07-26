@@ -439,17 +439,21 @@ const genericServices: Template = {
   key: "generic-services",
   label: "خدمات عامة",
   vertical: "services",
-  description: "لأي نشاط خدمي: تعريف، خدمات، آراء العملاء، وتواصل.",
+  description:
+    "موقع خدمي من ٤ صفحات مترابطة: الرئيسية، الخدمات والأسعار، من نحن والفريق، وتواصل — بأسعار واضحة وحجز عبر واتساب.",
+  theme: { headerVariant: "A", headerScheme: "light", footerVariant: "A", footerScheme: "dark" },
   settings: {
-    whatsappNumber: "963900000000",
-    phone: "0911111111",
-    address: "دمشق",
+    whatsappNumber: "963991234567",
+    phone: "+963 11 555 6677",
+    address: "دمشق — شارع بغداد، بناء ١٢، الطابق الثاني",
+    googleMapsUrl: "https://maps.google.com/?q=Damascus",
     openingHours: WEEK_9_9,
   },
   services: [
-    { name: "الخدمة الأولى", price: "حسب الطلب" },
-    { name: "الخدمة الثانية", price: "حسب الطلب" },
-    { name: "الخدمة الثالثة", price: "حسب الطلب" },
+    { name: "استشارة أولية", price: "مجانًا", duration: "٣٠ دقيقة", description: "جلسة تعارف لفهم احتياجك وتحديد الخطوات." },
+    { name: "الباقة الأساسية", price: "٢٠٠٬٠٠٠ ل.س", duration: "حسب المشروع", description: "تغطية كاملة للاحتياجات الشائعة بسعر واضح." },
+    { name: "الباقة المتقدّمة", price: "٤٥٠٬٠٠٠ ل.س", duration: "حسب المشروع", description: "خدمة موسّعة مع متابعة ودعم لاحق." },
+    { name: "خدمة مخصّصة", price: "حسب الطلب", description: "نصمّم عرضًا يناسب حالتك تحديدًا — راسلنا لنتفق." },
   ],
   pages: [
     {
@@ -457,43 +461,142 @@ const genericServices: Template = {
       pageType: "landing",
       title: "الرئيسية",
       sections: [
-        { type: "Hero", variant: "B", scheme: "primary", content: { headline: "اسم نشاطك التجاري", subtext: "وصف قصير وجذّاب لما تقدّمه.", ctaLabel: "تواصل معنا" } },
-        { type: "About", variant: "about-photo", scheme: "light", content: {} },
-        { type: "ServicesGrid", variant: "services-numbered", scheme: "primary", content: {} },
-        { type: "Testimonials", variant: "reviews-grid", scheme: "light", content: {} },
-        { type: "WhatsAppCTA", variant: "wa-centered", scheme: "accent", content: { title: "هل لديك سؤال؟", subtext: "راسلنا على واتساب." } },
+        { type: "Hero", variant: "B", scheme: "primary", content: { headline: "خدمةٌ تُنجَز بإتقان", subtext: "نقدّم ما نَعِد به، في وقته المتّفق عليه، وبسعرٍ واضح من البداية.", ctaLabel: "تواصل معنا", secondaryCta: "خدماتنا" } },
+        { type: "About", variant: "about-statement", scheme: "light", content: { kicker: "من نحن", titleLine1: "خبرةٌ عملية،", titleLine2: "ونتائج تُقاس", lede: "نعمل مع عملائنا خطوة بخطوة، ونقيس نجاحنا بنتائجهم لا بوعودنا.", values: [ { title: "وضوح", body: "السعر والنطاق معروفان قبل أن نبدأ." }, { title: "التزام", body: "المواعيد التي نحدّدها نلتزم بها." }, { title: "متابعة", body: "لا ننتهي عند التسليم — ندعمك بعده." } ] } },
+        { type: "ServicesGrid", variant: "services-numbered", scheme: "dark", content: { limit: 3, kicker: "ما نقدّمه", title: "خدماتنا الأكثر طلبًا", lede: "باقات واضحة تناسب أغلب الحالات — والبقية نفصّلها لك.", ctaLabel: "كل الخدمات والأسعار" } },
+        { type: "Testimonials", variant: "reviews-grid", scheme: "muted", content: { kicker: "ماذا قالوا", title: "آراء عملائنا" } },
+        { type: "WhatsAppCTA", variant: "wa-band", scheme: "accent", content: { title: "هل لديك سؤال؟", subtext: "راسلنا على واتساب ونرد خلال دقائق.", ctaLabel: "ابدأ محادثة", messageText: "مرحبًا {name}! عندي استفسار" } },
+      ],
+    },
+    {
+      path: "/services",
+      pageType: "services",
+      title: "الخدمات",
+      sections: [
+        { type: "ServicesGrid", variant: "services-list", scheme: "light", content: { kicker: "القائمة الكاملة", title: "الخدمات والأسعار", lede: "أسعار واضحة ونطاق معروف — اختر ما يناسبك أو اطلب عرضًا مخصّصًا.", footnote: "الأسعار تقديرية وتُحدَّد نهائيًا بعد الاستشارة المجانية." } },
+        { type: "Faq", variant: "faq-accordion", scheme: "muted", content: { kicker: "قبل أن تسأل", title: "الأسئلة الشائعة" } },
+      ],
+    },
+    {
+      path: "/about",
+      pageType: "about",
+      title: "من نحن",
+      sections: [
+        { type: "About", variant: "about-milestones", scheme: "light", content: { kicker: "قصّتنا", titleLine1: "من فكرة", titleLine2: "إلى فريقٍ موثوق", lede: "بدأنا صغارًا، وكبرنا بثقة عملائنا وتوصياتهم." } },
+        { type: "Team", variant: "team-portraits", scheme: "muted", content: { kicker: "من يعمل معك", title: "الفريق" } },
+      ],
+    },
+    {
+      path: "/contact",
+      pageType: "contact",
+      title: "تواصل",
+      sections: [
+        { type: "ContactBlock", variant: "contact-simple", scheme: "light", content: { kicker: "نحن هنا", title: "تواصل معنا", lede: "أسرع طريقة هي واتساب — نرد خلال دقائق في أوقات العمل." } },
+        { type: "MapAddress", variant: "map-wide", scheme: "muted", content: { kicker: "أين نحن", title: "تجدنا هنا" } },
+        { type: "OpeningHours", variant: "hours-table", scheme: "dark", content: { kicker: "متى نعمل", title: "أوقات العمل" } },
       ],
     },
   ],
 };
 
-const restaurantLite: Template = {
-  key: "restaurant-lite",
+// Drinks menu — categories become the section's tabs (ساخنة / باردة / عصائر).
+const DRINKS = [
+  { category: "ساخنة", name: "قهوة عربية", price: "١٥٠٠٠", description: "بالهيل، تُقدَّم على الطريقة الشامية.", badge: "", image: "" },
+  { category: "ساخنة", name: "إسبريسو", price: "١٨٠٠٠", description: "حبوب محمّصة طازجة، طبقة كريما غنيّة.", badge: "", image: "" },
+  { category: "ساخنة", name: "شاي بالنعناع", price: "١٠٠٠٠", description: "شاي أحمر مع نعناع طازج.", badge: "", image: "" },
+  { category: "باردة", name: "آيس لاتيه", price: "٢٢٠٠٠", description: "إسبريسو مع حليب بارد ومكعّبات ثلج.", badge: "", image: "" },
+  { category: "باردة", name: "ليموناضة بالنعناع", price: "١٦٠٠٠", description: "ليمون طازج، نعناع، ورشّة سكر.", badge: "الأكثر طلبًا", image: "" },
+  { category: "عصائر", name: "عصير برتقال طازج", price: "٢٠٠٠٠", description: "برتقال معصور عند الطلب، بلا سكر مضاف.", badge: "", image: "" },
+  { category: "عصائر", name: "عصير أفوكادو", price: "٢٨٠٠٠", description: "أفوكادو وحليب وعسل — كثيف ومغذٍّ.", badge: "", image: "" },
+];
+
+// Food menu — categories: مقبّلات / دجاج / لحوم / حلويات.
+const FOOD = [
+  { category: "مقبّلات", name: "حمّص بالطحينة", price: "٢٥٠٠٠", description: "حمّص كريمي بزيت الزيتون البلدي والصنوبر.", badge: "نباتي", image: "" },
+  { category: "مقبّلات", name: "متبّل باذنجان", price: "٢٥٠٠٠", description: "باذنجان مشوي على الفحم مع طحينة وليمون.", badge: "", image: "" },
+  { category: "مقبّلات", name: "تبّولة", price: "٢٢٠٠٠", description: "بقدونس، برغل، بندورة، ونعناع — منعشة.", badge: "", image: "" },
+  { category: "دجاج", name: "شيش طاووق", price: "٦٥٠٠٠", description: "قطع دجاج متبّلة بالثوم والليمون، مشوية طازجة.", badge: "", image: "" },
+  { category: "دجاج", name: "فرّوج مشوي", price: "٧٠٠٠٠", description: "نصف فرّوج متبّل مع ثوم وبطاطا.", badge: "", image: "" },
+  { category: "لحوم", name: "مشاوي مشكّلة", price: "٩٥٠٠٠", description: "شيش طاووق، كباب، وريش غنم مع خضار مشوية.", badge: "الأكثر طلبًا", image: "" },
+  { category: "لحوم", name: "كباب حلبي", price: "٧٥٠٠٠", description: "كباب بالسمنة والبقدونس على الطريقة الحلبية.", badge: "", image: "" },
+  { category: "حلويات", name: "كنافة نابلسية", price: "٣٠٠٠٠", description: "بالجبن الطازج والقطر، تُقدَّم ساخنة.", badge: "", image: "" },
+  { category: "حلويات", name: "بقلاوة", price: "٢٥٠٠٠", description: "طبقات رقيقة بالفستق الحلبي والقطر.", badge: "", image: "" },
+];
+
+const FEATURED = [
+  FOOD[5], // مشاوي مشكّلة
+  FOOD[3], // شيش طاووق
+  FOOD[7], // كنافة
+  DRINKS[4], // ليموناضة
+];
+
+const restaurant: Template = {
+  key: "restaurant",
   label: "مطعم",
   vertical: "restaurant",
-  description: "قائمة طعام بالأسعار، معرض صور، وتواصل واتساب.",
+  description:
+    "مطعم من ٥ صفحات مترابطة: واجهة، قائمة مشروبات وقائمة طعام بتبويبات وأصناف وصور للأطباق ووصف لكل طبق، أوقات العمل، وصفحة «احجز طاولة» بارزة في الترويسة.",
+  theme: { headerVariant: "B", headerScheme: "dark", footerVariant: "A", footerScheme: "dark" },
   settings: {
-    whatsappNumber: "963900000000",
-    phone: "0911111111",
-    address: "دمشق",
-    openingHours: WEEK_9_9,
+    whatsappNumber: "963991234567",
+    phone: "+963 11 333 4455",
+    address: "دمشق — شارع الحمرا، مقابل الحديقة، بناء ٧",
+    googleMapsUrl: "https://maps.google.com/?q=Damascus+Al-Hamra",
+    openingHours: {
+      sat: { open: "12:00", close: "23:59" },
+      sun: { open: "12:00", close: "23:59" },
+      mon: { open: "12:00", close: "23:59" },
+      tue: { open: "12:00", close: "23:59" },
+      wed: { open: "12:00", close: "23:59" },
+      thu: { open: "12:00", close: "23:59" },
+      fri: { open: "13:00", close: "23:59" },
+    },
   },
-  services: [
-    { name: "طبق اليوم", price: "١٥٠٠٠ ل.س" },
-    { name: "مشاوٍ مشكّلة", price: "٢٥٠٠٠ ل.س" },
-    { name: "حلويات", price: "٨٠٠٠ ل.س" },
-  ],
   pages: [
     {
       path: "/",
       pageType: "landing",
       title: "الرئيسية",
       sections: [
-        { type: "Hero", variant: "A", scheme: "dark", content: { headline: "مطعم الشام", subtext: "أشهى الأطباق السورية الأصيلة.", ctaLabel: "اطلب الآن" } },
-        { type: "PriceList", variant: "B", scheme: "light", content: { title: "قائمة الطعام" } },
-        { type: "Gallery", variant: "gallery-mosaic", scheme: "primary", content: { title: "من أطباقنا" } },
-        { type: "OpeningHours", variant: "hours-table", scheme: "dark", content: {} },
-        { type: "WhatsAppCTA", variant: "wa-centered", scheme: "accent", content: { title: "احجز طاولتك", subtext: "تواصل معنا عبر واتساب." } },
+        { type: "Hero", variant: "A", scheme: "dark", content: { headline: "نكهةٌ تُطهى على مهل", subtext: "مطبخٌ سوري أصيل بمكوّنات طازجة يوميًا — في قلب دمشق.", ctaLabel: "احجز طاولة", secondaryCta: "قائمة الطعام" } },
+        { type: "About", variant: "about-statement", scheme: "light", content: { kicker: "عن المطعم", titleLine1: "من مطبخنا", titleLine2: "إلى طاولتك", lede: "نطهو كما يُطهى في البيت — بصبرٍ ومكوّناتٍ نختارها بأنفسنا كل صباح.", values: [ { title: "طازج يوميًا", body: "نتسوّق كل صباح، ولا نجمّد ما يُطهى." }, { title: "وصفات أصيلة", body: "نكهات شامية توارثناها كما هي." }, { title: "أسعار واضحة", body: "القائمة معلّقة والسعر معروف مسبقًا." } ] } },
+        { type: "Menu", variant: "menu-cards", scheme: "light", content: { kicker: "مختارات", title: "أطباق مميّزة", lede: "لمحة من قائمتنا — والقائمة الكاملة في صفحتَي المشروبات والطعام.", ctaLabel: "اطلب عبر واتساب", items: FEATURED } },
+        { type: "OpeningHours", variant: "hours-status", scheme: "dark", content: { kicker: "متى نفتح", title: "أوقات العمل", lede: "نفتح يوميًا من الظهر حتى منتصف الليل." } },
+        { type: "WhatsAppCTA", variant: "wa-band", scheme: "accent", content: { title: "احجز طاولتك الآن", subtext: "راسلنا على واتساب لحجز طاولة أو للطلب الخارجي.", ctaLabel: "ابدأ محادثة", messageText: "مرحبًا {name}! حابب أحجز طاولة" } },
+      ],
+    },
+    {
+      path: "/drinks",
+      pageType: "custom",
+      title: "المشروبات",
+      sections: [
+        { type: "Menu", variant: "menu-tabs", scheme: "light", content: { kicker: "قائمة المشروبات", title: "المشروبات", lede: "ساخنة، باردة، وعصائر طازجة — اختر التبويب.", ctaLabel: "اطلب عبر واتساب", items: DRINKS } },
+      ],
+    },
+    {
+      path: "/food",
+      pageType: "custom",
+      title: "الطعام",
+      sections: [
+        { type: "Menu", variant: "menu-cards", scheme: "light", content: { kicker: "قائمة الطعام", title: "الطعام", lede: "مقبّلات ومشاوٍ وحلويات — كل طبق يُحضَّر عند الطلب.", ctaLabel: "اطلب عبر واتساب", items: FOOD } },
+      ],
+    },
+    {
+      path: "/contact",
+      pageType: "contact",
+      title: "تواصل",
+      sections: [
+        { type: "ContactBlock", variant: "contact-simple", scheme: "light", content: { kicker: "نحن هنا", title: "تواصل معنا", lede: "للحجز أو الطلب الخارجي — واتساب أسرع طريقة." } },
+        { type: "MapAddress", variant: "map-wide", scheme: "muted", content: { kicker: "أين نحن", title: "تجدنا هنا", lede: "في شارع الحمرا، مقابل الحديقة." } },
+        { type: "OpeningHours", variant: "hours-table", scheme: "dark", content: { kicker: "متى نعمل", title: "أوقات العمل" } },
+      ],
+    },
+    {
+      path: "/book",
+      pageType: "custom",
+      title: "احجز طاولة",
+      sections: [
+        { type: "ContactBlock", variant: "contact-booking", scheme: "dark", content: { kicker: "الحجز", title: "احجز طاولتك", lede: "اختر اليوم والوقت وعدد الأشخاص، ونؤكّد لك على واتساب خلال دقائق.", submitLabel: "أكّد الحجز على واتساب", privacyNote: "يفتح واتساب بطلبك جاهزًا — لا نحتفظ بأي بيانات.", subjects: ["حجز طاولة", "طلب خارجي", "مناسبة خاصة", "استفسار"], days: ["اليوم", "غدًا", "السبت", "الأحد"], times: ["١٣:٠٠", "١٥:٠٠", "٢٠:٠٠", "٢١:٣٠"] } },
       ],
     },
   ],
@@ -502,7 +605,7 @@ const restaurantLite: Template = {
 export const TEMPLATES: Record<string, Template> = {
   barbershop,
   "generic-services": genericServices,
-  "restaurant-lite": restaurantLite,
+  restaurant,
 };
 
 export function listTemplates() {

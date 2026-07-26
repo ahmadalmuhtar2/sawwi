@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Store, Settings, Check, Plus, ChevronDown } from "lucide-react";
+import { Settings, Check, Plus, ChevronDown, Loader2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
@@ -15,6 +15,18 @@ interface WorkspaceLite {
   id: string;
   name: string;
 }
+
+// Tinted monogram tints (low chroma, never saturated) — keyed by workspace order
+// so each workspace keeps a stable colour. Literal classes for the JIT scanner.
+const TINTS = [
+  "bg-[oklch(0.93_0.02_262)] text-[oklch(0.38_0.055_262)]",
+  "bg-[oklch(0.93_0.02_150)] text-[oklch(0.40_0.06_150)]",
+  "bg-[oklch(0.94_0.025_70)] text-[oklch(0.42_0.06_60)]",
+  "bg-[oklch(0.93_0.02_20)] text-[oklch(0.45_0.07_25)]",
+  "bg-[oklch(0.93_0.015_310)] text-[oklch(0.42_0.05_310)]",
+];
+const tintFor = (i: number) => TINTS[i % TINTS.length];
+const monogram = (name: string) => name.trim().charAt(0) || "؟";
 
 export function WorkspaceMenu({
   workspaces,
@@ -35,14 +47,22 @@ export function WorkspaceMenu({
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState<string | null>(null);
 
-  const active = workspaces.find((w) => w.id === activeId);
+  const activeIndex = workspaces.findIndex((w) => w.id === activeId);
+  const active = workspaces[activeIndex];
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   async function switchTo(id: string) {
@@ -79,11 +99,13 @@ export function WorkspaceMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm transition hover:bg-black/[0.03] cursor-pointer"
+        className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm transition hover:border-neutral-400 hover:bg-neutral-100 cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <Store className="size-4 text-muted" />
+        <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-md font-display text-[13px] font-bold", tintFor(Math.max(activeIndex, 0)))}>
+          {monogram(active?.name ?? "؟")}
+        </span>
         <span className="max-w-40 truncate font-medium text-ink">{active?.name ?? "مساحة العمل"}</span>
         <ChevronDown className={cn("size-4 text-faint transition", open && "rotate-180")} />
       </button>
@@ -91,38 +113,59 @@ export function WorkspaceMenu({
       {open && (
         <div
           role="menu"
-          className="absolute start-0 z-50 mt-2 w-64 overflow-hidden rounded-lg border border-line bg-surface shadow-lg"
+          className="absolute start-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-line bg-surface shadow-lg animate-[fade-down_.14s_ease]"
         >
-          <div className="max-h-64 overflow-y-auto p-1">
-            <p className="px-3 py-1.5 text-xs font-medium text-faint">مساحات العمل</p>
-            {workspaces.map((w) => (
-              <button
-                key={w.id}
-                onClick={() => switchTo(w.id)}
-                disabled={switching !== null}
-                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] disabled:opacity-60 cursor-pointer"
-              >
-                <Store className="size-4 text-muted" />
-                <span className="flex-1 truncate text-start">{w.name}</span>
-                {w.id === activeId && <Check className="size-4 text-accent" />}
-              </button>
-            ))}
+          <div className="max-h-72 overflow-y-auto p-1.5">
+            <p className="px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-faint">مساحات العمل</p>
+            {workspaces.map((w, i) => {
+              const isActive = w.id === activeId;
+              const isSwitching = switching === w.id;
+              return (
+                <button
+                  key={w.id}
+                  role="menuitemradio"
+                  aria-checked={isActive}
+                  onClick={() => switchTo(w.id)}
+                  disabled={switching !== null}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition disabled:opacity-60 cursor-pointer",
+                    isActive ? "bg-accent-50 text-accent-900" : "text-ink hover:bg-neutral-100",
+                  )}
+                >
+                  <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-md font-display text-sm font-bold", tintFor(i))}>
+                    {monogram(w.name)}
+                  </span>
+                  <span className="flex-1 truncate text-start font-medium">{w.name}</span>
+                  {isSwitching ? (
+                    <Loader2 className="size-4 shrink-0 animate-spin text-accent" />
+                  ) : isActive ? (
+                    <Check className="size-4 shrink-0 text-accent" />
+                  ) : null}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="border-t border-line p-1">
+          <div className="border-t border-line p-1.5">
             <button
               onClick={() => { setOpen(false); setCreateOpen(true); }}
-              className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] cursor-pointer"
+              className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-ink transition hover:bg-neutral-100 cursor-pointer"
             >
-              <Plus className="size-4 text-muted" /> مساحة عمل جديدة
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-dashed border-line text-muted">
+                <Plus className="size-4" />
+              </span>
+              مساحة عمل جديدة
             </button>
             {isOwner && (
               <Link
                 href="/dashboard/workspace"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04]"
+                className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-ink transition hover:bg-neutral-100"
               >
-                <Settings className="size-4 text-muted" /> إعدادات مساحة العمل
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted">
+                  <Settings className="size-4" />
+                </span>
+                إعدادات مساحة العمل
               </Link>
             )}
           </div>
