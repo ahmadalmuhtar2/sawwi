@@ -5,7 +5,8 @@
 
 import type { PageType } from "@/shared/domain";
 
-/** Section library v1 — FROZEN at 13 types (AGENT_GUIDE §6). */
+/** Section library — the built-in section types (AGENT_GUIDE §6, + Menu for
+ *  the restaurant vertical). */
 export const SECTION_TYPES = [
   "Hero",
   "About",
