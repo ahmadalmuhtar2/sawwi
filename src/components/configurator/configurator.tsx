@@ -25,7 +25,7 @@ import type { ColorScheme, PageType } from "@/shared/domain";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Modal } from "@/components/ui/modal";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Field, Input, Textarea, Select } from "@/components/ui/field";
 import { PageSeoModal } from "@/components/configurator/page-seo-modal";
 import { PageCreateModal, type NewPage } from "@/components/configurator/page-create-modal";
 import { PreviewFrame } from "@/components/configurator/preview-frame";
@@ -870,15 +870,11 @@ function AppearanceInspector({
 
       <div>
         <p className="mb-1.5 text-xs font-medium text-faint">الخط</p>
-        <select
-          value={fontKey}
-          onChange={(e) => onChange({ fontKey: e.target.value })}
-          className="w-full rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-accent cursor-pointer"
-        >
+        <Select value={fontKey} onChange={(e) => onChange({ fontKey: e.target.value })}>
           {FONTS.map((f) => (
             <option key={f.key} value={f.key}>{f.label}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <p className="rounded-md bg-bg p-3 text-xs leading-relaxed text-muted">
@@ -1425,29 +1421,25 @@ function LinkField({
   sections: { slug: string; label: string }[];
   onChange: (link: SectionLink) => void;
 }) {
-  const selectCls =
-    "w-full rounded-md border border-line bg-surface px-2.5 py-2 text-sm text-ink focus-ring";
   return (
     <div>
       <p className="mb-1.5 text-xs font-medium text-faint">{label}</p>
       <div className="space-y-1.5">
-        <select
+        <Select
           value={value.kind}
           onChange={(e) => onChange({ kind: e.target.value as LinkKind, value: "" })}
-          className={selectCls}
         >
           <option value="whatsapp">واتساب</option>
           <option value="section">قسم في الصفحة</option>
           <option value="page">صفحة</option>
           <option value="url">رابط خارجي</option>
           <option value="none">بلا</option>
-        </select>
+        </Select>
 
         {value.kind === "section" && (
-          <select
+          <Select
             value={value.value ?? ""}
             onChange={(e) => onChange({ kind: "section", value: e.target.value })}
-            className={selectCls}
           >
             <option value="">اختر قسمًا…</option>
             {sections.map((s) => (
@@ -1455,14 +1447,13 @@ function LinkField({
                 {s.label}
               </option>
             ))}
-          </select>
+          </Select>
         )}
 
         {value.kind === "page" && (
-          <select
+          <Select
             value={value.value ?? ""}
             onChange={(e) => onChange({ kind: "page", value: e.target.value })}
-            className={selectCls}
           >
             <option value="">اختر صفحة…</option>
             {pages.map((p) => (
@@ -1470,7 +1461,7 @@ function LinkField({
                 {p.title}
               </option>
             ))}
-          </select>
+          </Select>
         )}
 
         {value.kind === "url" && (
