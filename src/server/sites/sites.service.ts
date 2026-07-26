@@ -132,8 +132,9 @@ export async function deleteSite(claims: SessionClaims, siteId: string) {
     throw errors.forbidden("حذف الموقع يتطلب صلاحية مالك مساحة العمل");
   }
   await sitesRepository.delete(siteId);
-  // Free all of the site's stored media (logos, favicons, OG, section images).
-  await deleteSiteAssets(siteId);
+  // Free all of the site's stored media (best-effort, non-blocking — the delete
+  // response shouldn't wait on LIST+DELETE across every asset prefix).
+  void deleteSiteAssets(siteId).catch(() => {});
   return { id: siteId, deleted: true };
 }
 
@@ -170,7 +171,7 @@ export async function updateSeo(
   const { site, permissions } = await loadViewable(claims, siteId);
   if (!permissions.canEditSettings) throw errors.forbidden("لا تملك صلاحية التعديل");
   const updated = await sitesRepository.updateSeo(siteId, input);
-  // Free the favicon/OG image if it was removed or replaced by this edit.
-  await deleteRemovedObjects(site.seo, input);
+  // Free the favicon/OG image if it was removed or replaced (best-effort, non-blocking).
+  void deleteRemovedObjects(site.seo, input).catch(() => {});
   return updated;
 }

@@ -152,8 +152,9 @@ export async function updateSection(
   }
   const updated = await pagesRepository.updateSection(sectionId, input);
   // Free any images this edit removed or replaced (e.g. cleared/replaced photos).
+  // Fire-and-forget: it's best-effort cleanup, so don't add S3 latency to the save.
   if (input.content !== undefined) {
-    await deleteRemovedObjects(section.content, input.content);
+    void deleteRemovedObjects(section.content, input.content).catch(() => {});
   }
   return updated;
 }
@@ -168,8 +169,8 @@ export async function deleteSection(
   await requirePage(siteId, pageId);
   const section = await requireSection(pageId, sectionId);
   await pagesRepository.deleteSection(sectionId);
-  // Delete every image this section owned.
-  await deleteRemovedObjects(section.content, {});
+  // Delete every image this section owned (best-effort, non-blocking).
+  void deleteRemovedObjects(section.content, {}).catch(() => {});
   return { id: sectionId, deleted: true };
 }
 

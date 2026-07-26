@@ -11,7 +11,6 @@ import {
   CreditCard,
   LogOut,
   PanelLeft,
-  Menu,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { Logo } from "@/components/logo";
