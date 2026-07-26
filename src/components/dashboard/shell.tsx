@@ -158,14 +158,6 @@ export function DashboardShell({
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-16 items-center justify-between border-b border-line bg-surface px-5">
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggle}
-                title={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
-                aria-label={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
-                className="rounded-md border border-line p-1.5 text-muted transition hover:bg-black/[0.04] hover:text-ink cursor-pointer"
-              >
-                <Menu className="size-[18px]" />
-              </button>
               {workspaces.length > 0 && activeWorkspaceId ? (
                 <WorkspaceMenu
                   workspaces={workspaces}

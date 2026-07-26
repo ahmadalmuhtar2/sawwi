@@ -291,10 +291,6 @@ export default function GalleryUniversal({
               ))}
             </div>
           </div>
-          <span className="flex items-center gap-2.5 pt-1 text-[11.5px] tracking-[0.04em] opacity-[0.48]">
-            <span aria-hidden className="h-px w-5 bg-current" />
-            {motion ? "ينساب تلقائيًا · بلا أزرار" : "الحركة متوقّفة"}
-          </span>
         </div>
       )}
 

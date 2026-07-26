@@ -8,6 +8,7 @@ import {
   resolveSiteAccess,
 } from "@/server/access/access.rules";
 import { validateOpeningHours, type OpeningHours } from "@/server/settings/hours.rules";
+import { deleteRemovedObjects, deleteSiteAssets } from "@/lib/storage-cleanup";
 import type { SiteSeo } from "@/shared/seo";
 import { errors } from "@/shared/errors";
 import type {
@@ -131,6 +132,8 @@ export async function deleteSite(claims: SessionClaims, siteId: string) {
     throw errors.forbidden("حذف الموقع يتطلب صلاحية مالك مساحة العمل");
   }
   await sitesRepository.delete(siteId);
+  // Free all of the site's stored media (logos, favicons, OG, section images).
+  await deleteSiteAssets(siteId);
   return { id: siteId, deleted: true };
 }
 
@@ -164,7 +167,10 @@ export async function updateSeo(
   siteId: string,
   input: SiteSeo,
 ) {
-  const { permissions } = await loadViewable(claims, siteId);
+  const { site, permissions } = await loadViewable(claims, siteId);
   if (!permissions.canEditSettings) throw errors.forbidden("لا تملك صلاحية التعديل");
-  return sitesRepository.updateSeo(siteId, input);
+  const updated = await sitesRepository.updateSeo(siteId, input);
+  // Free the favicon/OG image if it was removed or replaced by this edit.
+  await deleteRemovedObjects(site.seo, input);
+  return updated;
 }

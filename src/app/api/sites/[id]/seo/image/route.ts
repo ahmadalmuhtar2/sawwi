@@ -2,6 +2,7 @@ import { withRoute } from "@/lib/http";
 import { requireSessionClaims } from "@/lib/auth";
 import { requireSiteSettingsEdit } from "@/server/sites/sites.service";
 import { putObject, isStorageConfigured } from "@/lib/storage";
+import { siteAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
 
 // POST /api/sites/:id/seo/image — multipart { file, key } → uploads an SEO asset
@@ -48,9 +49,11 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
     throw errors.validation("حجم الصورة كبير", { file: `أقصى حجم للصورة ${mb} ميغابايت` });
   }
 
-  // Stable key per (site, asset) → a re-upload overwrites the old one (no orphans).
+  // Per-website folder, stable key per asset → a same-type re-upload overwrites
+  // (no orphans); an extension change is cleaned up by updateSeo's diff.
+  const kind = key === "favicon" ? "favicons" : "og";
   const buffer = Buffer.from(await file.arrayBuffer());
-  const stored = await putObject(`seo/${id}/${key}.${ext}`, buffer, file.type);
+  const stored = await putObject(siteAssetKey(kind, id, `${key}.${ext}`), buffer, file.type);
 
   // Cache-bust so a replaced asset refreshes in the browser.
   return { url: `${stored}?v=${Date.now()}` };

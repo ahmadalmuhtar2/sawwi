@@ -9,6 +9,8 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
   HeadBucketCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -113,6 +115,54 @@ export async function putObject(
 
 export async function deleteObject(key: string): Promise<void> {
   await getClient().send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+}
+
+/**
+ * The object key behind one of OUR public URLs, or null if the URL isn't ours
+ * (external image the user pasted, or storage not configured). Strips any
+ * `?v=` cache-bust query.
+ */
+export function keyFromUrl(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    getClient(); // populates publicBase
+  } catch {
+    return null; // storage not configured — nothing of ours to match
+  }
+  const clean = url.split("?")[0];
+  const prefix = `${publicBase}/`;
+  return clean.startsWith(prefix) ? clean.slice(prefix.length) : null;
+}
+
+/** Best-effort delete by public URL (no-op for external/unknown URLs). */
+export async function deleteByUrl(url?: string | null): Promise<void> {
+  const key = keyFromUrl(url);
+  if (!key) return;
+  try {
+    await deleteObject(key);
+  } catch {
+    // best-effort: a missing object or transient error must not fail the request
+  }
+}
+
+/** Delete every object under a key prefix (paginated). Used to free a whole
+ *  site's media on site deletion. */
+export async function deletePrefix(prefix: string): Promise<void> {
+  const c = getClient();
+  let token: string | undefined;
+  do {
+    const list = await c.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }),
+    );
+    const objects = (list.Contents ?? [])
+      .map((o) => o.Key)
+      .filter((k): k is string => Boolean(k))
+      .map((Key) => ({ Key }));
+    if (objects.length) {
+      await c.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: objects } }));
+    }
+    token = list.IsTruncated ? list.NextContinuationToken : undefined;
+  } while (token);
 }
 
 /** Connectivity/health check — verifies the bucket is reachable. */

@@ -1,7 +1,8 @@
 import { withRoute } from "@/lib/http";
 import { requireSessionClaims } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
-import { putObject, isStorageConfigured } from "@/lib/storage";
+import { putObject, isStorageConfigured, keyFromUrl, deleteByUrl } from "@/lib/storage";
+import { userAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
 
 // POST /api/account/avatar — multipart { file } → uploads to object storage and
@@ -36,9 +37,10 @@ export const POST = withRoute(async (req) => {
     throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ٢ ميغابايت" });
   }
 
-  // Stable key per user → a new upload overwrites the old (no orphan buildup).
+  // Per-user folder, stable key → same-type re-upload overwrites.
+  const prev = await getPrisma().user.findUnique({ where: { id: claims.userId }, select: { image: true } });
   const buffer = Buffer.from(await file.arrayBuffer());
-  const stored = await putObject(`avatars/${claims.userId}.${ext}`, buffer, file.type);
+  const stored = await putObject(userAssetKey(claims.userId, `avatar.${ext}`), buffer, file.type);
 
   // Cache-bust so an overwritten avatar refreshes in the browser.
   const url = `${stored}?v=${Date.now()}`;
@@ -46,6 +48,9 @@ export const POST = withRoute(async (req) => {
     where: { id: claims.userId },
     data: { image: url },
   });
+
+  // Clean up a previous avatar with a different extension.
+  if (keyFromUrl(prev?.image) !== keyFromUrl(url)) await deleteByUrl(prev?.image);
 
   return { url };
 });

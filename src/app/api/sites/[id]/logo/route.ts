@@ -2,7 +2,8 @@ import { withRoute } from "@/lib/http";
 import { requireSessionClaims } from "@/lib/auth";
 import { requireSiteSettingsEdit } from "@/server/sites/sites.service";
 import { getPrisma } from "@/lib/db";
-import { putObject, isStorageConfigured } from "@/lib/storage";
+import { putObject, isStorageConfigured, keyFromUrl, deleteByUrl } from "@/lib/storage";
+import { siteAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
 
 // POST /api/sites/:id/logo — multipart { file } → uploads the site logo and sets
@@ -42,22 +43,28 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
     throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ٢ ميغابايت" });
   }
 
-  // Stable key per site → a new upload overwrites the old (no orphan buildup).
+  // Per-website folder, stable key → same-type re-upload overwrites.
+  const prev = await getPrisma().site.findUnique({ where: { id }, select: { logoUrl: true } });
   const buffer = Buffer.from(await file.arrayBuffer());
-  const stored = await putObject(`logos/${id}.${ext}`, buffer, file.type);
+  const stored = await putObject(siteAssetKey("logos", id, `logo.${ext}`), buffer, file.type);
 
   // Cache-bust so an overwritten logo refreshes in the browser.
   const url = `${stored}?v=${Date.now()}`;
   await getPrisma().site.update({ where: { id }, data: { logoUrl: url } });
 
+  // If the previous logo had a different extension, its object is now orphaned.
+  if (keyFromUrl(prev?.logoUrl) !== keyFromUrl(url)) await deleteByUrl(prev?.logoUrl);
+
   return { url };
 });
 
-// DELETE /api/sites/:id/logo — remove the logo.
+// DELETE /api/sites/:id/logo — remove the logo (and its stored object).
 export const DELETE = withRoute(async (_req, { params }: Ctx) => {
   const claims = await requireSessionClaims();
   const { id } = await params;
   await requireSiteSettingsEdit(claims, id);
+  const prev = await getPrisma().site.findUnique({ where: { id }, select: { logoUrl: true } });
   await getPrisma().site.update({ where: { id }, data: { logoUrl: null } });
+  await deleteByUrl(prev?.logoUrl);
   return { ok: true };
 });

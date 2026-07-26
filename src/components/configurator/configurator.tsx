@@ -942,6 +942,12 @@ function SectionInspector({
     typeof effective[key] === "string" ? (effective[key] as string) : "";
   const effList = (key: string) =>
     Array.isArray(effective[key]) ? (effective[key] as string[]) : [];
+  // Pure defaults (what the section shows when a field is left blank) — used as
+  // the input PLACEHOLDER so text fields bind to the raw stored value and can be
+  // cleared to empty (an empty field hides that part of the section).
+  const defaults = fieldEffectiveValues(activeVariant, {}, siteData);
+  const defStr = (key: string) =>
+    typeof defaults[key] === "string" ? (defaults[key] as string) : "";
   const setContent = (key: string, value: unknown) =>
     onPatch({ content: { ...section.content, [key]: value } });
 
@@ -1014,16 +1020,18 @@ function SectionInspector({
         />
       );
     }
-    // Show stored value if set, else the effective (resolved) value so the field
-    // is never blank when the section clearly renders text.
+    // Bind to the RAW stored value so the field can be cleared to empty (the
+    // last character deletes). The default renders as a placeholder; leaving the
+    // field blank hides that part of the section on the live site.
     const stored = section.content[f.key];
-    const value = typeof stored === "string" && stored.length > 0 ? stored : effStr(f.key);
+    const value = typeof stored === "string" ? stored : "";
+    const placeholder = defStr(f.key) || undefined;
     return (
       <Field key={f.key} label={f.label}>
         {f.type === "textarea" ? (
-          <Textarea value={value} onChange={(e) => setContent(f.key, e.target.value)} />
+          <Textarea value={value} placeholder={placeholder} onChange={(e) => setContent(f.key, e.target.value)} />
         ) : (
-          <Input value={value} onChange={(e) => setContent(f.key, e.target.value)} />
+          <Input value={value} placeholder={placeholder} onChange={(e) => setContent(f.key, e.target.value)} />
         )}
       </Field>
     );

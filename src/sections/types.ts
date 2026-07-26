@@ -64,7 +64,10 @@ export function readLink(content: Record<string, unknown>, key: string): Section
 
 export function text(content: Record<string, unknown>, key: string, fallback = ""): string {
   const v = content[key];
-  return typeof v === "string" && v.length ? v : fallback;
+  // An explicitly-set value wins even when empty ("") — clearing a field in the
+  // builder hides that part of the section. The fallback/default applies only
+  // when the key was never set (absent). Sections guard on empty (`{v && …}`).
+  return typeof v === "string" ? v : fallback;
 }
 
 export function whatsappLink(numberOrLink?: string | null, message?: string): string {

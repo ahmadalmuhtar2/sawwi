@@ -3,6 +3,7 @@ import { requireSessionClaims } from "@/lib/auth";
 import { requireSiteBuilderEdit } from "@/server/sites/sites.service";
 import { getPrisma } from "@/lib/db";
 import { putObject, isStorageConfigured } from "@/lib/storage";
+import { siteAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
 
 // POST /api/sites/:id/pages/:pageId/sections/:sectionId/image
@@ -56,9 +57,10 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
     throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ٥ ميغابايت" });
   }
 
-  // Stable key per (section, field) → re-upload overwrites (no orphan buildup).
+  // Per-website folder, stable key per (section, field) → same-type re-upload
+  // overwrites; a type change is cleaned up by updateSection's content diff.
   const buffer = Buffer.from(await file.arrayBuffer());
-  const stored = await putObject(`sections/${sectionId}/${key}.${ext}`, buffer, file.type);
+  const stored = await putObject(siteAssetKey("sections", id, `${sectionId}-${key}.${ext}`), buffer, file.type);
 
   // Cache-bust so a replaced image refreshes in the browser.
   return { url: `${stored}?v=${Date.now()}` };

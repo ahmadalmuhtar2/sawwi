@@ -6,6 +6,7 @@ import type { SessionClaims } from "@/server/access/access.rules";
 import { requireSiteBuilderEdit } from "@/server/sites/sites.service";
 import { isSectionAllowed } from "@/server/sections/sections.rules";
 import { designsForSection } from "@/sections/designs";
+import { deleteRemovedObjects } from "@/lib/storage-cleanup";
 import { errors } from "@/shared/errors";
 import type {
   AddSectionInput,
@@ -149,7 +150,12 @@ export async function updateSection(
   if (input.variant !== undefined && !isKnownDesign(section.sectionType, input.variant)) {
     throw errors.validation("تصميم غير صالح", { variant: "تصميم غير معروف لهذا القسم" });
   }
-  return pagesRepository.updateSection(sectionId, input);
+  const updated = await pagesRepository.updateSection(sectionId, input);
+  // Free any images this edit removed or replaced (e.g. cleared/replaced photos).
+  if (input.content !== undefined) {
+    await deleteRemovedObjects(section.content, input.content);
+  }
+  return updated;
 }
 
 export async function deleteSection(
@@ -160,8 +166,10 @@ export async function deleteSection(
 ) {
   await requireSiteBuilderEdit(claims, siteId);
   await requirePage(siteId, pageId);
-  await requireSection(pageId, sectionId);
+  const section = await requireSection(pageId, sectionId);
   await pagesRepository.deleteSection(sectionId);
+  // Delete every image this section owned.
+  await deleteRemovedObjects(section.content, {});
   return { id: sectionId, deleted: true };
 }
 
