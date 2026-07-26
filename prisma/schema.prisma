@@ -46,24 +46,6 @@ enum SiteStatus {
   suspended
 }
 
-enum PageType {
-  landing
-  about
-  contact
-  services
-  custom
-}
-
-enum ColorScheme {
-  primary
-  bold
-  dark
-  light
-  muted
-  accent
-  soft
-}
-
 enum SubscriptionStatus {
   active
   grace
@@ -107,7 +89,6 @@ model User {
 
   memberships WorkspaceMember[]
   siteAccess  SiteAccess[]
-  pageLocks   PageLock[]
   sessions    Session[]
   accounts    Account[]
 
@@ -231,6 +212,7 @@ model Site {
   status       SiteStatus   @default(draft)
   logoUrl      String? // uploaded logo/avatar — shown in the dashboard list and the site header
   seo          Json         @default("{}") // site-wide SEO defaults, see src/shared/seo.ts
+  content      Json         @default("{}") // editable template data (see src/templates); merged over the template defaults at render
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
@@ -243,7 +225,6 @@ model Site {
   team         TeamMember[]
   testimonials Testimonial[]
   faq          FaqItem[]
-  pages        Page[]
   snapshots    PublishSnapshot[]
 
   @@index([workspaceId])
@@ -369,42 +350,8 @@ model FaqItem {
 }
 
 // ============================================================================
-// Pages & sections (the configurator core)
+// Publishing
 // ============================================================================
-
-model Page {
-  id       String   @id @default(cuid())
-  siteId   String
-  path     String // "/", "/about", ...
-  pageType PageType @default(landing)
-  title    String
-  seo      Json     @default("{}")
-  order    Int      @default(0) // drives auto navigation
-
-  site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  sections SectionInstance[]
-  locks    PageLock[]
-
-  @@unique([siteId, path])
-  @@index([siteId])
-  @@map("pages")
-}
-
-model SectionInstance {
-  id          String      @id @default(cuid())
-  pageId      String
-  sectionType String // from the frozen library, see src/server/sections.ts
-  variant     String      @default("A") // A|B|C
-  colorScheme ColorScheme @default(primary)
-  order       Int         @default(0)
-  content     Json        @default("{}")
-  dataSource  Json        @default("{}") // which structured entities to show
-
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-
-  @@index([pageId])
-  @@map("section_instances")
-}
 
 /// Immutable full-site payload; append-only history. Rollback = new snapshot
 /// copying an old payload.
@@ -421,19 +368,6 @@ model PublishSnapshot {
   @@unique([siteId, version])
   @@index([siteId])
   @@map("publish_snapshots")
-}
-
-/// Soft lock, 2-min heartbeat auto-release, force take-over allowed.
-model PageLock {
-  id          String   @id @default(cuid())
-  pageId      String   @unique
-  lockedById  String
-  heartbeatAt DateTime @default(now())
-
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [lockedById], references: [id], onDelete: Cascade)
-
-  @@map("page_locks")
 }
 
 // ============================================================================

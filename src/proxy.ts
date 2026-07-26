@@ -10,7 +10,7 @@ function subdomain(hostname: string): string | null {
     return parts.length >= 2 ? parts[0] : null;
   }
   const parts = hostname.split(".");
-  return parts.length > 2 ? parts[0] : null; // sub.sawwi.com
+  return parts.length > 2 ? parts[0] : null; // sub.sawwi.online
 }
 
 export function proxy(request: NextRequest) {

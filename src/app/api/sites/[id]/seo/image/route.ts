@@ -10,7 +10,7 @@ import { errors } from "@/shared/errors";
 // caller writes the URL into the SEO payload. Settings-level edit (same gate as
 // the logo). Favicons may be SVG/ICO; the OG share image is a raster photo.
 const KEYS = {
-  og: { max: 5 * 1024 * 1024, exts: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as Record<string, string> },
+  og: { max: 10 * 1024 * 1024, exts: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as Record<string, string> },
   favicon: { max: 1 * 1024 * 1024, exts: { "image/png": "png", "image/svg+xml": "svg", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico", "image/webp": "webp" } as Record<string, string> },
 } as const;
 

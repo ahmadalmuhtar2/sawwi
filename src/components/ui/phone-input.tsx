@@ -98,7 +98,7 @@ export function PhoneInput({
           type="button"
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
-          className="flex h-full items-center gap-1.5 rounded-s-md border-e border-line px-2.5 text-sm text-ink transition hover:bg-black/[0.03] disabled:opacity-60 cursor-pointer"
+          className="flex h-full items-center gap-1.5 rounded-s-md border-e border-line px-2.5 text-sm text-ink transition hover:bg-black/[0.03] dark:hover:bg-white/5 disabled:opacity-60 cursor-pointer"
           aria-haspopup="listbox"
           aria-expanded={open}
         >
@@ -120,7 +120,7 @@ export function PhoneInput({
                     setOpen(false);
                     emit(c.dial, local);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink transition hover:bg-black/[0.04] cursor-pointer"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-start text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6 cursor-pointer"
                 >
                   <c.Flag />
                   <span className="flex-1">{c.name}</span>

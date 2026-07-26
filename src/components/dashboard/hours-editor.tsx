@@ -127,7 +127,7 @@ export function HoursEditor({
             <div key={key} className="flex flex-wrap items-center gap-3 p-3">
               <span className="w-16 text-sm font-medium text-ink">{label}</span>
 
-              <div className="inline-flex rounded-md bg-black/[0.05] p-0.5 text-xs">
+              <div className="inline-flex rounded-md bg-black/[0.05] dark:bg-white/6 p-0.5 text-xs">
                 {([
                   ["open", "مفتوح"],
                   ["closed", "مغلق"],

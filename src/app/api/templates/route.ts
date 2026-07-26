@@ -1,9 +1,13 @@
+// GET /api/templates — the templates gallery feed. Server-side search + tag
+// filter + cursor pagination (see templates.service). The client only forwards
+// the query params and renders the returned page; it never filters locally.
+
 import { withRoute } from "@/lib/http";
 import { requireSessionClaims } from "@/lib/auth";
-import { listTemplates } from "@/server/templates/registry";
+import { parseListTemplatesQuery } from "@/server/templates/templates.schema";
+import { listTemplates } from "@/server/templates/templates.service";
 
-// GET /api/templates — available vertical templates for the create-site picker.
-export const GET = withRoute(async () => {
+export const GET = withRoute(async (request) => {
   await requireSessionClaims();
-  return { items: listTemplates() };
+  return listTemplates(parseListTemplatesQuery(request.url));
 });

@@ -29,6 +29,7 @@ const input = {
   slug: "abu-ali",
   verticalKey: "barbershop",
   language: "ar" as const,
+  content: {},
 };
 
 beforeEach(() => vi.clearAllMocks());

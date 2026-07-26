@@ -5,7 +5,7 @@ type Tone = "accent" | "neutral" | "danger" | "warn" | "outline";
 
 const TONES: Record<Tone, string> = {
   accent: "bg-accent-100 text-accent-900",
-  neutral: "bg-black/[0.05] text-muted",
+  neutral: "bg-black/[0.05] dark:bg-white/6 text-muted",
   danger: "bg-danger-100 text-danger",
   warn: "bg-warn-100 text-[oklch(0.45_0.1_75)]",
   outline: "border border-line text-muted",

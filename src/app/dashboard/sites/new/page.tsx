@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionClaims } from "@/lib/auth";
-import { SiteWizard } from "@/components/dashboard/site-wizard";
+import { NewSiteFlow } from "@/components/templates/new-site-flow";
 
 export default async function NewSitePage() {
   const claims = await getSessionClaims();
@@ -8,5 +8,5 @@ export default async function NewSitePage() {
   // Only workspace users (resellers) create sites — collaborators cannot.
   if (!claims.workspace) redirect("/dashboard");
 
-  return <SiteWizard />;
+  return <NewSiteFlow />;
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { whatsappLink } from "@/sections/types";
+import { whatsappLink } from "@/lib/whatsapp";
 
 type Mode = "number" | "link";
 
@@ -63,7 +63,7 @@ export function WhatsAppInput({
             dir="ltr"
             className="flex h-10 items-stretch rounded-md border border-line bg-surface transition focus-within:border-accent focus-within:ring-3 focus-within:ring-accent-100"
           >
-            <span className="flex select-none items-center rounded-s-md border-e border-line bg-black/[0.03] px-2.5 font-label text-sm text-muted">
+            <span className="flex select-none items-center rounded-s-md border-e border-line bg-black/[0.03] dark:bg-white/5 px-2.5 font-label text-sm text-muted">
               https://wa.me/
             </span>
             <input

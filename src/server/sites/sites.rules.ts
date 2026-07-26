@@ -1,5 +1,5 @@
 // Pure domain rules for sites. Zero deps (except the shared error vocabulary).
-// A slug becomes {slug}.sawwi.com, so it must be a safe DNS label and must not
+// A slug becomes {slug}.sawwi.online, so it must be a safe DNS label and must not
 // collide with a platform subdomain. Schema constraint: unique, [a-z0-9-]{3,40}.
 
 import { errors } from "@/shared/errors";

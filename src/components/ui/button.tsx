@@ -10,7 +10,7 @@ const VARIANTS: Record<Variant, string> = {
     "bg-accent text-white shadow-sm hover:bg-accent-600 active:translate-y-px",
   secondary:
     "bg-surface text-ink border border-line hover:bg-bg active:translate-y-px",
-  ghost: "text-ink hover:bg-black/[0.04] active:translate-y-px",
+  ghost: "text-ink hover:bg-black/[0.04] dark:hover:bg-white/6 active:translate-y-px",
   subtle: "bg-accent-100 text-accent-900 hover:bg-accent-200",
   danger: "bg-danger text-white hover:opacity-90 active:translate-y-px",
 };

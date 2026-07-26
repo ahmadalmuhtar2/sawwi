@@ -98,14 +98,17 @@ export function DashboardShell({
           >
             {!collapsed && (
               <Link href="/dashboard">
-                <Logo className="h-8 w-auto" />
+                {/* Color logo on light, white logo on dark — CSS-toggled so it
+                    follows the theme with no flash. */}
+                <Logo variant="full" className="h-11 w-auto dark:hidden" />
+                <Logo variant="mono-white" className="hidden h-11 w-auto dark:block" />
               </Link>
             )}
             <button
               onClick={toggle}
               title={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
               aria-label={collapsed ? "توسيع القائمة" : "طيّ القائمة"}
-              className="rounded-md p-1.5 text-muted transition hover:bg-black/[0.04] hover:text-ink cursor-pointer"
+              className="rounded-md p-1.5 text-muted transition hover:bg-black/[0.04] hover:text-ink cursor-pointer dark:hover:bg-white/6"
             >
               <PanelLeft className="size-[18px]" />
             </button>
@@ -126,7 +129,7 @@ export function DashboardShell({
                     collapsed ? "justify-center px-0" : "px-3",
                     active
                       ? "bg-accent-100 text-accent-900"
-                      : "text-muted hover:bg-black/[0.03] hover:text-ink",
+                      : "text-muted hover:bg-black/[0.03] hover:text-ink dark:hover:bg-white/5",
                   )}
                 >
                   {active && (
@@ -143,7 +146,7 @@ export function DashboardShell({
               onClick={logout}
               title={collapsed ? "تسجيل الخروج" : undefined}
               className={cn(
-                "flex w-full items-center gap-3 rounded-md py-2.5 text-sm text-muted transition hover:bg-black/[0.03] hover:text-danger cursor-pointer",
+                "flex w-full items-center gap-3 rounded-md py-2.5 text-sm text-muted transition hover:bg-black/[0.03] hover:text-danger cursor-pointer dark:hover:bg-white/5",
                 collapsed ? "justify-center px-0" : "px-3",
               )}
             >

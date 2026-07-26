@@ -12,6 +12,7 @@ export interface CreateSiteData {
   verticalKey: string;
   templateKey: string | null;
   language: SiteLanguage;
+  content: Prisma.InputJsonValue;
 }
 
 export const sitesRepository = {
@@ -34,6 +35,10 @@ export const sitesRepository = {
 
   create(data: CreateSiteData) {
     return getPrisma().site.create({ data });
+  },
+
+  updateContent(siteId: string, content: Prisma.InputJsonValue) {
+    return getPrisma().site.update({ where: { id: siteId }, data: { content } });
   },
 
   delete(id: string) {

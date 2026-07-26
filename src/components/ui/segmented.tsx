@@ -25,7 +25,7 @@ export function SegmentedControl<T extends string>({
     <div
       role="tablist"
       className={cn(
-        "inline-flex items-center gap-1 rounded-lg bg-black/[0.05] p-1",
+        "inline-flex items-center gap-1 rounded-lg bg-black/[0.05] dark:bg-white/6 p-1",
         className,
       )}
     >

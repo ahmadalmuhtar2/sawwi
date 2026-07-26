@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { SeoImageUploader } from "@/components/dashboard/seo-image-uploader";
 import type { SiteSeo } from "@/shared/seo";
 
 export function SiteSeoEditor({ siteId, initial }: { siteId: string; initial: SiteSeo }) {
@@ -61,13 +62,14 @@ export function SiteSeoEditor({ siteId, initial }: { siteId: string; initial: Si
           <Input value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="حلاقة، صالون، دمشق" />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="صورة المشاركة (OG)" hint="رابط صورة تظهر عند مشاركة الموقع" error={errors.ogImageUrl}>
-            <Input dir="ltr" value={ogImageUrl} onChange={(e) => setOgImageUrl(e.target.value)} placeholder="https://…/og.jpg" />
+          <Field label="صورة المشاركة (OG)" hint="تظهر عند مشاركة الموقع" error={errors.ogImageUrl}>
+            <SeoImageUploader siteId={siteId} assetKey="og" value={ogImageUrl} onChange={setOgImageUrl} />
           </Field>
           <Field label="أيقونة الموقع (Favicon)" error={errors.faviconUrl}>
-            <Input dir="ltr" value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://…/favicon.png" />
+            <SeoImageUploader siteId={siteId} assetKey="favicon" value={faviconUrl} onChange={setFaviconUrl} />
           </Field>
         </div>
+        <p className="text-xs text-faint">بعد الرفع اضغط «حفظ» لتثبيت الصورة على الموقع.</p>
         <Button type="submit" loading={saving}>حفظ</Button>
       </form>
     </Card>

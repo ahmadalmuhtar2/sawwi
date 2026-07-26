@@ -7,7 +7,7 @@
 
 import { auth } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
-import { applyTemplate } from "@/server/templates/templates.service";
+import { barbershopFiveStar } from "@/templates/barbershop-five-star";
 import { publishingRepository } from "@/server/publishing/publishing.repository";
 import type { PlatformRole } from "@/shared/domain";
 
@@ -62,12 +62,12 @@ async function main() {
         slug: "diwan",
         businessName: "صالون الديوان للحلاقة",
         verticalKey: "barbershop",
-        templateKey: "barbershop",
+        templateKey: barbershopFiveStar.key,
+        content: JSON.parse(JSON.stringify(barbershopFiveStar.defaults)),
         language: "ar",
         status: "published",
       },
     });
-    await applyTemplate(site.id, "barbershop");
     await prisma.subscription.create({
       data: {
         siteId: site.id,

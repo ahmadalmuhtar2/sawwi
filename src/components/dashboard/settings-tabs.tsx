@@ -10,6 +10,7 @@ import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { siteHost } from "@/lib/site-url";
 import { WebsiteInfoEditor, type WebsiteInfo } from "@/components/dashboard/website-info-editor";
 import { Field, Select } from "@/components/ui/field";
 import { CURRENCIES } from "@/shared/currency";
@@ -130,7 +131,7 @@ export function SettingsTabs({
                 "inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition cursor-pointer",
                 active
                   ? "bg-accent-100 text-accent-900"
-                  : "text-muted hover:bg-black/[0.04] hover:text-ink",
+                  : "text-muted hover:bg-black/[0.04] dark:hover:bg-white/6 hover:text-ink",
               )}
             >
               <Icon className="size-4" /> {t.label}
@@ -220,7 +221,7 @@ export function SettingsTabs({
 
       {/* Public URL hint */}
       <p className="mt-8 text-center font-label text-xs text-faint">
-        {slug}.SAWWI.COM
+        {siteHost(slug)}
       </p>
     </div>
   );

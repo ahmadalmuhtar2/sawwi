@@ -16,6 +16,9 @@ const EnvSchema = z.object({
   // Public / routing
   ROOT_DOMAIN: z.string().min(1),
   NEXT_PUBLIC_APP_URL: z.string().min(1),
+  // Client-safe root host label for UI (e.g. "localhost:3000" / "sawwi.online").
+  // Mirrors ROOT_DOMAIN but readable in client components. See src/lib/site-url.ts.
+  NEXT_PUBLIC_ROOT_DOMAIN: z.string().min(1),
 
   // Auth (values exist even though Better Auth isn't wired yet)
   BETTER_AUTH_SECRET: z.string().min(1),
@@ -31,7 +34,19 @@ const EnvSchema = z.object({
   // Email (SMTP) — local Mailpit in dev; a real provider in prod.
   SMTP_HOST: z.string().default("mailpit"),
   SMTP_PORT: z.coerce.number().default(1025),
+  // Auth for real SMTP. Unset locally (Mailpit needs no auth). SMTP_SECURE
+  // overrides the port-based TLS default (465=on).
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.enum(["true", "false"]).optional(),
   MAIL_FROM: z.string().default("Sawwi <no-reply@sawwi.local>"),
+
+  // EmailJS (prod transport). When all four are set, sendMail uses the EmailJS
+  // REST API instead of SMTP. PRIVATE_KEY is required for server-side sending.
+  EMAILJS_SERVICE_ID: z.string().optional(),
+  EMAILJS_TEMPLATE_ID: z.string().optional(),
+  EMAILJS_PUBLIC_KEY: z.string().optional(),
+  EMAILJS_PRIVATE_KEY: z.string().optional(),
 
   // Object storage — optional until the media milestone
   R2_ACCOUNT_ID: z.string().optional(),

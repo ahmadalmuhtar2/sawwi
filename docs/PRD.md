@@ -21,7 +21,7 @@ Sawwi serves two creation paths with one product:
 
 **Admin** (platform owner) oversees workspaces, records cash payments, manages the template/section library.
 
-Published sites are served on subdomains (`{slug}.sawwi.com`). Revenue is annual, cash, recorded manually; the system enforces expiry and suspension. Drafts are free; **publishing requires an active subscription**.
+Published sites are served on subdomains (`{slug}.sawwi.online`). Revenue is annual, cash, recorded manually; the system enforces expiry and suspension. Drafts are free; **publishing requires an active subscription**.
 
 ### Core principles
 - Arabic-first everywhere (RTL default), English secondary.
@@ -135,7 +135,7 @@ Puck may be used internally as the section-list engine (sections = top-level com
 
 ## 5. Section: Renderer
 
-- Next.js App Router, ISR, tenant by Host header (`{slug}.sawwi.com`), reads latest snapshot only.
+- Next.js App Router, ISR, tenant by Host header (`{slug}.sawwi.online`), reads latest snapshot only.
 - **Section components** are the design system: every section_type × variant × color_scheme, pixel-perfect in RTL and LTR, responsive, AR/EN. This is the product's face — hold the highest quality bar here.
 - Branded loading states on client-side navigation: per-site logo/loading icon (from settings) in `loading.tsx`.
 - Fonts: curated self-hosted set (Cairo, Tajawal, Almarai, IBM Plex Sans Arabic, Noto Kufi Arabic, Rubik, Readex Pro) via `next/font/local`. No external font CDNs.
@@ -153,7 +153,7 @@ Puck may be used internally as the section-list engine (sections = top-level com
 Unchanged from v1 spec:
 - Presigned uploads scoped to `sites/{site_id}/`; images only (jpg/png/webp, sanitized svg), ≤10MB.
 - Sharp pipeline: strip EXIF, WebP + responsive variants (320/640/1280/1920w), dimensions + blurhash.
-- Storage: S3-compatible (R2 / Hetzner Object Storage, env-configured). Serving: `media.sawwi.com`, immutable keys, long cache.
+- Storage: S3-compatible (R2 / Hetzner Object Storage, env-configured). Serving: `media.sawwi.online`, immutable keys, long cache.
 - Track bytes per site (no enforcement). Soft-delete with site; hard cleanup after 90 days.
 
 ---
@@ -171,7 +171,7 @@ Unchanged model, workspace-based:
 
 ## 8. Section: Dashboard
 
-One Next.js app (`app.sawwi.com`), role-adaptive. **Arabic-first (RTL) with English toggle.** Mobile-friendly throughout — the configurator (unlike a canvas editor) must work well on phones; section editing on mobile is a launch requirement, not a nice-to-have.
+One Next.js app (`app.sawwi.online`), role-adaptive. **Arabic-first (RTL) with English toggle.** Mobile-friendly throughout — the configurator (unlike a canvas editor) must work well on phones; section editing on mobile is a launch requirement, not a nice-to-have.
 
 ### The configurator (heart of the product — workspace users and site editors)
 - Left: pages list (add page → preset picker; drag to reorder = nav order)

@@ -5,7 +5,7 @@
 
 import { getEnv } from "./env";
 
-export type AssetKind = "logos" | "favicons" | "og" | "sections" | "avatars";
+export type AssetKind = "logos" | "favicons" | "og" | "sections" | "avatars" | "templates";
 
 function envPrefix(): string {
   const e = getEnv().NODE_ENV;
@@ -20,4 +20,11 @@ export function siteAssetKey(kind: AssetKind, siteId: string, name: string): str
 /** Per-user object key (avatars aren't tied to a site): `<env>/avatars/<userId>/<name>`. */
 export function userAssetKey(userId: string, name: string): string {
   return `${envPrefix()}/avatars/${userId}/${name}`;
+}
+
+/** Pre-site staging key for onboarding uploads (the site doesn't exist yet):
+ *  `<env>/staging/<userId>/<name>`. Kept when the site is created; abandoned
+ *  staging is swept later. */
+export function stagingAssetKey(userId: string, name: string): string {
+  return `${envPrefix()}/staging/${userId}/${name}`;
 }

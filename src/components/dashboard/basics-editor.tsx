@@ -7,6 +7,7 @@ import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
+import { ROOT_DOMAIN, siteHost } from "@/lib/site-url";
 
 export function BasicsEditor({
   siteId,
@@ -57,7 +58,7 @@ export function BasicsEditor({
       >
         <div className="flex items-center gap-2" dir="ltr">
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} className="text-left" />
-          <span className="shrink-0 font-label text-sm text-faint">.sawwi.com</span>
+          <span className="shrink-0 font-label text-sm text-faint">.{ROOT_DOMAIN}</span>
         </div>
       </Field>
 
@@ -66,7 +67,7 @@ export function BasicsEditor({
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
           <span>
             تغيير الرابط سيغيّر عنوان الموقع العام إلى
-            <span className="font-label" dir="ltr"> {slug || "…"}.sawwi.com</span>.
+            <span className="font-label" dir="ltr"> {siteHost(slug || "…")}</span>.
             الروابط القديمة لن تعمل بعد الآن.
           </span>
         </div>

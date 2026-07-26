@@ -21,7 +21,7 @@ market — **not** a free-form website builder. Users pick a vertical template (
 choose their pages, toggle and reorder **pre-designed sections**, pick a style variant and color
 scheme per section, and fill **structured business content** (services, hours, address). Nobody
 designs anything from scratch — **everybody assembles quality**. Published sites are served on
-subdomains (`{slug}.sawwi.com`). Revenue is annual, cash, recorded manually; the system enforces
+subdomains (`{slug}.sawwi.online`). Revenue is annual, cash, recorded manually; the system enforces
 expiry and suspension. Drafts are free; **publishing requires an active subscription**.
 
 **The prime directive:** *Assembly, not design. It must be impossible to produce an ugly site.*
@@ -51,15 +51,15 @@ the whole thing is **one Next.js app**. These decisions are final for v1:
 | Decision | Choice | Why |
 |---|---|---|
 | **App shape** | **ONE Next.js 16 app** (App Router), front **and** back | Solo dev; Next.js is a full-stack framework. From 6 services → 1 app + Postgres + Caddy. |
-| **Routing** | Middleware routes by **hostname** | `app.sawwi.com` → dashboard; `{slug}.sawwi.com` → public rendered site. Same codebase. |
+| **Routing** | Middleware routes by **hostname** | `app.sawwi.online` → dashboard; `{slug}.sawwi.online` → public rendered site. Same codebase. |
 | **Backend** | Next.js **Route Handlers + Server Actions** | No separate backend framework. Prisma talks to Postgres inside these. |
 | **Auth** | **Better Auth** (TypeScript, inside the app) | Chosen over the PRD's Keycloak — keeps everything TS, no Java server to operate. Provides email verify, password reset, organizations. |
 | **Database** | **PostgreSQL + Prisma** | Single DB; logical separation by module, not separate servers. |
 | **Background jobs** | **Folded into Next.js — no worker, no BullMQ in v1** | Image processing runs inline in the upload handler (self-hosted Node = no timeout). Expiry sweep + analytics flush = protected route handlers triggered by a nightly **cron**. |
-| **Object storage** | **Cloudflare R2** (S3-compatible) | Zero egress, CDN edge. Served via `media.sawwi.com`. Env-swappable (Hetzner Object Storage also works). |
+| **Object storage** | **Cloudflare R2** (S3-compatible) | Zero egress, CDN edge. Served via `media.sawwi.online`. Env-swappable (Hetzner Object Storage also works). |
 | **Images** | **sharp** | WebP + responsive variants, EXIF strip, blurhash. |
 | **Fonts** | **Self-hosted** via `next/font/local` | No external font CDNs. |
-| **Reverse proxy + TLS** | **Caddy** (recommended; soft) | Automatic **wildcard** TLS for `*.sawwi.com`. Traefik is the alternative. Confirm at M1. |
+| **Reverse proxy + TLS** | **Caddy** (recommended; soft) | Automatic **wildcard** TLS for `*.sawwi.online`. Traefik is the alternative. Confirm at M1. |
 | **Error tracking** | **GlitchTip** self-hosted (recommended; soft) | Sentry-compatible, lightweight. Confirm at M1. |
 | **Monorepo tooling** | **None** — plain single Next.js repo | Single app has no cross-app packages; pnpm workspaces / Turborepo dropped. |
 | **Redis** | **Not used in v1** | Its only jobs were BullMQ (dropped) + caching/analytics buffering; Next.js ISR/data cache + direct Postgres writes suffice at pilot scale. Add back only if BullMQ/distributed caching returns. |
@@ -69,7 +69,7 @@ the whole thing is **one Next.js app**. These decisions are final for v1:
 Internet
    │
    ▼
- Caddy            ← ports 80/443, holds the *.sawwi.com wildcard TLS cert
+ Caddy            ← ports 80/443, holds the *.sawwi.online wildcard TLS cert
    │
    ▼
  Next.js app      ← middleware reads Host → dashboard OR public site render
@@ -98,8 +98,8 @@ import alias `@/*`). Grow it toward this shape:
 ```
 src/
   app/
-    (dashboard)/            # app.sawwi.com — authed configurator
-    (site)/                 # {slug}.sawwi.com — public rendered sites (ISR)
+    (dashboard)/            # app.sawwi.online — authed configurator
+    (site)/                 # {slug}.sawwi.online — public rendered sites (ISR)
     api/                    # route handlers: REST endpoints, cron targets, media presign, analytics beacon
     layout.tsx              # root: lang="ar" dir="rtl" by default (Arabic-first)
   middleware.ts             # hostname → dashboard vs public site; tenant resolution
@@ -192,8 +192,8 @@ Header & Footer are **automatic** (from settings + pages), variant-configurable 
 
 ## 7. Rendering, tenancy & SEO
 
-- **Tenant resolution:** `middleware.ts` reads the `Host` header. `app.sawwi.com` → dashboard
-  route group; `{slug}.sawwi.com` → public site route group, resolving the site by slug.
+- **Tenant resolution:** `middleware.ts` reads the `Host` header. `app.sawwi.online` → dashboard
+  route group; `{slug}.sawwi.online` → public site route group, resolving the site by slug.
 - **Public sites use ISR** and read the **latest PublishSnapshot only** (never live draft).
 - **Navigation** auto-generated from pages (order + titles). **Single-page sites** are a
   first-class option → anchor-scroll nav.
@@ -212,7 +212,7 @@ Header & Footer are **automatic** (from settings + pages), variant-configurable 
 - **Media:** presigned uploads scoped to `sites/{site_id}/`; images only (jpg/png/webp, sanitized
   svg), ≤10MB. **sharp runs inline in the upload route handler** — strip EXIF, emit WebP +
   320/640/1280/1920w variants, dimensions + blurhash. Store to R2, serve immutable keys via
-  `media.sawwi.com` with long cache. Track bytes per site (no enforcement).
+  `media.sawwi.online` with long cache. Track bytes per site (no enforcement).
 - **Billing:** one site = one **annual cash** subscription, recorded manually by admin.
   **No active subscription → no publish.** Status flow `active → grace (7d) → suspended`, driven by
   a **daily cron-triggered route handler**. A `PaymentRecord` extends expiry +1 year and reactivates

@@ -5,7 +5,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Download, Printer, QrCode, IdCard, Info } from "lucide-react";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { getPalette, PALETTES } from "@/sections/palette";
+import { getPalette, PALETTES } from "@/lib/palette";
 import { cn } from "@/lib/cn";
 
 interface Props {

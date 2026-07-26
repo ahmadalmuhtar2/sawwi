@@ -5,23 +5,29 @@ import { getPrisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const publishingRepository = {
-  /** The full current draft of a site, serialized into a snapshot payload. */
-  buildPayload(siteId: string) {
-    return getPrisma().site.findUnique({
+  /** The current draft of a site, serialized into the snapshot payload the
+   *  public renderer reads (see server/sites/template-data.ts TemplateSnapshot):
+   *  the chosen template + its editable content + the themeable tokens. */
+  async buildPayload(siteId: string) {
+    const site = await getPrisma().site.findUnique({
       where: { id: siteId },
-      include: {
-        settings: true,
-        theme: true,
-        services: { orderBy: { order: "asc" } },
-        team: { orderBy: { order: "asc" } },
-        testimonials: { orderBy: { order: "asc" } },
-        faq: { orderBy: { order: "asc" } },
-        pages: {
-          orderBy: { order: "asc" },
-          include: { sections: { orderBy: { order: "asc" } } },
-        },
-      },
+      include: { settings: true, theme: true },
     });
+    if (!site) return null;
+    return {
+      businessName: site.businessName,
+      language: site.language,
+      seo: site.seo,
+      templateKey: site.templateKey,
+      content: site.content,
+      currency: site.settings?.currency ?? "SYP",
+      theme: {
+        accent: site.theme?.primaryColor ?? null,
+        ground: site.theme?.bgColor ?? null,
+        ink: site.theme?.secondaryColor ?? null,
+        fontKey: site.theme?.fontKey ?? null,
+      },
+    };
   },
 
   async latestVersion(siteId: string): Promise<number | null> {

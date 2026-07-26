@@ -11,7 +11,7 @@ const ACCEPT: Record<"og" | "favicon", string> = {
   favicon: "image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,image/webp",
 };
 const HINT: Record<"og" | "favicon", string> = {
-  og: "JPG أو PNG أو WEBP — ٥ ميغابايت كحد أقصى",
+  og: "JPG أو PNG أو WEBP — ١٠ ميغابايت كحد أقصى",
   favicon: "PNG أو SVG أو ICO — ١ ميغابايت كحد أقصى",
 };
 

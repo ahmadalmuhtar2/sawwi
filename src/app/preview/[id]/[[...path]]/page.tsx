@@ -4,10 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowRight, Eye } from "lucide-react";
 import { getSessionClaims } from "@/lib/auth";
 import { getSite } from "@/server/sites/sites.service";
-import { getDraftRenderData } from "@/server/sites/site-data";
-import { pathFromSegments, pickPage, buildNav } from "@/server/sites/render-helpers";
+import { getDraftTemplateData } from "@/server/sites/template-data";
 import { buildSiteMetadata } from "@/server/seo/metadata";
-import { SiteRender } from "@/components/public/site-render";
+import { TemplateHost } from "@/components/public/template-host";
 
 type Params = Promise<{ id: string; path?: string[] }>;
 
@@ -15,7 +14,7 @@ type Params = Promise<{ id: string; path?: string[] }>;
 // chosen favicon appears here just like on the published site. Always noindex.
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const fallback: Metadata = { title: "معاينة — سوّي", robots: { index: false, follow: false } };
-  const { id, path } = await params;
+  const { id } = await params;
   const claims = await getSessionClaims();
   if (!claims) return fallback;
 
@@ -26,20 +25,18 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     return fallback;
   }
 
-  const data = await getDraftRenderData(id);
+  const data = await getDraftTemplateData(id);
   if (!data) return fallback;
-  const page = pickPage(data.pages, pathFromSegments(path));
 
   const meta = buildSiteMetadata({
     businessName: data.meta.businessName,
     language: data.meta.language,
     slug: site.slug,
-    pagePath: page?.path ?? "/",
-    pageTitle: page?.title,
+    pagePath: "/",
     siteSeo: data.meta.seo,
-    pageSeo: page?.seo ?? {},
+    pageSeo: {},
   });
-  // A preview must never be indexed, whatever the page's own robots say.
+  // A preview must never be indexed, whatever the site's own robots say.
   return { ...meta, robots: { index: false, follow: false } };
 }
 
@@ -47,7 +44,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 // freeze it. Auth-gated (site editors only); lives outside /dashboard so it shows
 // full-bleed without the dashboard chrome.
 export default async function PreviewPage({ params }: { params: Params }) {
-  const { id, path } = await params;
+  const { id } = await params;
   const claims = await getSessionClaims();
   if (!claims) redirect("/login");
 
@@ -57,11 +54,8 @@ export default async function PreviewPage({ params }: { params: Params }) {
     notFound();
   }
 
-  const data = await getDraftRenderData(id);
+  const data = await getDraftTemplateData(id);
   if (!data) notFound();
-
-  const page = pickPage(data.pages, pathFromSegments(path));
-  if (!page) notFound();
 
   return (
     <div>
@@ -76,12 +70,11 @@ export default async function PreviewPage({ params }: { params: Params }) {
           <ArrowRight className="size-3.5" /> العودة إلى المُنشئ
         </Link>
       </div>
-      <SiteRender
-        siteData={data.siteData}
-        nav={buildNav(data.pages)}
-        page={page}
-        basePath={`/preview/${id}`}
+      <TemplateHost
+        templateKey={data.templateKey}
+        content={data.content}
         theme={data.theme}
+        currency={data.currency}
       />
     </div>
   );

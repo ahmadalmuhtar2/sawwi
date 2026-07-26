@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/feedback";
+import { siteHost } from "@/lib/site-url";
 
 export default async function DashboardHome() {
   const claims = await getSessionClaims();
@@ -58,12 +59,12 @@ export default async function DashboardHome() {
               <li key={s.id}>
                 <Link
                   href={`/dashboard/sites/${s.id}`}
-                  className="flex items-center justify-between px-5 py-3.5 transition hover:bg-black/[0.02]"
+                  className="flex items-center justify-between px-5 py-3.5 transition hover:bg-black/[0.02] dark:hover:bg-white/4"
                 >
                   <div>
                     <p className="font-medium text-ink">{s.businessName}</p>
                     <p className="font-label text-[11px] text-faint">
-                      {s.slug}.SAWWI.COM
+                      {siteHost(s.slug)}
                     </p>
                   </div>
                   <StatusBadge status={s.status} />

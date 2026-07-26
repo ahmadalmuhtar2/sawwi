@@ -12,14 +12,66 @@ let transporter: nodemailer.Transporter | null = null;
 
 function getTransport(): nodemailer.Transporter {
   if (!transporter) {
+    const host = process.env.SMTP_HOST ?? "mailpit";
+    const port = Number(process.env.SMTP_PORT ?? 1025);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    // Implicit TLS on 465; STARTTLS/none otherwise. Override with SMTP_SECURE.
+    const secure = process.env.SMTP_SECURE
+      ? process.env.SMTP_SECURE === "true"
+      : port === 465;
     transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST ?? "mailpit",
-      port: Number(process.env.SMTP_PORT ?? 1025),
-      secure: false,
-      ignoreTLS: true,
+      host,
+      port,
+      secure,
+      // Authenticate when creds are provided. Local Mailpit has no auth/TLS —
+      // only then do we skip TLS.
+      auth: user && pass ? { user, pass } : undefined,
+      ignoreTLS: !user && !secure,
     });
   }
   return transporter;
+}
+
+/** True when EmailJS is fully configured — then it's the transport of record
+ *  (prod). Otherwise we fall back to SMTP/nodemailer (local Mailpit). */
+function emailjsConfigured(): boolean {
+  return Boolean(
+    process.env.EMAILJS_SERVICE_ID &&
+      process.env.EMAILJS_TEMPLATE_ID &&
+      process.env.EMAILJS_PUBLIC_KEY &&
+      process.env.EMAILJS_PRIVATE_KEY,
+  );
+}
+
+/** Send through EmailJS's REST API (server-side, "non-browser" strict mode —
+ *  requires the private key as accessToken). The EmailJS template must expose
+ *  these params: `to_email`, `subject`, `html` (see .env.example for setup). */
+async function sendViaEmailJS(opts: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      service_id: process.env.EMAILJS_SERVICE_ID,
+      template_id: process.env.EMAILJS_TEMPLATE_ID,
+      user_id: process.env.EMAILJS_PUBLIC_KEY,
+      accessToken: process.env.EMAILJS_PRIVATE_KEY,
+      template_params: {
+        to_email: opts.to,
+        subject: opts.subject,
+        html: opts.html,
+        from_name: process.env.MAIL_FROM ?? "Sawwi",
+      },
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`EmailJS send failed (${res.status}): ${body}`);
+  }
 }
 
 export async function sendMail(opts: {
@@ -27,6 +79,10 @@ export async function sendMail(opts: {
   subject: string;
   html: string;
 }): Promise<void> {
+  if (emailjsConfigured()) {
+    await sendViaEmailJS(opts);
+    return;
+  }
   await getTransport().sendMail({
     from: process.env.MAIL_FROM ?? "Sawwi <no-reply@sawwi.local>",
     ...opts,

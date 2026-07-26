@@ -17,7 +17,7 @@ export interface MetadataInput {
   pageSeo: PageSeo;
 }
 
-/** The public origin for a site's slug, e.g. https://diwan.sawwi.com. */
+/** The public origin for a site's slug, e.g. https://diwan.sawwi.online. */
 export function publicOrigin(slug: string): string {
   const env = getEnv();
   let protocol = "https:";

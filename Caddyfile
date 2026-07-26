@@ -1,14 +1,14 @@
 {
 	# --- Current phase: plain HTTP reverse proxy only. ---
-	# Wildcard TLS for *.sawwi.com is deferred to a later phase (block at the bottom).
+	# Wildcard TLS for *.sawwi.online is deferred to a later phase (block at the bottom).
 	auto_https off
 	admin off
 }
 
 # Catch-all: forward every host to the Next.js app on the internal network.
 # The app's middleware reads the Host header to route:
-#   app.sawwi.com    -> dashboard
-#   {slug}.sawwi.com -> published site
+#   app.sawwi.online    -> dashboard
+#   {slug}.sawwi.online -> published site
 :80 {
 	encode gzip zstd
 	reverse_proxy app:3000
@@ -20,7 +20,7 @@
 # Requires a Caddy image built with the Cloudflare DNS plugin (xcaddy) and
 # CF_API_TOKEN in the environment. Then replace the `:80` block above with:
 #
-#   *.sawwi.com, sawwi.com {
+#   *.sawwi.online, sawwi.online {
 #       encode gzip zstd
 #       tls {
 #           dns cloudflare {env.CF_API_TOKEN}

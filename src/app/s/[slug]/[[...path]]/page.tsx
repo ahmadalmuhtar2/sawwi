@@ -2,11 +2,10 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPrisma } from "@/lib/db";
-import { getPublishedRenderData } from "@/server/sites/site-data";
+import { getPublishedTemplateData } from "@/server/sites/template-data";
 import { buildSiteMetadata } from "@/server/seo/metadata";
 import { isServable } from "@/server/billing/billing.rules";
-import { pathFromSegments, pickPage, buildNav } from "@/server/sites/render-helpers";
-import { SiteRender } from "@/components/public/site-render";
+import { TemplateHost } from "@/components/public/template-host";
 
 type Params = Promise<{ slug: string; path?: string[] }>;
 
@@ -27,29 +26,27 @@ function isSiteServed(site: { status: string; subscription: { expiry: Date } | n
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug, path } = await params;
+  const { slug } = await params;
   const site = await loadSite(slug);
   if (!site || !isSiteServed(site)) return { title: "سوّي" };
 
-  const published = await getPublishedRenderData(site.id);
+  const published = await getPublishedTemplateData(site.id);
   if (!published) return { title: "سوّي" };
 
-  const page = pickPage(published.pages, pathFromSegments(path));
-  if (!page) return { title: published.meta.businessName };
-
+  // Templates are self-contained (their own internal nav), so metadata is
+  // site-level — no per-page path resolution.
   return buildSiteMetadata({
     businessName: published.meta.businessName,
     language: published.meta.language,
     slug,
-    pagePath: page.path,
-    pageTitle: page.title,
+    pagePath: "/",
     siteSeo: published.meta.seo,
-    pageSeo: page.seo,
+    pageSeo: {},
   });
 }
 
 export default async function PublicSitePage({ params }: { params: Params }) {
-  const { slug, path } = await params;
+  const { slug } = await params;
   const site = await loadSite(slug);
   if (!site) notFound();
 
@@ -67,19 +64,15 @@ export default async function PublicSitePage({ params }: { params: Params }) {
   }
 
   // Serve the frozen published snapshot — NOT the live draft.
-  const published = await getPublishedRenderData(site.id);
+  const published = await getPublishedTemplateData(site.id);
   if (!published) notFound();
 
-  const page = pickPage(published.pages, pathFromSegments(path));
-  if (!page) notFound();
-
   return (
-    <SiteRender
-      siteData={published.siteData}
-      nav={buildNav(published.pages)}
-      page={page}
-      basePath=""
+    <TemplateHost
+      templateKey={published.templateKey}
+      content={published.content}
       theme={published.theme}
+      currency={published.currency}
     />
   );
 }

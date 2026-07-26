@@ -19,7 +19,7 @@ import type {
 } from "./sites.schema";
 import { assertSlugValid } from "./sites.rules";
 import { sitesRepository } from "./sites.repository";
-import { applyTemplate } from "@/server/templates/templates.service";
+import type { Prisma } from "@/generated/prisma/client";
 
 export async function createSite(claims: SessionClaims, input: CreateSiteInput) {
   const workspace = claims.workspace;
@@ -30,6 +30,8 @@ export async function createSite(claims: SessionClaims, input: CreateSiteInput) 
   if (await sitesRepository.slugExists(input.slug)) {
     throw errors.conflict("هذا الرابط مستخدم بالفعل، اختر رابطًا آخر");
   }
+  // The site is created WITH its editable template content (collected in the
+  // onboarding wizard) — there is no separate section-instantiation step.
   const site = await sitesRepository.create({
     workspaceId: workspace.id, // from trusted claims, not the request body
     slug: input.slug,
@@ -37,12 +39,8 @@ export async function createSite(claims: SessionClaims, input: CreateSiteInput) 
     verticalKey: input.verticalKey,
     templateKey: input.templateKey ?? null,
     language: input.language,
+    content: (input.content ?? {}) as Prisma.InputJsonValue,
   });
-
-  // Instantiate the chosen template into real pages/sections/content rows.
-  if (input.templateKey) {
-    await applyTemplate(site.id, input.templateKey);
-  }
   return site;
 }
 
@@ -136,6 +134,20 @@ export async function deleteSite(claims: SessionClaims, siteId: string) {
   // response shouldn't wait on LIST+DELETE across every asset prefix).
   void deleteSiteAssets(siteId).catch(() => {});
   return { id: siteId, deleted: true };
+}
+
+/** Replace the site's editable template content (the onboarding/editor data). */
+export async function updateContent(
+  claims: SessionClaims,
+  siteId: string,
+  content: Record<string, unknown>,
+) {
+  const { site, permissions } = await loadViewable(claims, siteId);
+  if (!permissions.canEditSettings) throw errors.forbidden("لا تملك صلاحية التعديل");
+  const updated = await sitesRepository.updateContent(siteId, content as Prisma.InputJsonValue);
+  // Free any images this edit removed or replaced (best-effort, non-blocking).
+  void deleteRemovedObjects(site.content, content).catch(() => {});
+  return updated;
 }
 
 export async function updateSiteBasics(

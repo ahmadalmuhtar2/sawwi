@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/feedback";
 import { CreateSiteButton } from "@/components/dashboard/create-site";
 import { SiteActionsMenu } from "@/components/dashboard/site-actions-menu";
+import { siteHost } from "@/lib/site-url";
 
 export default async function SitesPage() {
   const claims = await getSessionClaims();
@@ -58,7 +59,7 @@ export default async function SitesPage() {
                 </div>
               </div>
               <h3 className="mt-4 font-bold text-ink">{s.businessName}</h3>
-              <p className="font-label text-[11px] text-faint">{s.slug}.SAWWI.COM</p>
+              <p className="font-label text-[11px] text-faint">{siteHost(s.slug)}</p>
               <div className="mt-4 flex items-center gap-2 border-t border-line pt-4">
                 <Link
                   href={`/dashboard/sites/${s.id}`}

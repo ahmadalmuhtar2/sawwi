@@ -67,13 +67,13 @@ export function SiteActionsMenu({
   }
 
   const itemCls =
-    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] cursor-pointer";
+    "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6 cursor-pointer";
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="rounded-md p-1.5 text-muted transition hover:bg-black/[0.04] hover:text-ink cursor-pointer"
+        className="rounded-md p-1.5 text-muted transition hover:bg-black/[0.04] dark:hover:bg-white/6 hover:text-ink cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="خيارات الموقع"

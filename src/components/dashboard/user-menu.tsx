@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { User, CreditCard, LogOut, ChevronDown } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
 import { Avatar } from "@/components/ui/feedback";
+import { ThemeMenuItem } from "@/components/dashboard/theme-toggle";
 
 interface MenuUser {
   name: string;
@@ -45,7 +46,7 @@ export function UserMenu({ user }: { user: MenuUser }) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-2.5 rounded-md p-1 transition hover:bg-black/[0.03] cursor-pointer"
+        className="flex items-center gap-2.5 rounded-md p-1 transition hover:bg-black/[0.03] dark:hover:bg-white/5 cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -70,17 +71,18 @@ export function UserMenu({ user }: { user: MenuUser }) {
             <Link
               href="/dashboard/profile"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04]"
+              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
             >
               <User className="size-4 text-muted" /> الملف الشخصي
             </Link>
             <Link
               href="/dashboard/billing"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04]"
+              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
             >
               <CreditCard className="size-4 text-muted" /> الفوترة والاشتراك
             </Link>
+            <ThemeMenuItem />
           </div>
           <div className="border-t border-line p-1">
             <button

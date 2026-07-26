@@ -15,6 +15,8 @@ export const CreateSiteInput = z.object({
   verticalKey: z.string().min(1),
   templateKey: z.string().optional(),
   language: z.enum(["ar", "en"]).default("ar"),
+  // The editable template data collected in onboarding (see src/templates).
+  content: z.record(z.string(), z.unknown()).default({}),
 });
 export type CreateSiteInput = z.infer<typeof CreateSiteInput>;
 

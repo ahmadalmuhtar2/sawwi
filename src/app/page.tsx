@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { ROOT_DOMAIN } from "@/lib/site-url";
 
 export default function LandingPage() {
   return (
@@ -80,7 +81,7 @@ export default function LandingPage() {
                 <span className="size-2.5 rounded-full bg-warn/50" />
                 <span className="size-2.5 rounded-full bg-accent/40" />
                 <span className="ms-3 font-label text-[10px] text-faint">
-                  ABU-ALI.SAWWI.COM
+                  ABU-ALI.{ROOT_DOMAIN}
                 </span>
               </div>
               <div className="space-y-4 p-5">
@@ -196,7 +197,7 @@ export default function LandingPage() {
           </div>
           <ul className="mt-6 space-y-3 text-sm">
             {[
-              "موقع كامل على نطاق فرعي‏ {slug}.sawwi.com",
+              `موقع كامل على نطاق فرعي‏ {slug}.${ROOT_DOMAIN}`,
               "كل أنواع الأقسام والقوالب",
               "تعديلات ونشر غير محدود",
               "معاينة وتصميم مجانًا قبل الاشتراك",

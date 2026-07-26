@@ -25,8 +25,8 @@ app** (AGENT_GUIDE §2–§3). Map paths as follows — no shared packages exist
 |---|---|---|
 | `packages/ui-components` | [`src/components/`](../src/components/) | Dashboard UI primitives & shell (§2.1–§2.3) |
 | `packages/sections` | [`src/sections/`](../src/sections/) | Published-site section library (§2.4) — the keystone |
-| `apps/dashboard` | `src/app/(dashboard)/` | `app.sawwi.com` configurator |
-| `apps/renderer` | `src/app/(site)/` | `{slug}.sawwi.com` public sites |
+| `apps/dashboard` | `src/app/(dashboard)/` | `app.sawwi.online` configurator |
+| `apps/renderer` | `src/app/(site)/` | `{slug}.sawwi.online` public sites |
 
 The section library is consumed by **both** the public renderer and the dashboard live preview —
 one source of truth, exactly as AGENT_GUIDE §6 requires. Configurator primitives (Button, Modal,

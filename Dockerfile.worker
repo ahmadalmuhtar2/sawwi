@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+#
+# Sawwi — BullMQ worker image for Railway. Self-contained (Railway builds the
+# final stage of the file it's pointed at). Point the worker service at this
+# file with the service variable:  RAILWAY_DOCKERFILE_PATH=Dockerfile.worker
+#
+# The web app uses the default ./Dockerfile (its `app` stage is last). Local
+# compose builds the worker from ./Dockerfile via `target: worker`.
+
+FROM node:22-alpine AS base
+RUN apk add --no-cache libc6-compat
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+WORKDIR /app
+
+# Dependencies (skip postinstall prisma generate; schema not present yet).
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Worker: full node_modules + source + generated Prisma client, run via tsx.
+FROM base AS worker
+ENV NODE_ENV=production
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Throwaway URL for `prisma generate` only — it loads prisma.config.ts but does
+# not connect. Real DATABASE_URL is injected at runtime by Railway.
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" pnpm prisma generate
+CMD ["pnpm", "tsx", "src/worker/index.ts"]
