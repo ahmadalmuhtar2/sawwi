@@ -10,13 +10,15 @@ import {
 } from "./sections.rules";
 
 describe("section library", () => {
-  it("is frozen at 13 types", () => {
-    expect(SECTION_TYPES).toHaveLength(13);
+  it("has the expected built-in types (13 core + Menu for restaurants)", () => {
+    expect(SECTION_TYPES).toHaveLength(14);
+    expect(SECTION_TYPES).toContain("Menu");
   });
 
   it("recognises known types and rejects unknown / auto ones", () => {
     expect(isSectionType("Hero")).toBe(true);
     expect(isSectionType("PriceList")).toBe(true);
+    expect(isSectionType("Menu")).toBe(true);
     expect(isSectionType("Header")).toBe(false); // auto, not addable
     expect(isSectionType("Footer")).toBe(false);
     expect(isSectionType("Carousel")).toBe(false);
