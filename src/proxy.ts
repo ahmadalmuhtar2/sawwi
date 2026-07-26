@@ -3,14 +3,26 @@ import { getSessionCookie } from "better-auth/cookies";
 
 const RESERVED_SUBS = new Set(["app", "www", "api", "media", "admin"]);
 
-/** Extract a tenant subdomain, or null for the apex/app host. */
+// The root host (no port), from env. Read the server var at runtime; fall back
+// to the build-inlined public var (edge runtime) and finally localhost.
+const ROOT_HOST = (
+  process.env.ROOT_DOMAIN ??
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN ??
+  "localhost"
+)
+  .split(":")[0]
+  .toLowerCase();
+
+/** Extract a tenant subdomain, or null for the apex / app / ANY host that isn't
+ *  under our root domain (the Railway *.up.railway.app URL, a bare IP, or a
+ *  health-check host) — those all serve the app, never a tenant lookup. */
 function subdomain(hostname: string): string | null {
-  if (hostname.endsWith(".localhost")) {
-    const parts = hostname.split(".");
-    return parts.length >= 2 ? parts[0] : null;
+  const host = hostname.toLowerCase();
+  if (host === ROOT_HOST) return null; // apex → app
+  if (host.endsWith(`.${ROOT_HOST}`)) {
+    return host.slice(0, host.length - ROOT_HOST.length - 1).split(".")[0] || null;
   }
-  const parts = hostname.split(".");
-  return parts.length > 2 ? parts[0] : null; // sub.sawwi.online
+  return null; // not our domain → app (Railway URL, IP, health check)
 }
 
 export function proxy(request: NextRequest) {
