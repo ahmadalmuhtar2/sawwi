@@ -5,7 +5,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Download, Printer, QrCode, IdCard, Info } from "lucide-react";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
-import { getPalette, PALETTES } from "@/lib/palette";
+import { PALETTES } from "@/lib/palette";
 import { cn } from "@/lib/cn";
 
 interface Props {
@@ -13,7 +13,6 @@ interface Props {
   siteUrl: string;
   businessName: string;
   logoUrl: string | null;
-  paletteKey: string | null;
   phone: string;
   whatsapp: string;
   address: string;
@@ -180,11 +179,11 @@ function printDoc(title: string, bodyHtml: string) {
 }
 
 export function SharePrint({
-  slug, siteUrl, businessName, logoUrl, paletteKey, phone, whatsapp, address,
+  slug, siteUrl, businessName, logoUrl, phone, whatsapp, address,
 }: Props) {
   const [tagline, setTagline] = useState("");
   const [template, setTemplate] = useState<TemplateKey>("band");
-  const [accent, setAccent] = useState(getPalette(paletteKey).swatch);
+  const [accent, setAccent] = useState(PALETTES[0].swatch);
   const [showQr, setShowQr] = useState(true);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const qrWrapRef = useRef<HTMLDivElement>(null);

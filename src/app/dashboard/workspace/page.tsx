@@ -7,17 +7,19 @@ export default async function WorkspacePage() {
   const claims = await getSessionClaims();
   if (!claims) redirect("/login");
 
-  const workspace = claims.workspace
-    ? await getPrisma().workspace.findUnique({
-        where: { id: claims.workspace.id },
-        select: { name: true },
-      })
-    : null;
+  const active = claims.workspace;
+  const [workspace, siteCount] = active
+    ? await Promise.all([
+        getPrisma().workspace.findUnique({ where: { id: active.id }, select: { name: true } }),
+        getPrisma().site.count({ where: { workspaceId: active.id } }),
+      ])
+    : [null, 0];
 
   return (
     <WorkspaceEditor
       workspace={workspace}
-      canEdit={claims.workspace?.role === "owner"}
+      canEdit={active?.role === "owner"}
+      siteCount={siteCount}
     />
   );
 }

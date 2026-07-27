@@ -7,7 +7,7 @@
  *   الخدمات   services + the session ritual + hygiene standard
  *   الحلاقون  the team + booking etiquette
  *   العناية   aftercare + return intervals
- *   الحجز     service / barber / day / slot with a live summary
+ *   الحجز     service / barber / day → WhatsApp request (shop confirms the time)
  *
  * ─────────────────────────────────────────────────────────────────────────
  * THE POINT OF THIS FILE: static vs. editable content is a TYPE-LEVEL split.
@@ -26,6 +26,18 @@
  */
 
 import * as React from "react";
+import { EditableText, EditableImage, useEdit, useEditList, useEditStrings } from "@/components/templates/inline-edit";
+import {
+  WhatsAppIcon,
+  PhoneIcon,
+  SocialLinks,
+  useOpenNow,
+  groupHours,
+  type HoursRow,
+} from "@/components/templates/site-chrome";
+
+/** Barbershop palette for the shared social chips (dark ground, bone text). */
+const SOCIAL_CHIP = "size-8 rounded-full border border-bone/15 text-bone/75 hover:border-oxblood/60 hover:text-bone";
 
 /* ────────────────────────────── types ────────────────────────────── */
 
@@ -61,13 +73,6 @@ export interface Barber {
   photo?: string;
 }
 
-export interface HoursRow {
-  days: string;
-  time: string;
-  /** bolded — the everyday row */
-  primary?: boolean;
-}
-
 export interface BookingDay {
   label: string;
   date?: string;
@@ -75,7 +80,8 @@ export interface BookingDay {
 
 export interface ShopContent {
   name: string;
-  latinName?: string;
+  /** optional uploaded logo (storage URL); shows in the header when set. */
+  logo?: string;
   tagline?: string;
   heroLine?: string;
   heroBlurb?: string;
@@ -84,18 +90,37 @@ export interface ShopContent {
   whatsapp: string;
   phone?: string;
   address?: string;
-  mapsUrl?: string;
   socials?: { instagram?: string; facebook?: string; tiktok?: string };
   lastAppointment?: string;
+  /** the status line under the brand name, e.g. "مفتوح · آخر موعد ٩:٣٠" */
+  headerNote?: string;
+  /** editable overrides for the team (الحلاقون) section heading + intro */
+  teamKicker?: string;
+  teamTitle?: string;
+  teamIntro?: string;
   stats?: Array<{ value: string; label: string }>;
 }
 
 /** The universal half — override only if a shop genuinely differs. */
 export interface HouseContent {
   ritual: Array<{ title: string; body: string }>;
+  /** editable overrides for the ritual section heading */
+  ritualKicker?: string;
+  ritualTitle?: string;
+  /** editable override for the hygiene section heading */
+  hygieneKicker?: string;
   hygiene: string[];
+  /** editable override for the etiquette section heading */
+  etiquetteKicker?: string;
   etiquette: string[];
+  /** editable overrides for the aftercare (العناية) section heading + intro */
+  careKicker?: string;
+  careTitle?: string;
+  careIntro?: string;
   aftercare: Array<{ title: string; body: string }>;
+  /** editable overrides for the intervals (متى تعود) section heading + note */
+  intervalsKicker?: string;
+  intervalsNote?: string;
   intervals: Array<{ style: string; every: string }>;
 }
 
@@ -106,9 +131,6 @@ export interface BarbershopFiveStarProps {
   barbers: Barber[];
   hours: HoursRow[];
   days?: BookingDay[];
-  slots?: string[];
-  /** booked slot indices per day — real availability from your API */
-  takenByDay?: number[][];
   /** override any part of the universal copy */
   house?: Partial<HouseContent>;
   currency?: string;
@@ -167,13 +189,6 @@ export const defaultDays: BookingDay[] = [
   { label: "الأربعاء", date: "٣٠/٧" },
 ];
 
-export const defaultSlots = [
-  "١٠:٣٠", "١١:١٥", "١٢:٠٠", "١٢:٤٥", "١:٣٠", "٤:٠٠",
-  "٤:٤٥", "٥:٣٠", "٦:١٥", "٧:٠٠", "٧:٤٥", "٨:٣٠",
-];
-
-export const defaultTakenByDay = [[0, 1, 5, 8], [2, 6, 9], [3, 4, 10], [1, 7], [0, 6, 11]];
-
 /* ───────────────────────────── helpers ───────────────────────────── */
 
 const AR = "٠١٢٣٤٥٦٧٨٩";
@@ -183,16 +198,12 @@ export const arInt = (n: number | string) => String(n).replace(/\d/g, (d) => AR[
 const waLink = (n: string, text: string) =>
   `https://wa.me/${n.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
 
+
 /** Arabic label. NEVER a mono face — JetBrains Mono has no Arabic coverage and
  *  positive tracking breaks the cursive joins. nowrap so pills never split. */
 const K = "whitespace-nowrap font-sans text-[11.5px] font-semibold leading-[1.5] tracking-[0.07em]";
 const K_SM = "whitespace-nowrap font-sans text-[11px] font-semibold leading-[1.5] tracking-[0.06em]";
 
-const WhatsAppIcon = ({ className = "size-[17px]" }: { className?: string }) => (
-  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-    <path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.8L1.5 14.5l3.4-.9A6.5 6.5 0 1 0 8 1.5z" />
-  </svg>
-);
 const Check = ({ className = "size-3.5" }: { className?: string }) => (
   <svg viewBox="0 0 16 16" fill="none" aria-hidden className={className}>
     <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
@@ -218,19 +229,38 @@ function Photo({ src, alt, className = "" }: { src?: string; alt: string; classN
 }
 
 /** Section head with the static/editable tag the resellers read. */
-function Head({ kind, kicker, title }: { kind: "house" | "shop"; kicker: string; title?: string }) {
+function Head({
+  kicker,
+  title,
+  kickerPath,
+  titlePath,
+}: {
+  kicker: string;
+  title?: string;
+  /** when set, the kicker/title become inline-editable (builder only) */
+  kickerPath?: string;
+  titlePath?: string;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <span className="flex items-center gap-2.5">
-        <span
-          aria-hidden
-          className={`size-[9px] shrink-0 rounded-sm ${kind === "house" ? "bg-oxblood" : "bg-[oklch(0.6_0.12_145)]"}`}
-        />
-        <span className={`${K} text-oxblood-200`}>{kicker}</span>
+        {kickerPath ? (
+          <EditableText path={kickerPath} value={kicker} className={`${K} text-oxblood-200`} />
+        ) : (
+          <span className={`${K} text-oxblood-200`}>{kicker}</span>
+        )}
       </span>
-      {title && (
-        <span className="font-display text-[21px] font-extrabold leading-[1.42] text-bone">{title}</span>
-      )}
+      {(title || titlePath) &&
+        (titlePath ? (
+          <EditableText
+            path={titlePath}
+            value={title ?? ""}
+            placeholder="عنوان القسم"
+            className="font-display text-[21px] font-extrabold leading-[1.42] text-bone"
+          />
+        ) : (
+          <span className="font-display text-[21px] font-extrabold leading-[1.42] text-bone">{title}</span>
+        ))}
     </div>
   );
 }
@@ -244,13 +274,31 @@ export default function BarbershopFiveStar({
   barbers,
   hours,
   days = defaultDays,
-  slots = defaultSlots,
-  takenByDay = defaultTakenByDay,
   house,
   currency = "ل.س",
   className,
 }: BarbershopFiveStarProps) {
   const H: HouseContent = { ...HOUSE_CONTENT, ...house };
+
+  const openNow = useOpenNow(hours);
+  const editApi = useEdit();
+  const statEdit = useEditList("shop.stats", shop.stats ?? []);
+  const svcEdit = useEditList("services", services);
+  const groupEdit = useEditList("groups", groups);
+  // Removing a category also drops its services, in one commit (atomic).
+  const removeGroup = (index: number) => {
+    const gid = groups[index]?.id;
+    editApi?.setMany({
+      groups: groups.filter((_, i) => i !== index),
+      services: services.filter((s) => s.group !== gid),
+    });
+  };
+  const teamEdit = useEditList("barbers", barbers);
+  const ritualEdit = useEditList("house.ritual", H.ritual);
+  const hygieneEdit = useEditStrings("house.hygiene", H.hygiene);
+  const etiquetteEdit = useEditStrings("house.etiquette", H.etiquette);
+  const aftercareEdit = useEditList("house.aftercare", H.aftercare);
+  const intervalsEdit = useEditList("house.intervals", H.intervals);
 
   const [page, setPage] = React.useState<Page>("services");
   const [group, setGroup] = React.useState(groups[0]?.id);
@@ -258,10 +306,6 @@ export default function BarbershopFiveStar({
   const [svc, setSvc] = React.useState(0);
   const [barber, setBarber] = React.useState(0);
   const [day, setDay] = React.useState(0);
-  const [slot, setSlot] = React.useState(6);
-
-  const taken = takenByDay[day % takenByDay.length] ?? [];
-  const slotChosen = slot >= 0 && !taken.includes(slot);
 
   // The stored group can go stale when `groups` changes under live editing
   // (e.g. the onboarding preview swaps the whole category set) — fall back to the
@@ -272,7 +316,7 @@ export default function BarbershopFiveStar({
   const visible = services.map((s, i) => ({ s, i })).filter(({ s }) => s.group === activeGroup);
   const open = sheet >= 0 ? services[sheet] : null;
 
-  const bookable = services.slice(0, 4);
+  const bookable = services;
   const picked = bookable[svc] ?? bookable[0];
   const barberNames = ["أي حلاق متاح", ...barbers.map((b) => b.name)];
 
@@ -291,14 +335,14 @@ export default function BarbershopFiveStar({
   };
 
   const confirm = () => {
-    if (!slotChosen) return;
     const body = [
       ["طلب موعد", `${picked.name} (${picked.duration})`],
       ["الحلاق", barberNames[barber]],
-      ["الموعد", `${days[day].label} ${days[day].date ?? ""} — ${slots[slot]}`],
+      ["اليوم", `${days[day].label} ${days[day].date ?? ""}`.trim()],
       ["السعر", `${picked.price} ${currency}`],
+      ["", "ما هي الأوقات المتاحة في هذا اليوم؟"],
     ]
-      .map(([k, v]) => `${k}: ${v}`)
+      .map(([k, v]) => (k ? `${k}: ${v}` : v))
       .join("\n");
     window.open(waLink(shop.whatsapp, body), "_blank", "noopener,noreferrer");
   };
@@ -321,7 +365,9 @@ export default function BarbershopFiveStar({
       // A real, full-bleed website — the dark ground fills the viewport and the
       // page uses natural document scroll, so the sticky brand bar and bottom
       // tabs pin to the viewport and the fixed sheet covers the whole page.
-      className={`relative min-h-dvh w-full overflow-x-hidden bg-ink font-sans text-bone ${className ?? ""}`}
+      // overflow-x-CLIP (not hidden): clips sideways bleed WITHOUT making this a
+      // scroll container, which would break the sticky header on mobile.
+      className={`relative min-h-dvh w-full overflow-x-clip bg-ink font-sans text-bone ${className ?? ""}`}
     >
       {/* Content column — a single readable column on phones (max-w-107.5), and a
           full-width responsive website on desktop (lg:max-w-none). Each section
@@ -334,43 +380,61 @@ export default function BarbershopFiveStar({
           aria-hidden
           className="w-2 shrink-0 self-stretch rounded-sm bg-[repeating-linear-gradient(-45deg,oklch(0.96_0.01_60)_0_8px,oklch(0.5_0.14_25)_8px_16px,oklch(0.3_0.014_45)_16px_24px)] bg-[length:100%_56px] animate-pole motion-reduce:animate-none"
         />
+        {(shop.logo || editApi?.editing) && (
+          <EditableImage path="shop.logo" className="size-10 shrink-0 self-center overflow-hidden rounded-md">
+            <Photo src={shop.logo} alt={shop.name} className="size-10" />
+          </EditableImage>
+        )}
         <span className="flex flex-col gap-0.5">
-          <span className="font-display text-[15px] font-extrabold leading-[1.4] lg:text-lg">{shop.name}</span>
-          <span className={`${K_SM} text-oxblood-200`}>
-            مفتوح · آخر موعد {shop.lastAppointment ?? "٩:٣٠"}
-          </span>
+          <EditableText
+            path="shop.name"
+            value={shop.name}
+            className="font-display text-[15px] font-extrabold leading-[1.4] lg:text-lg"
+          />
+          <EditableText
+            path="shop.headerNote"
+            value={shop.headerNote ?? `مفتوح · آخر موعد ${shop.lastAppointment ?? "٩:٣٠"}`}
+            placeholder="مفتوح · آخر موعد ٩:٣٠"
+            className={`${K_SM} text-oxblood-200`}
+          />
         </span>
 
-        {/* desktop top-nav — the four pages as horizontal links (mobile uses the
-            bottom tab bar instead). Reuses the TABS labels/icons and the go() logic. */}
-        <nav className="ms-auto hidden items-center gap-1 lg:flex">
-          {TABS.map((t) => {
-            const on = page === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                aria-current={on}
-                onClick={() => go(t.id)}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold leading-none transition-colors ${
-                  on ? "bg-oxblood/[0.14] text-oxblood-100" : "text-bone/70 hover:text-bone"
-                }`}
-              >
-                <span className="size-4.5">{t.icon}</span>
-                {t.label}
-              </button>
-            );
-          })}
-        </nav>
+        {/* right cluster — pushed to the end on every size. On desktop it also
+            holds the top-nav; social icons show on mobile AND desktop. */}
+        <div className="ms-auto flex items-center gap-2 lg:gap-3">
+          {/* desktop top-nav — the four pages as horizontal links (mobile uses the
+              bottom tab bar instead). Reuses the TABS labels/icons + go(). */}
+          <nav className="hidden items-center gap-1 lg:flex">
+            {TABS.map((t) => {
+              const on = page === t.id;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  aria-current={on}
+                  onClick={() => go(t.id)}
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold leading-none transition-colors ${
+                    on ? "bg-oxblood/[0.14] text-oxblood-100" : "text-bone/70 hover:text-bone"
+                  }`}
+                >
+                  <span className="size-4.5">{t.icon}</span>
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
 
-        <button
-          type="button"
-          onClick={() => go("book")}
-          className="ms-auto inline-flex h-9 items-center gap-[7px] whitespace-nowrap rounded-full border border-oxblood/45 bg-oxblood/[0.12] px-3.5 text-[12.5px] font-semibold text-oxblood-200 lg:ms-4"
-        >
-          <WhatsAppIcon className="size-3.5" />
-          احجز
-        </button>
+          <SocialLinks socials={shop.socials} size="size-3.5" itemClassName={SOCIAL_CHIP} />
+
+          <button
+            type="button"
+            onClick={() => go("book")}
+            className="inline-flex h-9 items-center gap-[7px] whitespace-nowrap rounded-full border border-oxblood/45 bg-oxblood/[0.12] px-3.5 text-[12.5px] font-semibold text-oxblood-200"
+          >
+            <WhatsAppIcon className="size-3.5" />
+            احجز
+          </button>
+        </div>
       </div>
       </div>
 
@@ -380,29 +444,69 @@ export default function BarbershopFiveStar({
           <section className="relative overflow-hidden lg:py-16">
             <div className="lg:mx-auto lg:grid lg:w-full lg:max-w-6xl lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-10">
               <div className="relative lg:order-2 lg:overflow-hidden lg:rounded">
-                <Photo src={shop.heroPhoto} alt={shop.name} className="h-[240px] w-full lg:h-auto lg:aspect-4/5" />
+                <EditableImage path="shop.heroPhoto">
+                  <Photo src={shop.heroPhoto} alt={shop.name} className="h-[240px] w-full lg:h-auto lg:aspect-4/5" />
+                </EditableImage>
                 <span
                   aria-hidden
                   className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,oklch(0.115_0.006_45)_3%,oklch(0.115_0.006_45/.72)_42%,transparent_78%)] lg:hidden"
                 />
               </div>
               <div className="relative -mt-5 flex flex-col gap-4 px-[22px] pb-6 lg:order-1 lg:mt-0 lg:px-0 lg:pb-0">
-                <span className={`${K} text-oxblood-200`}>{shop.tagline ?? "حلاقة رجالية · بالموعد"}</span>
-                <span className="max-w-[20ch] font-display text-[27px] font-extrabold leading-[1.42] -tracking-[0.025em] text-balance lg:max-w-[16ch] lg:text-5xl">
-                  {shop.heroLine ?? "كرسيٌّ واحد، وكامل انتباهنا"}
-                </span>
+                <EditableText
+                  path="shop.tagline"
+                  value={shop.tagline ?? "حلاقة رجالية · بالموعد"}
+                  className={`${K} text-oxblood-200`}
+                />
+                <EditableText
+                  path="shop.heroLine"
+                  value={shop.heroLine ?? "كرسيٌّ واحد، وكامل انتباهنا"}
+                  multiline
+                  className="max-w-[20ch] font-display text-[27px] font-extrabold leading-[1.42] -tracking-[0.025em] text-balance lg:max-w-[16ch] lg:text-5xl"
+                />
                 <span aria-hidden className="h-0.5 w-16 bg-oxblood lg:w-20" />
-                <span className="max-w-[44ch] text-sm leading-[1.85] text-bone/[0.82] lg:text-base lg:leading-[1.9]">
-                  {shop.heroBlurb ?? "لا ننادي رقمًا ولا نستعجل أحدًا. كل جلسة لها وقتها المحجوز، وتنتهي حين تكون تامّة."}
-                </span>
-                {shop.stats && (
-                  <div className="flex flex-wrap gap-5 border-t border-bone/[0.14] pt-3.5 lg:gap-10 lg:pt-6">
-                    {shop.stats.map((s) => (
-                      <span key={s.label} className="flex flex-col gap-[3px]">
-                        <span className="font-serif text-2xl leading-none text-oxblood-200 lg:text-4xl">{s.value}</span>
-                        <span className={`${K_SM} text-bone/70`}>{s.label}</span>
+                <EditableText
+                  path="shop.heroBlurb"
+                  value={shop.heroBlurb ?? "لا ننادي رقمًا ولا نستعجل أحدًا. كل جلسة لها وقتها المحجوز، وتنتهي حين تكون تامّة."}
+                  multiline
+                  className="max-w-[44ch] text-sm leading-[1.85] text-bone/[0.82] lg:text-base lg:leading-[1.9]"
+                />
+                {(shop.stats?.length || statEdit.editing) && (
+                  <div className="flex flex-wrap items-start gap-5 border-t border-bone/[0.14] pt-3.5 lg:gap-10 lg:pt-6">
+                    {(shop.stats ?? []).map((s, i) => (
+                      <span key={i} className="relative flex flex-col gap-[3px]">
+                        <EditableText
+                          value={s.value}
+                          onCommit={(t) => statEdit.setField(i, "value", t)}
+                          className="font-serif text-2xl leading-none text-oxblood-200 lg:text-4xl"
+                        />
+                        <EditableText
+                          value={s.label}
+                          onCommit={(t) => statEdit.setField(i, "label", t)}
+                          className={`${K_SM} text-bone/70`}
+                        />
+                        {statEdit.editing && (
+                          <button
+                            type="button"
+                            onClick={() => statEdit.remove(i)}
+                            aria-label="حذف الرقم"
+                            className="absolute -end-2.5 -top-2.5 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-oxblood text-[11px] leading-none text-white shadow"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </span>
                     ))}
+                    {statEdit.editing && (
+                      <button
+                        type="button"
+                        onClick={() => statEdit.add({ value: "٠", label: "رقم جديد" })}
+                        className="inline-flex cursor-pointer flex-col items-center gap-0.5 rounded-md border border-dashed border-bone/40 px-3.5 py-1.5 text-bone/70 hover:border-oxblood/60 hover:text-bone"
+                      >
+                        <span className="text-lg leading-none">＋</span>
+                        <span className={K_SM}>رقم</span>
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -410,105 +514,218 @@ export default function BarbershopFiveStar({
           </section>
 
           {/* HOUSE — the ritual */}
+          {(H.ritual.length > 0 || ritualEdit.editing) && (
           <section className="border-y border-bone/10 bg-ink-800 px-[22px] py-[26px] lg:px-10 lg:py-16">
             <div className="mx-auto w-full max-w-6xl">
-            <Head kind="house" kicker="طقوس الجلسة" title="ما يحدث حين تجلس" />
+            <Head
+              kicker={H.ritualKicker ?? "طقوس الجلسة"}
+              kickerPath="house.ritualKicker"
+              title={H.ritualTitle ?? "ما يحدث حين تجلس"}
+              titlePath="house.ritualTitle"
+            />
             <div className="flex flex-col pt-4 lg:grid lg:grid-cols-2 lg:gap-x-12 lg:pt-8">
               {H.ritual.map((r, i) => (
-                <div key={r.title} className="flex items-start gap-[15px] border-b border-bone/10 py-[15px]">
+                <div key={i} className="relative flex items-start gap-[15px] border-b border-bone/10 py-[15px]">
                   <span className="min-w-[22px] shrink-0 pt-0.5 font-serif text-[15px] tracking-[0.04em] text-oxblood-300">
                     {arNum(i + 1)}
                   </span>
-                  <span className="flex min-w-0 flex-col gap-1">
-                    <span className="font-display text-[14.5px] font-bold">{r.title}</span>
-                    <span className="text-[12.5px] leading-[1.75] text-bone/[0.76] text-pretty">{r.body}</span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <EditableText value={r.title} onCommit={(t) => ritualEdit.setField(i, "title", t)} className="font-display text-[14.5px] font-bold" />
+                    <EditableText value={r.body} multiline onCommit={(t) => ritualEdit.setField(i, "body", t)} className="text-[12.5px] leading-[1.75] text-bone/[0.76] text-pretty" />
                   </span>
+                  {ritualEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => ritualEdit.remove(i)}
+                      aria-label="حذف الخطوة"
+                      className="absolute -end-1 top-3 z-10 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-oxblood text-[11px] text-white shadow"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
+              {ritualEdit.editing && (
+                <button
+                  type="button"
+                  onClick={() => ritualEdit.add({ title: "خطوة جديدة", body: "وصف الخطوة…" })}
+                  className="mt-2 inline-flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 py-3 text-sm font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                >
+                  <span className="text-lg leading-none">＋</span> إضافة خطوة
+                </button>
+              )}
             </div>
             </div>
           </section>
+          )}
 
           {/* SHOP — services */}
           <section>
             <div className="sticky top-[61px] z-40 border-b border-bone/[0.12] bg-ink/95 px-[22px] pb-3 pt-3.5 backdrop-blur-md lg:px-10 lg:pb-4 lg:pt-5">
               <div className="mx-auto w-full max-w-6xl">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <span className="inline-flex items-center gap-[9px]">
-                  <span aria-hidden className="size-[9px] shrink-0 rounded-sm bg-[oklch(0.6_0.12_145)]" />
-                  <span className="font-display text-[19px] font-extrabold lg:text-2xl">الخدمات</span>
-                </span>
-                <span className={`${K_SM} text-bone/70`}>{arInt(services.length)} خدمة</span>
+              <div className="mb-3 flex items-baseline gap-3">
+                <span className="font-display text-[19px] font-extrabold lg:text-2xl">الخدمات</span>
               </div>
-              <div className="flex gap-[7px] overflow-x-auto pb-0.5">
-                {groups.map((g) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    aria-pressed={activeGroup === g.id}
-                    onClick={() => setGroup(g.id)}
-                    className={`inline-flex h-9 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full border px-[15px] text-[13px] font-semibold leading-none ${chip(activeGroup === g.id)}`}
-                  >
-                    {g.label}
-                    <span className="font-serif text-[12.5px] opacity-60">
-                      {arNum(services.filter((s) => s.group === g.id).length)}
+              <div className="flex gap-[7px] overflow-x-auto overscroll-x-contain scroll-smooth pb-0.5 [-webkit-overflow-scrolling:touch]">
+                {groups.map((g, gi) =>
+                  groupEdit.editing ? (
+                    <span
+                      key={g.id}
+                      onClick={() => setGroup(g.id)}
+                      title="انقر للاختيار · انقر مرتين لإعادة التسمية"
+                      className={`group/tab relative inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border ps-[18px] pe-3 text-[13.5px] font-semibold leading-none transition-shadow ${chip(activeGroup === g.id)} ${activeGroup === g.id ? "ring-2 ring-oxblood/60 ring-offset-2 ring-offset-ink" : ""}`}
+                    >
+                      <EditableText
+                        value={g.label}
+                        placeholder="القسم"
+                        keepLatinDigits
+                        onCommit={(t) => groupEdit.setField(gi, "label", t)}
+                      />
+                      {groups.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeGroup(gi); }}
+                          aria-label="حذف القسم"
+                          title="حذف القسم"
+                          className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-oxblood/85 text-[11px] leading-none text-white shadow transition-colors hover:bg-oxblood"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </span>
+                  ) : (
+                    <button
+                      key={g.id}
+                      type="button"
+                      aria-pressed={activeGroup === g.id}
+                      onClick={() => setGroup(g.id)}
+                      className={`inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-[15px] text-[13px] font-semibold leading-none ${chip(activeGroup === g.id)}`}
+                    >
+                      {g.label}
+                    </button>
+                  ),
+                )}
+                {groupEdit.editing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const id = "c" + Math.random().toString(36).slice(2, 8);
+                      groupEdit.add({ id, label: "قسم جديد" });
+                      setGroup(id); // select it so its (empty) services show for editing
+                    }}
+                    aria-label="إضافة قسم"
+                    className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-bone/35 px-4 text-[13.5px] font-semibold leading-none text-bone/70 transition-colors hover:border-oxblood/60 hover:text-bone"
+                  >
+                    <span className="text-base leading-none">＋</span> قسم
                   </button>
-                ))}
+                )}
               </div>
               </div>
             </div>
 
             <div className="px-[22px] pb-[26px] pt-1 lg:px-10 lg:pb-16 lg:pt-4">
               <div className="mx-auto flex w-full max-w-6xl flex-col lg:grid lg:grid-cols-2 lg:gap-4 xl:grid-cols-3">
-              {visible.map(({ s, i }, n) => (
-                <button
-                  key={s.name}
-                  type="button"
-                  onClick={() => setSheet(i)}
-                  style={{ animationDelay: `${n * 55}ms` }}
-                  className="flex items-start gap-3.5 border-b border-bone/10 py-[18px] text-start text-current animate-rise motion-reduce:animate-none lg:rounded lg:border lg:border-bone/11 lg:bg-bone/5 lg:p-4 lg:transition-colors lg:hover:border-oxblood/40"
-                >
-                  <Photo src={s.photo} alt={s.name} className="size-20 shrink-0 rounded-[3px]" />
-                  <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <span className="flex flex-wrap items-baseline gap-[9px]">
-                      <span className="font-display text-[15.5px] font-bold">{s.name}</span>
-                      {s.mark && <span className={`${K_SM} text-oxblood-200`}>{s.mark}</span>}
-                    </span>
-                    {s.latin && <span className="font-serif text-xs italic text-bone/70">{s.latin}</span>}
-                    {s.desc && (
-                      <span className="text-[12.5px] leading-[1.7] text-bone/[0.76] text-pretty">{s.desc}</span>
-                    )}
-                    <span className="flex items-center gap-3 pt-[3px]">
-                      <span className="font-serif text-lg text-oxblood-100">{s.price}</span>
-                      <span className={`${K_SM} text-bone/[0.66]`}>{s.duration}</span>
-                      <span className="ms-auto text-bone/60">
-                        <Chevron />
+              {visible.map(({ s, i }, n) => {
+                const cardClass =
+                  "flex items-start gap-3.5 border-b border-bone/10 py-[18px] text-start text-current animate-rise motion-reduce:animate-none lg:rounded lg:border lg:border-bone/11 lg:bg-bone/5 lg:p-4 lg:transition-colors lg:hover:border-oxblood/40";
+                const inner = (
+                  <>
+                    <EditableImage onChange={(url) => svcEdit.setField(i, "photo", url)} className="size-20 shrink-0 rounded-[3px]">
+                      <Photo src={s.photo} alt={s.name} className="size-20 shrink-0 rounded-[3px]" />
+                    </EditableImage>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                      <span className="flex flex-wrap items-baseline gap-[9px]">
+                        <EditableText value={s.name} onCommit={(t) => svcEdit.setField(i, "name", t)} className="font-display text-[15.5px] font-bold" />
+                        <EditableText value={s.mark ?? ""} placeholder="وسم" onCommit={(t) => svcEdit.setField(i, "mark", t)} className={`${K_SM} text-oxblood-200`} />
+                      </span>
+                      <EditableText value={s.latin ?? ""} placeholder="بالإنجليزية" keepLatinDigits onCommit={(t) => svcEdit.setField(i, "latin", t)} className="font-serif text-xs italic text-bone/70" />
+                      <EditableText value={s.desc ?? ""} placeholder="أضف وصفًا…" multiline onCommit={(t) => svcEdit.setField(i, "desc", t)} className="text-[12.5px] leading-[1.7] text-bone/[0.76] text-pretty" />
+                      <span className="flex items-center gap-3 pt-[3px]">
+                        <EditableText value={s.price} onCommit={(t) => svcEdit.setField(i, "price", t)} className="font-serif text-lg text-oxblood-100" />
+                        <EditableText value={s.duration} onCommit={(t) => svcEdit.setField(i, "duration", t)} className={`${K_SM} text-bone/[0.66]`} />
+                        {!svcEdit.editing && (
+                          <span className="ms-auto text-bone/60">
+                            <Chevron />
+                          </span>
+                        )}
                       </span>
                     </span>
-                  </span>
+                  </>
+                );
+                return svcEdit.editing ? (
+                  <div key={`svc-${i}`} className={`relative ${cardClass}`}>
+                    {inner}
+                    <button
+                      type="button"
+                      onClick={() => svcEdit.remove(i)}
+                      aria-label="حذف الخدمة"
+                      className="absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-oxblood text-xs text-white shadow"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button key={`svc-${i}`} type="button" onClick={() => setSheet(i)} style={{ animationDelay: `${n * 55}ms` }} className={cardClass}>
+                    {inner}
+                  </button>
+                );
+              })}
+              {svcEdit.editing && (
+                <button
+                  type="button"
+                  onClick={() => svcEdit.add({ group: activeGroup, name: "خدمة جديدة", price: "٠", duration: "٣٠ دقيقة", desc: "", mark: "", latin: "" })}
+                  className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 py-4 text-sm font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone lg:p-4"
+                >
+                  <span className="text-lg leading-none">＋</span> إضافة خدمة
                 </button>
-              ))}
+              )}
               </div>
             </div>
           </section>
 
           {/* HOUSE — hygiene */}
-          <section className="border-t border-bone/10 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
-            <div className="mx-auto flex w-full max-w-6xl flex-col gap-3.5 rounded border border-bone/[0.12] bg-bone/[0.05] p-[18px] lg:p-8">
-              <Head kind="house" kicker="معيار التعقيم" />
-              <div className="flex flex-col gap-[11px] lg:grid lg:grid-cols-2 lg:gap-x-10 lg:gap-y-4">
-                {H.hygiene.map((t) => (
-                  <span key={t} className="flex items-start gap-[11px] text-[13px] leading-[1.75] text-bone/[0.82]">
-                    <span className="shrink-0 pt-0.5 text-[oklch(0.7_0.12_145)]">
-                      <Check />
+          {(H.hygiene.length > 0 || hygieneEdit.editing) && (
+            <section className="border-t border-bone/10 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-3.5 rounded border border-bone/[0.12] bg-bone/[0.05] p-[18px] lg:p-8">
+                <Head kicker={H.hygieneKicker ?? "معيار التعقيم"} kickerPath="house.hygieneKicker" />
+                <div className="flex flex-col gap-[11px] lg:grid lg:grid-cols-2 lg:gap-x-10 lg:gap-y-4">
+                  {H.hygiene.map((t, i) => (
+                    <span key={`hygiene-${i}`} className="group/hy relative flex items-start gap-[11px] text-[13px] leading-[1.75] text-bone/[0.82]">
+                      <span className="shrink-0 pt-0.5 text-[oklch(0.7_0.12_145)]">
+                        <Check />
+                      </span>
+                      <EditableText
+                        value={t}
+                        placeholder="معيار جديد…"
+                        multiline
+                        onCommit={(v) => hygieneEdit.setAt(i, v)}
+                        className="text-pretty"
+                      />
+                      {hygieneEdit.editing && (
+                        <button
+                          type="button"
+                          onClick={() => hygieneEdit.remove(i)}
+                          aria-label="حذف المعيار"
+                          className="absolute -end-1 -top-1 z-10 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-oxblood text-[11px] text-white opacity-0 shadow transition-opacity group-hover/hy:opacity-100"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </span>
-                    <span className="text-pretty">{t}</span>
-                  </span>
-                ))}
+                  ))}
+                  {hygieneEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => hygieneEdit.add("معيار جديد")}
+                      className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 p-2.5 text-[13px] font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                    >
+                      <span className="text-base leading-none">＋</span> إضافة معيار
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
         </div>
       )}
 
@@ -517,56 +734,100 @@ export default function BarbershopFiveStar({
         <div className="flex flex-col animate-page motion-reduce:animate-none">
           <section className="px-[22px] py-[26px] lg:px-10 lg:py-16">
             <div className="mx-auto w-full max-w-6xl">
-            <Head kind="shop" kicker="من سيجلس معك" title="الحلاقون" />
-            <span className="mt-4 block max-w-[60ch] text-[13.5px] leading-[1.85] text-bone/80 text-pretty">
-              تحجز مع شخصٍ بعينه، لا مع الصالون. من اعتاد على حلاقٍ يبقى معه.
-            </span>
+            <Head
+              kicker={shop.teamKicker ?? "من سيجلس معك"}
+              kickerPath="shop.teamKicker"
+              title={shop.teamTitle ?? "الحلاقون"}
+              titlePath="shop.teamTitle"
+            />
+            <EditableText
+              path="shop.teamIntro"
+              value={shop.teamIntro ?? "تحجز مع شخصٍ بعينه، لا مع الصالون. من اعتاد على حلاقٍ يبقى معه."}
+              placeholder="نبذة قصيرة عن الفريق…"
+              multiline
+              className="mt-4 block max-w-[60ch] text-[13.5px] leading-[1.85] text-bone/80 text-pretty"
+            />
             <div className="flex flex-col gap-3 pt-4 sm:grid sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:pt-8">
               {barbers.map((b, i) => (
                 <div
-                  key={b.name}
+                  key={`barber-${i}`}
                   style={{ animationDelay: `${i * 70}ms` }}
-                  className="flex gap-3.5 rounded border border-bone/[0.11] bg-bone/[0.05] p-3.5 animate-rise motion-reduce:animate-none"
+                  className="relative flex gap-3.5 rounded border border-bone/[0.11] bg-bone/[0.05] p-3.5 animate-rise motion-reduce:animate-none"
                 >
-                  <Photo src={b.photo} alt={b.name} className="h-[100px] w-[84px] shrink-0 rounded-[3px]" />
+                  <EditableImage onChange={(url) => teamEdit.setField(i, "photo", url)} className="h-[100px] w-[84px] shrink-0 rounded-[3px]">
+                    <Photo src={b.photo} alt={b.name} className="h-[100px] w-[84px] shrink-0 rounded-[3px]" />
+                  </EditableImage>
                   <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <span className="font-display text-base font-bold">{b.name}</span>
-                    <span className="text-[12.5px] font-medium text-oxblood-200">{b.role}</span>
-                    {b.bio && (
-                      <span className="text-[12.5px] leading-[1.7] text-bone/[0.76] text-pretty">{b.bio}</span>
-                    )}
-                    <span className="mt-auto flex items-baseline gap-3 border-t border-bone/[0.12] pt-1.5">
-                      <span className="flex items-baseline gap-[5px]">
-                        <span className="font-serif text-[17px] text-oxblood-100">{arInt(b.years)}</span>
-                        <span className={`${K_SM} text-bone/[0.66]`}>سنة</span>
-                      </span>
-                      <span
-                        className={`${K_SM} ms-auto ${b.availableToday === false ? "text-oxblood-200" : "text-[oklch(0.8_0.11_145)]"}`}
-                      >
-                        {b.availableToday === false ? "محجوز اليوم" : "متاح اليوم"}
-                      </span>
-                    </span>
+                    <EditableText value={b.name} onCommit={(t) => teamEdit.setField(i, "name", t)} className="font-display text-base font-bold" />
+                    <EditableText value={b.role} placeholder="الدور" onCommit={(t) => teamEdit.setField(i, "role", t)} className="text-[12.5px] font-medium text-oxblood-200" />
+                    <EditableText value={b.bio ?? ""} placeholder="نبذة قصيرة…" multiline onCommit={(t) => teamEdit.setField(i, "bio", t)} className="text-[12.5px] leading-[1.7] text-bone/[0.76] text-pretty" />
                   </span>
+                  {teamEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => teamEdit.remove(i)}
+                      aria-label="حذف الحلاق"
+                      className="absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-oxblood text-xs text-white shadow"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
+              {teamEdit.editing && (
+                <button
+                  type="button"
+                  onClick={() => teamEdit.add({ name: "حلاق جديد", role: "حلاق", years: 1, availableToday: true, photo: "", bio: "" })}
+                  className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 p-4 text-sm font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                >
+                  <span className="text-lg leading-none">＋</span> إضافة حلاق
+                </button>
+              )}
             </div>
             </div>
           </section>
 
           {/* HOUSE — etiquette */}
-          <section className="border-t border-bone/10 bg-ink-800 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
-            <div className="mx-auto w-full max-w-6xl">
-            <Head kind="house" kicker="آداب الحجز" />
-            <div className="mt-3.5 flex flex-col lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-x-12">
-              {H.etiquette.map((t, i) => (
-                <span key={t} className="flex items-baseline gap-[13px] border-b border-bone/10 py-[13px]">
-                  <span className="min-w-5 shrink-0 font-serif text-[13px] text-oxblood-300">{arNum(i + 1)}</span>
-                  <span className="text-[13px] leading-[1.75] text-bone/[0.82] text-pretty">{t}</span>
-                </span>
-              ))}
-            </div>
-            </div>
-          </section>
+          {(H.etiquette.length > 0 || etiquetteEdit.editing) && (
+            <section className="border-t border-bone/10 bg-ink-800 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
+              <div className="mx-auto w-full max-w-6xl">
+              <Head kicker={H.etiquetteKicker ?? "آداب الحجز"} kickerPath="house.etiquetteKicker" />
+              <div className="mt-3.5 flex flex-col lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-x-12">
+                {H.etiquette.map((t, i) => (
+                  <span key={`etiquette-${i}`} className="group/et relative flex items-baseline gap-[13px] border-b border-bone/10 py-[13px]">
+                    <span className="min-w-5 shrink-0 font-serif text-[13px] text-oxblood-300">{arNum(i + 1)}</span>
+                    <EditableText
+                      value={t}
+                      placeholder="أدب جديد…"
+                      multiline
+                      onCommit={(v) => etiquetteEdit.setAt(i, v)}
+                      className="text-[13px] leading-[1.75] text-bone/[0.82] text-pretty"
+                    />
+                    {etiquetteEdit.editing && (
+                      <button
+                        type="button"
+                        onClick={() => etiquetteEdit.remove(i)}
+                        aria-label="حذف البند"
+                        className="absolute -end-1 top-2 z-10 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-oxblood text-[11px] text-white opacity-0 shadow transition-opacity group-hover/et:opacity-100"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                ))}
+              </div>
+              {etiquetteEdit.editing && (
+                <button
+                  type="button"
+                  onClick={() => etiquetteEdit.add("أدب جديد")}
+                  className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 px-4 py-2.5 text-[13px] font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                >
+                  <span className="text-base leading-none">＋</span> إضافة بند
+                </button>
+              )}
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -575,47 +836,100 @@ export default function BarbershopFiveStar({
         <div className="flex flex-col animate-page motion-reduce:animate-none">
           <section className="px-[22px] py-[26px] lg:px-10 lg:py-16">
             <div className="mx-auto w-full max-w-6xl">
-            <Head kind="house" kicker="بعد أن تخرج" title="كيف تحافظ على القصّة" />
-            <span className="mt-4 block max-w-[60ch] text-[13.5px] leading-[1.85] text-bone/80 text-pretty">
-              نصف النتيجة تعتمد على ما تفعله في البيت. هذه القواعد تصلح لأي قصّة تقريبًا.
-            </span>
+            <Head
+              kicker={H.careKicker ?? "بعد أن تخرج"}
+              kickerPath="house.careKicker"
+              title={H.careTitle ?? "كيف تحافظ على القصّة"}
+              titlePath="house.careTitle"
+            />
+            <EditableText
+              path="house.careIntro"
+              value={H.careIntro ?? "نصف النتيجة تعتمد على ما تفعله في البيت. هذه القواعد تصلح لأي قصّة تقريبًا."}
+              placeholder="نبذة قصيرة…"
+              multiline
+              className="mt-4 block max-w-[60ch] text-[13.5px] leading-[1.85] text-bone/80 text-pretty"
+            />
             <div className="flex flex-col gap-2.5 pt-4 sm:grid sm:grid-cols-2 sm:gap-3 lg:gap-4 lg:pt-8">
               {H.aftercare.map((c, i) => (
                 <div
-                  key={c.title}
+                  key={`aftercare-${i}`}
                   style={{ animationDelay: `${i * 55}ms` }}
-                  className="flex items-start gap-[13px] rounded border border-bone/10 bg-bone/[0.05] p-3.5 animate-rise motion-reduce:animate-none"
+                  className="group/ac relative flex items-start gap-[13px] rounded border border-bone/10 bg-bone/[0.05] p-3.5 animate-rise motion-reduce:animate-none"
                 >
                   <span className="inline-flex size-[30px] shrink-0 items-center justify-center rounded-full bg-oxblood/[0.16] font-serif text-sm text-oxblood-100">
                     {arNum(i + 1)}
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
-                    <span className="font-display text-sm font-bold">{c.title}</span>
-                    <span className="text-[12.5px] leading-[1.75] text-bone/[0.76] text-pretty">{c.body}</span>
+                    <EditableText value={c.title} placeholder="العنوان" onCommit={(t) => aftercareEdit.setField(i, "title", t)} className="font-display text-sm font-bold" />
+                    <EditableText value={c.body} placeholder="الوصف…" multiline onCommit={(t) => aftercareEdit.setField(i, "body", t)} className="text-[12.5px] leading-[1.75] text-bone/[0.76] text-pretty" />
                   </span>
+                  {aftercareEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => aftercareEdit.remove(i)}
+                      aria-label="حذف القاعدة"
+                      className="absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-oxblood text-xs text-white opacity-0 shadow transition-opacity group-hover/ac:opacity-100"
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
+              {aftercareEdit.editing && (
+                <button
+                  type="button"
+                  onClick={() => aftercareEdit.add({ title: "قاعدة جديدة", body: "الوصف…" })}
+                  className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 p-3.5 text-[13px] font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                >
+                  <span className="text-base leading-none">＋</span> إضافة قاعدة
+                </button>
+              )}
             </div>
             </div>
           </section>
 
-          <section className="border-t border-bone/10 bg-ink-800 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
-            <div className="mx-auto w-full max-w-3xl">
-            <Head kind="house" kicker="متى تعود" />
-            <div className="mt-3.5 flex flex-col lg:mt-6">
-              {H.intervals.map((iv) => (
-                <span key={iv.style} className="flex items-baseline gap-3 border-b border-bone/10 py-[13px]">
-                  <span className="min-w-[108px] text-[13.5px] text-bone/[0.86]">{iv.style}</span>
-                  <span aria-hidden className="min-w-5 flex-[1_0_20px] border-b border-dotted border-bone/[0.22]" />
-                  <span className="whitespace-nowrap font-serif text-[15px] text-oxblood-100">{iv.every}</span>
-                </span>
-              ))}
-            </div>
-            <span className="mt-3 block text-[12.5px] leading-[1.75] text-bone/70">
-              هذه أرقام إرشادية — حلاقك يخبرك بالمدّة الأنسب لشعرك تحديدًا.
-            </span>
-            </div>
-          </section>
+          {(H.intervals.length > 0 || intervalsEdit.editing) && (
+            <section className="border-t border-bone/10 bg-ink-800 px-[22px] pb-7 pt-6 lg:px-10 lg:py-16">
+              <div className="mx-auto w-full max-w-3xl">
+              <Head kicker={H.intervalsKicker ?? "متى تعود"} kickerPath="house.intervalsKicker" />
+              <div className="mt-3.5 flex flex-col lg:mt-6">
+                {H.intervals.map((iv, i) => (
+                  <span key={`interval-${i}`} className="group/iv relative flex items-baseline gap-3 border-b border-bone/10 py-[13px]">
+                    <EditableText value={iv.style} placeholder="النوع" onCommit={(t) => intervalsEdit.setField(i, "style", t)} className="min-w-[108px] text-[13.5px] text-bone/[0.86]" />
+                    <span aria-hidden className="min-w-5 flex-[1_0_20px] border-b border-dotted border-bone/[0.22]" />
+                    <EditableText value={iv.every} placeholder="كل …" onCommit={(t) => intervalsEdit.setField(i, "every", t)} className="whitespace-nowrap font-serif text-[15px] text-oxblood-100" />
+                    {intervalsEdit.editing && (
+                      <button
+                        type="button"
+                        onClick={() => intervalsEdit.remove(i)}
+                        aria-label="حذف الصف"
+                        className="absolute -end-1 top-2 z-10 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-oxblood text-[11px] text-white opacity-0 shadow transition-opacity group-hover/iv:opacity-100"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {intervalsEdit.editing && (
+                  <button
+                    type="button"
+                    onClick={() => intervalsEdit.add({ style: "نوع جديد", every: "كل أسبوعين" })}
+                    className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-bone/30 px-4 py-2.5 text-[13px] font-semibold text-bone/70 transition-colors hover:border-oxblood/50 hover:text-bone"
+                  >
+                    <span className="text-base leading-none">＋</span> إضافة صف
+                  </button>
+                )}
+              </div>
+              <EditableText
+                path="house.intervalsNote"
+                value={H.intervalsNote ?? "هذه أرقام إرشادية — حلاقك يخبرك بالمدّة الأنسب لشعرك تحديدًا."}
+                placeholder="ملاحظة…"
+                multiline
+                className="mt-3 block text-[12.5px] leading-[1.75] text-bone/70"
+              />
+              </div>
+            </section>
+          )}
         </div>
       )}
 
@@ -634,7 +948,7 @@ export default function BarbershopFiveStar({
             <Picker label="الخدمة">
               {bookable.map((b, i) => (
                 <button
-                  key={b.name}
+                  key={`bk-barber-${i}`}
                   type="button"
                   aria-pressed={svc === i}
                   onClick={() => setSvc(i)}
@@ -649,7 +963,7 @@ export default function BarbershopFiveStar({
             <Picker label="الحلاق">
               {barberNames.map((n, i) => (
                 <button
-                  key={n}
+                  key={`bk-name-${i}`}
                   type="button"
                   aria-pressed={barber === i}
                   onClick={() => setBarber(i)}
@@ -663,11 +977,10 @@ export default function BarbershopFiveStar({
             <Picker label="اليوم">
               {days.map((d, i) => (
                 <button
-                  key={d.label}
+                  key={`day-${i}`}
                   type="button"
                   aria-pressed={day === i}
-                  // a slot free today may be taken tomorrow — clear it
-                  onClick={() => { setDay(i); setSlot(-1); }}
+                  onClick={() => setDay(i)}
                   className={`flex min-w-[68px] flex-col items-center gap-[3px] rounded-[3px] border px-3 py-2.5 ${chip(day === i)}`}
                 >
                   <span className="whitespace-nowrap text-[13px] font-semibold">{d.label}</span>
@@ -676,40 +989,9 @@ export default function BarbershopFiveStar({
               ))}
             </Picker>
 
-            <span className="flex flex-col gap-[9px]">
-              <span className={`${K_SM} text-bone/70`}>
-                الوقت — {days[day].label} {days[day].date ?? ""}
-              </span>
-              <div className="grid grid-cols-4 gap-2 lg:grid-cols-6">
-                {slots.map((label, i) => {
-                  const isTaken = taken.includes(i);
-                  const on = slot === i;
-                  return (
-                    <button
-                      key={label}
-                      type="button"
-                      disabled={isTaken}
-                      aria-pressed={on}
-                      title={isTaken ? "محجوز" : "متاح"}
-                      onClick={() => setSlot(i)}
-                      className={`h-[42px] rounded-[3px] border font-serif text-sm leading-none ${
-                        isTaken
-                          ? "cursor-not-allowed border-transparent bg-bone/10 text-bone/60 line-through opacity-[0.55]"
-                          : on
-                            ? "border-transparent bg-oxblood text-white"
-                            : "border-bone/25 bg-transparent text-bone/90"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <span className="flex flex-wrap items-center gap-4 pt-1 text-[11.5px] text-bone/[0.68]">
-                <Legend swatch="bg-oxblood" label="مُختار" />
-                <Legend swatch="border border-bone/25" label="متاح" />
-                <Legend swatch="bg-bone/10" label="محجوز" />
-              </span>
+            <span className="flex items-start gap-2.5 rounded-[3px] border border-bone/[0.13] bg-bone/[0.05] p-3.5 text-[12.5px] leading-[1.7] text-bone/[0.78]">
+              <Check className="mt-0.5 size-4 shrink-0 text-oxblood-200" />
+              اختر اليوم فقط — يؤكّد لك الحلاق الوقت المتاح عبر واتساب خلال دقائق.
             </span>
             </div>
 
@@ -718,7 +1000,8 @@ export default function BarbershopFiveStar({
               <span className={`${K_SM} text-bone/70`}>ملخّص الحجز</span>
               <Row k="الخدمة" v={picked.name} bold />
               <Row k="الحلاق" v={barberNames[barber]} />
-              <Row k="الموعد" v={slotChosen ? `${days[day].label} · ${slots[slot]}` : "اختر وقتًا"} serif />
+              <Row k="اليوم" v={`${days[day].label} ${days[day].date ?? ""}`.trim()} serif />
+              <Row k="الوقت" v="يؤكّده الحلاق" />
               <span className="flex items-baseline justify-between gap-3">
                 <span className="text-[13px] text-bone/[0.76]">السعر</span>
                 <span className="font-serif text-[22px] text-oxblood-100">
@@ -730,14 +1013,13 @@ export default function BarbershopFiveStar({
             <button
               type="button"
               onClick={confirm}
-              disabled={!slotChosen}
-              className="inline-flex h-[52px] items-center justify-center gap-2.5 rounded-[3px] border-0 bg-oxblood font-display text-[15px] font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex h-[52px] cursor-pointer items-center justify-center gap-2.5 rounded-[3px] border-0 bg-oxblood font-display text-[15px] font-bold text-white"
             >
               <WhatsAppIcon />
-              {slotChosen ? "أكّد على واتساب" : "اختر وقتًا أولًا"}
+              اطلب موعدًا على واتساب
             </button>
             <span className="text-[12.5px] leading-[1.75] text-bone/70">
-              نثبّت الموعد برسالة خلال دقائق. التأخّر أكثر من عشر دقائق يعني إعادة الجدولة — الكرسي التالي محجوز.
+              نتّفق على الوقت المتاح برسالة خلال دقائق. التأخّر أكثر من عشر دقائق يعني إعادة الجدولة — الكرسي التالي محجوز.
             </span>
             </div>
             </div>
@@ -748,41 +1030,59 @@ export default function BarbershopFiveStar({
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-4.5 lg:grid lg:grid-cols-3 lg:items-start lg:gap-10">
             <div className="flex items-baseline justify-between gap-3.5 lg:flex-col lg:items-start lg:gap-3">
               <span className="flex flex-col gap-1">
-                <span className="font-display text-lg font-extrabold">{shop.name}</span>
-                {shop.latinName && (
-                  <span className="font-serif text-xs italic tracking-[0.04em] text-bone/[0.74]">
-                    {shop.latinName}
-                  </span>
-                )}
+                <EditableText path="shop.name" value={shop.name} className="font-display text-lg font-extrabold" />
               </span>
-              <span className="inline-flex items-center gap-[7px] text-[12.5px] text-[oklch(0.82_0.09_145)]">
-                <span className="size-[7px] rounded-full bg-current animate-pulse-soft motion-reduce:animate-none" />
-                مفتوح الآن
-              </span>
+              {openNow !== null && (
+                <span
+                  className={`inline-flex items-center gap-[7px] text-[12.5px] ${
+                    openNow ? "text-[oklch(0.82_0.09_145)]" : "text-oxblood-200"
+                  }`}
+                >
+                  <span
+                    className={`size-[7px] rounded-full bg-current ${openNow ? "animate-pulse-soft motion-reduce:animate-none" : ""}`}
+                  />
+                  {openNow ? "مفتوح الآن" : "مغلق الآن"}
+                </span>
+              )}
             </div>
             <div className="flex flex-col gap-[9px]">
-              {hours.map((h) => (
-                <span key={h.days} className="flex items-baseline gap-2.5 text-[13px] text-bone/80">
-                  <span className={`whitespace-nowrap ${h.primary ? "font-bold" : ""}`}>{h.days}</span>
+              {groupHours(hours).map((g, i) => (
+                <span key={`hours-${i}`} className="flex items-baseline gap-2.5 text-[13px] text-bone/80">
+                  <span className="whitespace-nowrap">{g.label}</span>
                   <span aria-hidden className="min-w-4 flex-[1_0_16px] border-b border-dotted border-bone/[0.22]" />
-                  <span className="whitespace-nowrap font-serif text-bone/90">{h.time}</span>
+                  <span className={`whitespace-nowrap font-serif ${g.time === "مغلق" ? "text-oxblood-200" : "text-bone/90"}`}>{g.time}</span>
                 </span>
               ))}
             </div>
-            {(shop.address || shop.phone) && (
+            {(shop.address || shop.phone || shop.whatsapp) && (
               <div className="flex flex-col gap-[11px] border-t border-bone/[0.12] pt-3.5 lg:border-t-0 lg:pt-0">
                 {shop.address && (
                   <span className="flex items-start gap-2.5 text-[13px] leading-[1.65] text-bone/80">
                     <span aria-hidden className="text-oxblood-200">◉</span>
-                    <span className="text-pretty">{shop.address}</span>
+                    <EditableText path="shop.address" value={shop.address} multiline className="text-pretty" />
                   </span>
                 )}
+                {shop.whatsapp && (
+                  <a
+                    href={waLink(shop.whatsapp, "مرحبًا، أودّ حجز موعد.")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2.5 text-bone/80 transition-colors hover:text-bone"
+                  >
+                    <WhatsAppIcon className="size-4 text-oxblood-200" />
+                    <span dir="ltr" className="font-mono text-[12.5px]">{shop.whatsapp}</span>
+                  </a>
+                )}
                 {shop.phone && (
-                  <a href={`tel:${shop.phone.replace(/\s/g, "")}`} className="flex items-center gap-2.5 text-bone/80">
-                    <span aria-hidden className="text-oxblood-200">✆</span>
+                  <a
+                    href={`tel:${shop.phone.replace(/\s/g, "")}`}
+                    className="flex items-center gap-2.5 text-bone/80 transition-colors hover:text-bone"
+                  >
+                    <PhoneIcon className="size-4 text-oxblood-200" />
                     <span dir="ltr" className="font-mono text-[12.5px]">{shop.phone}</span>
                   </a>
                 )}
+                <SocialLinks socials={shop.socials} className="pt-1" itemClassName={SOCIAL_CHIP} />
               </div>
             )}
             </div>
@@ -851,8 +1151,8 @@ export default function BarbershopFiveStar({
               {open.includes?.length ? (
                 <div className="flex flex-col gap-2.5 border-t border-bone/[0.12] pt-3.5">
                   <span className={`${K_SM} text-bone/70`}>تشمل الجلسة</span>
-                  {open.includes.map((t) => (
-                    <span key={t} className="flex items-start gap-2.5 text-[13px] leading-[1.75] text-bone/[0.82]">
+                  {open.includes.map((t, i) => (
+                    <span key={`inc-${i}`} className="flex items-start gap-2.5 text-[13px] leading-[1.75] text-bone/[0.82]">
                       <span className="shrink-0 pt-0.5 text-oxblood-200">
                         <Check className="size-[13px]" />
                       </span>
@@ -908,14 +1208,6 @@ function Row({ k, v, bold, serif }: { k: string; v: string; bold?: boolean; seri
   );
 }
 
-function Legend({ swatch, label }: { swatch: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-[7px]">
-      <span aria-hidden className={`size-3 rounded-sm ${swatch}`} />
-      {label}
-    </span>
-  );
-}
 
 const ScissorsIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="size-5" aria-hidden>

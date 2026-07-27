@@ -10,7 +10,7 @@ import Component from "./component";
 const defaults = {
   shop: {
     name: "صالون قاسيون",
-    latinName: "QASIOUN",
+    logo: "",
     tagline: "حلاقة كلاسيكية بمعايير خمس نجوم",
     heroLine: "الكرسي جاهز في وقته تمامًا",
     heroBlurb:
@@ -19,7 +19,6 @@ const defaults = {
     whatsapp: "+963991112233",
     phone: "+963112223344",
     address: "دمشق — المزة، شارع الجلاء",
-    mapsUrl: "",
     lastAppointment: "٩:٣٠",
     socials: { instagram: "", facebook: "", tiktok: "" },
     stats: [
@@ -46,9 +45,16 @@ const defaults = {
     { name: "سامر", role: "أخصّائي تدرّج", years: 8, availableToday: true, photo: "" },
     { name: "وسيم", role: "حلاق", years: 5, availableToday: false, photo: "" },
   ],
+  // One row per weekday (Syrian week order). Same-hours days are collapsed into
+  // ranges on the site; edited via dropdowns in the settings panel.
   hours: [
-    { days: "السبت – الخميس", time: "١٠:٠٠ ص – ١٠:٠٠ م", primary: true },
-    { days: "الجمعة", time: "٢:٠٠ م – ١٠:٠٠ م" },
+    { day: "السبت", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الأحد", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الاثنين", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الثلاثاء", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الأربعاء", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الخميس", open: "١٠:٠٠ ص", close: "١٠:٠٠ م" },
+    { day: "الجمعة", open: "٢:٠٠ م", close: "١٠:٠٠ م" },
   ],
 };
 
@@ -66,97 +72,67 @@ export const barbershopFiveStar: TemplateModule = {
   Component: Component as unknown as TemplateModule["Component"],
   defaults,
   nameKey: "shop.name",
-  themeFont: true,
+  // The template ships its own font — no font override in the appearance tab.
+  themeFont: false,
   tokens: [
     { key: "accent", label: "لون التمييز", cssVar: "--color-oxblood", default: "oklch(0.48 0.16 25)" },
     { key: "ground", label: "الخلفية", cssVar: "--color-ink", default: "oklch(0.115 0.006 45)" },
     { key: "ink", label: "لون النص", cssVar: "--color-bone", default: "oklch(0.93 0.018 70)" },
   ],
+  // Ready-made colorways — the owner picks one instead of raw colors. "كلاسيكي"
+  // equals the token defaults so an untouched site reads as that palette.
+  palettes: [
+    // ── Dark ──────────────────────────────────────────────────────────────
+    { key: "classic", label: "كلاسيكي", tone: "dark", isDefault: true, mood: "داكن دافئ", colors: { accent: "oklch(0.48 0.16 25)", ground: "oklch(0.115 0.006 45)", ink: "oklch(0.93 0.018 70)" } },
+    { key: "midnight", label: "منتصف الليل", tone: "dark", mood: "داكن أزرق", colors: { accent: "oklch(0.6 0.13 235)", ground: "oklch(0.15 0.025 250)", ink: "oklch(0.93 0.02 245)" } },
+    { key: "forest", label: "غابة", tone: "dark", mood: "داكن أخضر", colors: { accent: "oklch(0.58 0.13 150)", ground: "oklch(0.14 0.02 160)", ink: "oklch(0.93 0.02 130)" } },
+    { key: "graphite", label: "غرافيت", tone: "dark", mood: "رمادي أنيق", colors: { accent: "oklch(0.68 0.14 55)", ground: "oklch(0.17 0.004 250)", ink: "oklch(0.92 0.01 250)" } },
+    { key: "espresso", label: "إسبريسو", tone: "dark", mood: "بنّي دافئ", colors: { accent: "oklch(0.66 0.11 60)", ground: "oklch(0.155 0.018 50)", ink: "oklch(0.92 0.02 75)" } },
+    { key: "wine", label: "نبيذ", tone: "dark", mood: "خمري داكن", colors: { accent: "oklch(0.6 0.15 8)", ground: "oklch(0.15 0.03 12)", ink: "oklch(0.92 0.02 30)" } },
+    { key: "ocean", label: "محيط", tone: "dark", mood: "أزرق عميق", colors: { accent: "oklch(0.68 0.12 200)", ground: "oklch(0.145 0.03 220)", ink: "oklch(0.93 0.02 210)" } },
+    { key: "plum", label: "برقوقي", tone: "dark", mood: "أرجواني", colors: { accent: "oklch(0.62 0.17 330)", ground: "oklch(0.16 0.035 320)", ink: "oklch(0.93 0.02 320)" } },
+    { key: "onyx", label: "أونيكس", tone: "dark", mood: "أسود كهربائي", colors: { accent: "oklch(0.62 0.16 260)", ground: "oklch(0.135 0.003 250)", ink: "oklch(0.93 0.005 250)" } },
+    { key: "emerald", label: "زمرّد", tone: "dark", mood: "أخضر لامع", colors: { accent: "oklch(0.7 0.15 162)", ground: "oklch(0.13 0.02 158)", ink: "oklch(0.94 0.02 150)" } },
+    { key: "copper", label: "نحاسي", tone: "dark", mood: "داكن نحاسي", colors: { accent: "oklch(0.64 0.13 48)", ground: "oklch(0.15 0.012 40)", ink: "oklch(0.92 0.02 60)" } },
+    { key: "royal", label: "ملكي", tone: "dark", mood: "نيلي وذهبي", colors: { accent: "oklch(0.76 0.13 85)", ground: "oklch(0.155 0.035 278)", ink: "oklch(0.93 0.02 280)" } },
+    { key: "teal", label: "طاووسي", tone: "dark", mood: "أخضر مزرقّ", colors: { accent: "oklch(0.66 0.12 185)", ground: "oklch(0.14 0.025 195)", ink: "oklch(0.93 0.02 190)" } },
+    { key: "neon", label: "نيون", tone: "dark", mood: "جريء", colors: { accent: "oklch(0.66 0.24 330)", ground: "oklch(0.16 0.035 300)", ink: "oklch(0.95 0.02 320)" } },
+    { key: "sunset", label: "غروب", tone: "dark", mood: "برتقالي دافئ", colors: { accent: "oklch(0.68 0.19 40)", ground: "oklch(0.165 0.03 28)", ink: "oklch(0.93 0.03 50)" } },
+    { key: "tropical", label: "استوائي", tone: "dark", mood: "مرجاني", colors: { accent: "oklch(0.68 0.19 18)", ground: "oklch(0.155 0.03 200)", ink: "oklch(0.94 0.02 190)" } },
+    // ── Light ─────────────────────────────────────────────────────────────
+    { key: "sand", label: "رملي", tone: "light", isDefault: true, mood: "فاتح دافئ", colors: { accent: "oklch(0.52 0.14 40)", ground: "oklch(0.95 0.022 75)", ink: "oklch(0.26 0.03 50)" } },
+    { key: "ivory", label: "عاجي", tone: "light", mood: "فاتح نظيف", colors: { accent: "oklch(0.5 0.16 25)", ground: "oklch(0.97 0.006 80)", ink: "oklch(0.24 0.01 60)" } },
+    { key: "linen", label: "كتّان", tone: "light", mood: "فاتح مريمي", colors: { accent: "oklch(0.5 0.1 150)", ground: "oklch(0.96 0.015 110)", ink: "oklch(0.26 0.02 130)" } },
+    { key: "blush", label: "وردي فاتح", tone: "light", mood: "فاتح وردي", colors: { accent: "oklch(0.56 0.15 6)", ground: "oklch(0.96 0.015 15)", ink: "oklch(0.26 0.02 20)" } },
+    { key: "sky", label: "سماوي", tone: "light", mood: "فاتح أزرق", colors: { accent: "oklch(0.52 0.13 245)", ground: "oklch(0.965 0.012 230)", ink: "oklch(0.26 0.02 250)" } },
+    { key: "mint", label: "نعناعي", tone: "light", mood: "فاتح فيروزي", colors: { accent: "oklch(0.5 0.11 185)", ground: "oklch(0.965 0.02 165)", ink: "oklch(0.25 0.02 175)" } },
+    { key: "sunny", label: "مشمس", tone: "light", mood: "مرِح", colors: { accent: "oklch(0.72 0.17 65)", ground: "oklch(0.97 0.02 90)", ink: "oklch(0.3 0.035 60)" } },
+  ],
   steps: [
     {
       key: "shop",
       title: "معلومات المحل",
-      hint: "الاسم، نبذة الواجهة، وطرق التواصل.",
+      hint: "طرق التواصل والعنوان. النصوص والصور والأرقام تُحرَّر مباشرةً على الموقع.",
       fields: [
-        { key: "shop.name", label: "اسم المحل", type: "text", placeholder: "صالون قاسيون" },
-        { key: "shop.latinName", label: "الاسم اللاتيني", type: "text", placeholder: "QASIOUN" },
-        { key: "shop.tagline", label: "الشعار", type: "text", placeholder: "حلاقة كلاسيكية بمعايير خمس نجوم" },
-        { key: "shop.heroLine", label: "عنوان الواجهة", type: "text" },
-        { key: "shop.heroBlurb", label: "نبذة الواجهة", type: "textarea" },
-        { key: "shop.heroPhoto", label: "صورة الواجهة", type: "image" },
+        // الاسم، الشعار، عنوان/نبذة/صورة الواجهة، آخر موعد، والأرقام — كلها inline
+        // على المعاينة (نقر مزدوج). هنا فقط ما لا يظهر كنص قابل للتحرير.
         { key: "shop.whatsapp", label: "رقم واتساب", type: "phone", help: "إلزامي — عليه تصل طلبات الحجز." },
         { key: "shop.phone", label: "الهاتف", type: "phone" },
         { key: "shop.address", label: "العنوان", type: "text" },
-        { key: "shop.mapsUrl", label: "رابط الخريطة", type: "text" },
-        { key: "shop.lastAppointment", label: "آخر موعد", type: "text", placeholder: "٩:٣٠" },
-        {
-          key: "shop.stats", label: "أرقام لافتة", type: "list", itemLabel: "رقم",
-          blank: { value: "", label: "" },
-          item: [
-            { key: "value", label: "القيمة", type: "text", placeholder: "٤٫٩" },
-            { key: "label", label: "الوصف", type: "text", placeholder: "تقييم الزبائن" },
-          ],
-        },
+        { key: "shop.socials.instagram", label: "رابط إنستغرام", type: "text", ltr: true, placeholder: "https://instagram.com/…", help: "تظهر الأيقونة في الترويسة والتذييل عند إضافة الرابط." },
+        { key: "shop.socials.facebook", label: "رابط فيسبوك", type: "text", ltr: true, placeholder: "https://facebook.com/…" },
+        { key: "shop.socials.tiktok", label: "رابط تيك توك", type: "text", ltr: true, placeholder: "https://tiktok.com/@…" },
       ],
     },
-    {
-      key: "services",
-      title: "الخدمات",
-      hint: "الأقسام والخدمات مع الأسعار.",
-      fields: [
-        {
-          key: "groups", label: "أقسام الخدمات", type: "list", itemLabel: "قسم",
-          blank: { id: "", label: "" },
-          item: [
-            { key: "id", label: "المعرّف (إنجليزي)", type: "text", placeholder: "hair" },
-            { key: "label", label: "الاسم", type: "text", placeholder: "الشعر" },
-          ],
-        },
-        {
-          key: "services", label: "الخدمات", type: "list", itemLabel: "خدمة",
-          blank: { group: "", name: "", price: "", duration: "", desc: "", mark: "", photo: "" },
-          item: [
-            { key: "group", label: "القسم (المعرّف)", type: "text", placeholder: "hair" },
-            { key: "name", label: "اسم الخدمة", type: "text" },
-            { key: "price", label: "السعر", type: "text", placeholder: "٢٥٬٠٠٠" },
-            { key: "duration", label: "المدة", type: "text", placeholder: "٤٥ دقيقة" },
-            { key: "desc", label: "الوصف", type: "textarea" },
-            { key: "mark", label: "وسم (اختياري)", type: "text", placeholder: "الأكثر طلبًا" },
-            { key: "photo", label: "صورة", type: "image" },
-          ],
-        },
-      ],
-    },
-    {
-      key: "barbers",
-      title: "الحلاقون",
-      hint: "فريق الحلاقين.",
-      fields: [
-        {
-          key: "barbers", label: "الحلاقون", type: "list", itemLabel: "حلاق",
-          blank: { name: "", role: "", years: 0, bio: "", availableToday: true, photo: "" },
-          item: [
-            { key: "name", label: "الاسم", type: "text" },
-            { key: "role", label: "الدور", type: "text", placeholder: "المعلّم" },
-            { key: "bio", label: "نبذة", type: "textarea" },
-            { key: "photo", label: "صورة", type: "image" },
-          ],
-        },
-      ],
-    },
+    // الخدمات + الحلاقون are edited INLINE on the live preview (double-click to
+    // edit, hover to remove, ＋ to add) — see the barbershop component. They're
+    // intentionally not in the side panel.
     {
       key: "hours",
       title: "أوقات العمل",
-      hint: "صفوف أوقات الدوام.",
+      hint: "لكل يوم: مفتوح (من/إلى) أو مغلق. تُجمَع الأيام المتشابهة تلقائيًا على الموقع.",
       fields: [
-        {
-          key: "hours", label: "أوقات العمل", type: "list", itemLabel: "صف",
-          blank: { days: "", time: "", primary: false },
-          item: [
-            { key: "days", label: "الأيام", type: "text", placeholder: "السبت – الخميس" },
-            { key: "time", label: "الوقت", type: "text", placeholder: "١٠:٠٠ ص – ١٠:٠٠ م" },
-          ],
-        },
+        { key: "hours", label: "أوقات الدوام", type: "weekhours" },
       ],
     },
   ],

@@ -14,7 +14,7 @@ const schema = z.object({
   password: z.string().min(1, "أدخل كلمة المرور"),
 });
 
-export function LoginForm() {
+export function LoginForm({ next, expired }: { next?: string; expired?: boolean }) {
   const router = useRouter();
   const { register, errors, formError, submitting, handleSubmit } = useForm({
     initial: { email: "", password: "" },
@@ -31,7 +31,8 @@ export function LoginForm() {
       }
     },
     onSuccess: () => {
-      router.push("/dashboard");
+      // Return the user to where they were headed (validated same-site path).
+      router.push(next ?? "/dashboard");
       router.refresh();
     },
   });
@@ -40,6 +41,12 @@ export function LoginForm() {
     <Card className="p-7">
       <h1 className="text-xl font-extrabold text-ink">تسجيل الدخول</h1>
       <p className="mt-1 text-sm text-muted">أهلًا بعودتك إلى سوّي.</p>
+
+      {expired && (
+        <p className="mt-4 rounded-md bg-amber-100/60 px-3 py-2 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+          انتهت جلستك. الرجاء تسجيل الدخول من جديد للمتابعة.
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
         <Field label="البريد الإلكتروني" htmlFor="email" error={errors.email}>

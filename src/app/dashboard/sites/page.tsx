@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/feedback";
 import { CreateSiteButton } from "@/components/dashboard/create-site";
 import { SiteActionsMenu } from "@/components/dashboard/site-actions-menu";
-import { siteHost } from "@/lib/site-url";
+import { siteHost, siteUrl } from "@/lib/site-url";
 
 export default async function SitesPage() {
   const claims = await getSessionClaims();
@@ -69,7 +69,7 @@ export default async function SitesPage() {
                 </Link>
                 {s.status === "published" && (
                   <a
-                    href={`http://${s.slug}.localhost:3000`}
+                    href={siteUrl(s.slug)}
                     target="_blank"
                     rel="noreferrer"
                     className="rounded-md border border-line p-2 text-muted transition hover:text-ink"

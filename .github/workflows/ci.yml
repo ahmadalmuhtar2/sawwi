@@ -1,0 +1,115 @@
+name: CI
+
+# Quality gate on every push to main and every PR. Railway builds + deploys the
+# app itself on push (from the Dockerfile); this workflow is the pre-flight that
+# catches lint / type / test / build / migration breakage BEFORE it ships.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# One in-flight run per branch; a newer push cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── lint · types · tests · build ──────────────────────────────────────────
+  quality:
+    name: lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Placeholder build-time env — mirrors the Dockerfile's builder stage.
+      # NOTHING connects at build; the REAL values are injected at runtime on
+      # Railway. NEXT_PUBLIC_* are inlined into the client bundle, so they must
+      # be present for `next build`.
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
+      REDIS_URL: redis://localhost:6379
+      ROOT_DOMAIN: localhost
+      NEXT_PUBLIC_ROOT_DOMAIN: localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      BETTER_AUTH_SECRET: ci-placeholder-not-used-at-runtime
+      BETTER_AUTH_URL: http://localhost:3000
+      CRON_SECRET: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # --ignore-scripts skips the postinstall `prisma generate` (same as the
+      # Dockerfile); we run generate explicitly once the schema is present.
+      - name: Install
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  # ── migrations apply cleanly on a fresh database ──────────────────────────
+  migrations:
+    name: migrations apply on a fresh DB
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sawwi
+          POSTGRES_PASSWORD: sawwi
+          POSTGRES_DB: sawwi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sawwi"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sawwi:sawwi@localhost:5432/sawwi
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      # Applies every committed migration to an empty DB exactly as production
+      # will — fails if a migration file is broken or out of order.
+      - name: Migrate deploy
+        run: pnpm prisma migrate deploy
+
+      # Fails if the schema and the migration history have drifted apart (e.g.
+      # schema.prisma edited without a matching migration).
+      - name: Migrate status
+        run: pnpm prisma migrate status

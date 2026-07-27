@@ -1,5 +1,11 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { defineConfig, env } from "prisma/config";
+
+// Prisma 7 no longer auto-loads .env. Load it here so host CLI runs (generate/
+// migrate/studio, and `pnpm check`) see DATABASE_URL. In CI/Docker there is no
+// .env file — the vars are already in the environment — so this is a no-op.
+if (existsSync(".env")) process.loadEnvFile(".env");
 
 // Prisma 7 config. The connection URL lives here (for migrate/studio) instead
 // of in schema.prisma. Runtime access uses the driver adapter in src/lib/db.ts.
