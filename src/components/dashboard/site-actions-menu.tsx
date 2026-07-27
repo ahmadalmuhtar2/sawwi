@@ -7,6 +7,7 @@ import {
   MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
+import { siteUrl } from "@/lib/site-url";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function SiteActionsMenu({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const liveUrl = `http://${site.slug}.localhost:3000`;
+  const liveUrl = siteUrl(site.slug);
   const isPublished = site.status === "published";
 
   useEffect(() => {

@@ -23,38 +23,16 @@ export default async function SiteSettingsPage({
   }
 
   const p = getPrisma();
-  const [settings, siteRow, theme, services, team, testimonials, faq] = await Promise.all([
+  // Template model: business content lives in Site.content (edited inline). The
+  // settings page only needs the site's settings row (currency + carried-through
+  // contact) and its SEO.
+  const [settings, siteRow] = await Promise.all([
     p.siteSettings.findUnique({ where: { siteId: id } }),
-    p.site.findUnique({ where: { id }, select: { seo: true } }),
-    p.siteTheme.findUnique({
-      where: { siteId: id },
-      select: {
-        paletteKey: true, primaryColor: true, secondaryColor: true, fontKey: true,
-        headerVariant: true, headerScheme: true,
-        footerVariant: true, footerScheme: true,
-      },
-    }),
-    p.service.findMany({
-      where: { siteId: id },
-      orderBy: { order: "asc" },
-      select: { id: true, name: true, price: true, duration: true, description: true },
-    }),
-    p.teamMember.findMany({
-      where: { siteId: id },
-      orderBy: { order: "asc" },
-      select: { id: true, name: true, roleTitle: true },
-    }),
-    p.testimonial.findMany({
-      where: { siteId: id },
-      orderBy: { order: "asc" },
-      select: { id: true, author: true, text: true },
-    }),
-    p.faqItem.findMany({
-      where: { siteId: id },
-      orderBy: { order: "asc" },
-      select: { id: true, question: true, answer: true },
-    }),
+    p.site.findUnique({ where: { id }, select: { seo: true, content: true } }),
   ]);
+
+  const shop = ((siteRow?.content as Record<string, unknown> | null)?.shop ?? {}) as Record<string, unknown>;
+  const initialLogo = typeof shop.logo === "string" ? shop.logo : "";
 
   return (
     <SettingsTabs
@@ -63,20 +41,11 @@ export default async function SiteSettingsPage({
       slug={site.slug}
       siteUrl={publicOrigin(site.slug)}
       initialLogoUrl={site.logoUrl ?? null}
+      initialLogo={initialLogo}
       initialBasics={{
         businessName: site.businessName,
         slug: site.slug,
         language: site.language === "en" ? "en" : "ar",
-      }}
-      initialTheme={{
-        paletteKey: theme?.paletteKey ?? null,
-        primaryColor: theme?.primaryColor ?? null,
-        secondaryColor: theme?.secondaryColor ?? null,
-        fontKey: theme?.fontKey ?? null,
-        headerVariant: theme?.headerVariant ?? null,
-        headerScheme: theme?.headerScheme ?? null,
-        footerVariant: theme?.footerVariant ?? null,
-        footerScheme: theme?.footerScheme ?? null,
       }}
       initialSettings={{
         whatsappNumber: settings?.whatsappNumber ?? "",
@@ -90,7 +59,6 @@ export default async function SiteSettingsPage({
         loadingIconId: settings?.loadingIconId ?? null,
       }}
       initialSeo={asSiteSeo(siteRow?.seo)}
-      lists={{ services, team, testimonials, faq }}
     />
   );
 }

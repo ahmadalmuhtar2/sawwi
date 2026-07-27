@@ -11,3 +11,11 @@ export const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "localhost:300
 export function siteHost(slug: string): string {
   return `${slug}.${ROOT_DOMAIN}`;
 }
+
+/** A tenant's full public URL, protocol-correct for dev (http/localhost) and
+ *  production (https). Client-safe — reads NEXT_PUBLIC_ROOT_DOMAIN, inlined at
+ *  build time. Use this for "visit website" links (never hardcode localhost). */
+export function siteUrl(slug: string): string {
+  const local = ROOT_DOMAIN.startsWith("localhost") || ROOT_DOMAIN.startsWith("127.0.0.1");
+  return `${local ? "http" : "https"}://${slug}.${ROOT_DOMAIN}`;
+}

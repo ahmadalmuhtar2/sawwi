@@ -44,6 +44,16 @@ export const auth = betterAuth({
       },
     },
   },
+  // Session policy (explicit, not the framework default): a 30-day window that
+  // slides — any activity after a day of use refreshes it, so an active owner is
+  // never logged out mid-work, while an abandoned session lapses in a month. The
+  // short signed cookie-cache lets most requests validate the session without a
+  // DB round-trip (revocation lags by at most `maxAge`).
+  session: {
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
+    updateAge: 60 * 60 * 24, // refresh at most once per active day
+    cookieCache: { enabled: true, maxAge: 5 * 60 }, // 5-minute signed cache
+  },
   plugins: [nextCookies()],
 });
 

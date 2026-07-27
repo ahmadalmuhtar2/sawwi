@@ -9,6 +9,7 @@ import { getTemplate } from "@/templates/registry";
 import { deepMerge } from "@/templates/content";
 import { getFont } from "@/lib/palette";
 import type { TemplateTheme } from "@/server/sites/template-data";
+import { EditProvider } from "@/components/templates/inline-edit";
 
 type TokenColors = Record<string, string | null>;
 
@@ -17,11 +18,15 @@ export function TemplateHost({
   content,
   theme,
   currency,
+  edit,
 }: {
   templateKey: string | null;
   content: Record<string, unknown>;
   theme: TemplateTheme;
   currency: string;
+  /** Builder only: enables inline editing. Commits call onChange with the next
+   *  content. Omitted on the published site → the template renders inert. */
+  edit?: { onChange: (next: Record<string, unknown>) => void };
 }) {
   const tpl = getTemplate(templateKey);
   if (!tpl) {
@@ -50,12 +55,22 @@ export function TemplateHost({
 
   const merged = deepMerge(tpl.defaults, content);
   const Component = tpl.Component;
+  const rendered = <Component {...merged} currency={currency} />;
 
   // data-theme="light": templates are always light and own their palette; this
   // stops the dashboard's dark chrome from bleeding into the builder preview.
   return (
-    <div data-theme="light" className="sw-tpl-scope" style={style}>
-      <Component {...merged} currency={currency} />
+    // `isolate` gives the template its own stacking context so its internal
+    // z-indexes (sticky header, bottom nav, sheet) stay contained and never
+    // overlay the dashboard chrome (e.g. the profile dropdown) in the builder.
+    <div data-theme="light" data-tpl={templateKey ?? undefined} className="sw-tpl-scope isolate" style={style}>
+      {edit ? (
+        <EditProvider content={content} onChange={edit.onChange}>
+          {rendered}
+        </EditProvider>
+      ) : (
+        rendered
+      )}
     </div>
   );
 }

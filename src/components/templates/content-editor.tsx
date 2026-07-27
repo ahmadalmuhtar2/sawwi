@@ -5,21 +5,52 @@
 // live preview. Autosaves content (debounced) and theme to the server.
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Eye, Loader2, Monitor, RotateCw, Smartphone, Rocket } from "lucide-react";
+import { ArrowRight, Eye, Loader2, Monitor, Smartphone, Rocket, Undo2, Redo2 } from "lucide-react";
 import { getTemplate } from "@/templates/registry";
 import { deepMerge } from "@/templates/content";
 import { FieldForm, uploadStaging } from "./fields";
 import { TemplateHost } from "@/components/public/template-host";
 import type { TemplateTheme } from "@/server/sites/template-data";
+import type { TemplatePalette } from "@/templates/types";
 import { api, ApiClientError } from "@/lib/api-client";
-import { Field, Select } from "@/components/ui/field";
+import { Field } from "@/components/ui/field";
 import { useToast } from "@/components/ui/toast";
-import { FONTS } from "@/lib/palette";
 import { cn } from "@/lib/cn";
 
 type Content = Record<string, unknown>;
 const clone = (v: unknown): Content => JSON.parse(JSON.stringify(v ?? {}));
+
+const normColor = (s: unknown) => String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+
+/** One colorway card in the appearance tab (swatch preview + name + mood). The
+ *  fill is the template's DOMINANT surface token (`surface`, default "ground"),
+ *  and the thin liner is the other of ground/ink — so the swatch reads the same
+ *  way the site does (e.g. foul-fatteh previews its cream menu, not the chrome). */
+function PaletteCard({ p, active, onSelect, surface = "ground" }: { p: TemplatePalette; active: boolean; onSelect: () => void; surface?: string }) {
+  const fill = p.colors[surface] ?? p.colors.ground;
+  const liner = p.colors[surface === "ground" ? "ink" : "ground"] ?? p.colors.ink;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "flex flex-col gap-2 rounded-lg border p-2.5 text-start transition cursor-pointer",
+        active ? "border-accent ring-2 ring-accent/25" : "border-line hover:border-accent/50",
+      )}
+    >
+      <span className="flex h-11 items-center gap-1.5 rounded-md px-2" style={{ background: fill }}>
+        <span className="size-5 shrink-0 rounded-full" style={{ background: p.colors.accent }} />
+        <span className="h-1.5 flex-1 rounded-full" style={{ background: liner }} />
+      </span>
+      <span className="flex items-baseline justify-between gap-1">
+        <span className="text-[13px] font-semibold text-ink">{p.label}</span>
+        {p.mood && <span className="truncate text-[11px] text-faint">{p.mood}</span>}
+      </span>
+    </button>
+  );
+}
 
 export function ContentEditor({
   siteId,
@@ -45,11 +76,56 @@ export function ContentEditor({
   const [saved, setSaved] = React.useState(true);
   const [publishing, setPublishing] = React.useState(false);
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
-  // Bumped after each successful autosave → reloads the mobile preview iframe so
-  // it reflects the latest draft (the iframe reads the saved draft, not the live
-  // in-memory content the desktop inline preview uses).
-  const [rev, setRev] = React.useState(0);
   const firstRun = React.useRef(true);
+
+  // In-session undo/redo. History holds content snapshots; every edit (inline or
+  // side-panel) goes through applyContent so it can be undone. The callbacks
+  // close over the current `content`; a state bump re-renders so the buttons'
+  // enabled state and the live preview reflect the change.
+  const [past, setPast] = React.useState<Content[]>([]);
+  const [future, setFuture] = React.useState<Content[]>([]);
+
+  const applyContent = (next: Content) => {
+    setPast((p) => [...p, content].slice(-100));
+    setFuture([]);
+    setContent(next);
+  };
+  const undo = () => {
+    if (past.length === 0) return;
+    setContent(past[past.length - 1]);
+    setPast((p) => p.slice(0, -1));
+    setFuture((f) => [...f, content]);
+  };
+  const redo = () => {
+    if (future.length === 0) return;
+    setContent(future[future.length - 1]);
+    setFuture((f) => f.slice(0, -1));
+    setPast((p) => [...p, content]);
+  };
+
+  // Ctrl/Cmd+Z undo, Ctrl/Cmd+Shift+Z or Ctrl+Y redo — unless a text field is
+  // focused (then the browser's own field-level undo applies). A ref holds the
+  // latest handlers so the listener subscribes once.
+  const histRef = React.useRef({ undo, redo });
+  React.useEffect(() => {
+    histRef.current = { undo, redo };
+  });
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if ((e.target as HTMLElement | null)?.isContentEditable) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        histRef.current.undo();
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        histRef.current.redo();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // Debounced content autosave.
   React.useEffect(() => {
@@ -63,7 +139,6 @@ export function ContentEditor({
       try {
         await api.put(`/api/sites/${siteId}/content`, content);
         setSaved(true);
-        setRev((r) => r + 1);
       } catch {
         /* keep dirty; a later edit retries */
       } finally {
@@ -105,7 +180,8 @@ export function ContentEditor({
 
   const tabs = [...tpl.steps.map((s) => s.title), "المظهر"];
   const isAppearance = tab === tpl.steps.length;
-  const preview = deepMerge(tpl.defaults, content);
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
 
   return (
     <div className="-m-6 flex h-[calc(100dvh-4rem)] flex-col">
@@ -121,6 +197,28 @@ export function ContentEditor({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 pe-1">
+            <button
+              type="button"
+              onClick={undo}
+              disabled={!canUndo}
+              title="تراجع (Ctrl+Z)"
+              aria-label="تراجع"
+              className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+            >
+              <Undo2 className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={redo}
+              disabled={!canRedo}
+              title="إعادة (Ctrl+Shift+Z)"
+              aria-label="إعادة"
+              className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+            >
+              <Redo2 className="size-4" />
+            </button>
+          </div>
           <Link
             href={`/preview/${siteId}`}
             target="_blank"
@@ -158,43 +256,83 @@ export function ContentEditor({
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             {isAppearance ? (
-              <div className="space-y-4">
-                {tpl.tokens.map((tok) => (
-                  <Field key={tok.key} label={tok.label}>
-                    <div className="flex items-center gap-2.5">
-                      <input
-                        type="color"
-                        value={toHex((theme[tok.key as keyof TemplateTheme] as string) || tok.default)}
-                        onChange={(e) => saveTheme({ ...theme, [tok.key]: e.target.value })}
-                        className="size-9 shrink-0 cursor-pointer rounded-md border border-line bg-surface p-0.5"
-                      />
-                      <button
-                        onClick={() => saveTheme({ ...theme, [tok.key]: null })}
-                        className="text-xs text-faint hover:text-ink cursor-pointer"
-                      >
-                        الافتراضي
-                      </button>
-                    </div>
-                  </Field>
-                ))}
-                {tpl.themeFont && (
-                  <Field label="الخط">
-                    <Select
-                      value={theme.fontKey ?? "readex"}
-                      onChange={(e) => saveTheme({ ...theme, fontKey: e.target.value })}
-                    >
-                      {FONTS.map((f) => (
-                        <option key={f.key} value={f.key}>{f.label}</option>
-                      ))}
-                    </Select>
-                  </Field>
+              <div className="space-y-5">
+                {tpl.palettes?.length ? (
+                  (() => {
+                    const isActive = (p: TemplatePalette) =>
+                      tpl.tokens.every(
+                        (tok) =>
+                          normColor(theme[tok.key as keyof TemplateTheme] ?? tok.default) ===
+                          normColor(p.colors[tok.key] ?? tok.default),
+                      );
+                    const select = (p: TemplatePalette) =>
+                      saveTheme({
+                        ...theme,
+                        accent: p.colors.accent ?? null,
+                        ground: p.colors.ground ?? null,
+                        ink: p.colors.ink ?? null,
+                      });
+                    // The template's two recommended defaults (one dark, one light).
+                    const defaults = tpl.palettes!.filter((p) => p.isDefault);
+                    const groups = [
+                      { tone: "dark" as const, label: "ألوان داكنة" },
+                      { tone: "light" as const, label: "ألوان فاتحة" },
+                    ];
+                    return (
+                      <div className="space-y-4">
+                        {defaults.length > 0 && (
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">الافتراضي</p>
+                            <div className="grid grid-cols-2 gap-2.5">
+                              {defaults.map((p) => (
+                                <PaletteCard key={p.key} p={p} active={isActive(p)} onSelect={() => select(p)} surface={tpl.surfaceToken} />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {groups.map(({ tone, label }) => {
+                          const list = tpl.palettes!.filter((p) => p.tone === tone && !p.isDefault);
+                          if (!list.length) return null;
+                          return (
+                            <div key={tone}>
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-faint">{label}</p>
+                              <div className="grid grid-cols-2 gap-2.5">
+                                {list.map((p) => (
+                                  <PaletteCard key={p.key} p={p} active={isActive(p)} onSelect={() => select(p)} surface={tpl.surfaceToken} />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()
+                ) : (
+                  tpl.tokens.map((tok) => (
+                    <Field key={tok.key} label={tok.label}>
+                      <div className="flex items-center gap-2.5">
+                        <input
+                          type="color"
+                          value={toHex((theme[tok.key as keyof TemplateTheme] as string) || tok.default)}
+                          onChange={(e) => saveTheme({ ...theme, [tok.key]: e.target.value })}
+                          className="size-9 shrink-0 cursor-pointer rounded-md border border-line bg-surface p-0.5"
+                        />
+                        <button
+                          onClick={() => saveTheme({ ...theme, [tok.key]: null })}
+                          className="text-xs text-faint hover:text-ink cursor-pointer"
+                        >
+                          الافتراضي
+                        </button>
+                      </div>
+                    </Field>
+                  ))
                 )}
               </div>
             ) : (
               <FieldForm
                 fields={tpl.steps[tab].fields}
                 content={content}
-                onChange={setContent}
+                onChange={applyContent}
                 upload={uploadStaging}
               />
             )}
@@ -216,34 +354,37 @@ export function ContentEditor({
                 <Smartphone className="size-4" /> موبايل
               </button>
             </span>
-            {device === "mobile" && (
-              <>
-                <span className="text-[11px] text-faint">تعرض آخر نسخة محفوظة</span>
-                <button type="button" onClick={() => setRev((r) => r + 1)} title="تحديث المعاينة"
-                  className="ms-auto inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted hover:text-ink cursor-pointer">
-                  <RotateCw className="size-3.5" /> تحديث
-                </button>
-              </>
-            )}
+            <span className="text-[11px] text-faint">✎ انقر مرتين على أي نص لتعديله</span>
           </div>
 
           {device === "desktop" ? (
-            // inline, live (instant) — but always desktop layout (viewport width)
+            // inline, live (instant), and INLINE-EDITABLE — double-click text in the
+            // preview to edit it in place. Always desktop layout (viewport width).
             <div className="sw-no-scrollbar min-w-0 flex-1 overflow-y-auto">
-              <TemplateHost templateKey={templateKey} content={preview} theme={theme} currency="ل.س" />
+              <TemplateHost
+                templateKey={templateKey}
+                content={content}
+                theme={theme}
+                currency="ل.س"
+                edit={{ onChange: applyContent }}
+              />
             </div>
           ) : (
-            // iframe → real mobile layout (its own viewport); reads the saved
-            // draft. The phone fills the available height so the OUTER panel never
-            // scrolls — only the site inside the phone does.
+            // iframe → REAL mobile viewport (so `lg:` breakpoints go phone), but
+            // the editable TemplateHost is portaled INTO it — same live, inline-
+            // editable tree as desktop, not the static /preview page. The phone
+            // fills the height so only the site inside it scrolls.
             <div className="flex min-h-0 flex-1 items-center justify-center p-4">
-              <div className="flex h-full max-h-195 w-97.5 max-w-full overflow-hidden rounded-[28px] border-4 border-ink bg-black shadow-xl">
-                <iframe
-                  key={rev}
-                  src={`/preview/${siteId}`}
-                  title="معاينة الجوال"
-                  className="size-full border-0 bg-white"
-                />
+              <div className="flex h-full max-h-195 w-97.5 max-w-full overflow-hidden rounded-[28px] border-4 border-ink bg-white shadow-xl">
+                <IframeCanvas title="معاينة الجوال" className="size-full border-0 bg-white">
+                  <TemplateHost
+                    templateKey={templateKey}
+                    content={content}
+                    theme={theme}
+                    currency="ل.س"
+                    edit={{ onChange: applyContent }}
+                  />
+                </IframeCanvas>
               </div>
             </div>
           )}
@@ -258,4 +399,44 @@ export function ContentEditor({
 // swatch still renders (the real default is applied by the template anyway).
 function toHex(v: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : "#2b3a55";
+}
+
+/**
+ * A same-origin iframe that gives its contents a REAL narrow viewport (so the
+ * template's responsive `lg:` breakpoints switch to the phone layout), while
+ * rendering `children` INTO it via a portal — so the mobile preview is the same
+ * live, inline-EDITABLE React tree as desktop (not the static /preview page).
+ * The app's stylesheets are cloned into the frame so utilities/fonts apply.
+ */
+function IframeCanvas({ title, className, children }: { title: string; className?: string; children: React.ReactNode }) {
+  const [doc, setDoc] = React.useState<Document | null>(null);
+
+  // Prepare the frame's own document (RTL, no margin) and clone the parent's
+  // styles into it (Turbopack <style> in dev, <link> in prod) so utilities and
+  // @font-face apply. Works on the LOCAL document from the event/ref, never the
+  // state value, then publishes it as the portal target.
+  const mount = React.useCallback((d: Document | null | undefined) => {
+    if (!d || d === doc) return;
+    d.documentElement.setAttribute("dir", "rtl");
+    d.documentElement.setAttribute("lang", "ar");
+    d.body.style.margin = "0";
+    d.head.querySelectorAll("[data-cloned]").forEach((n) => n.remove());
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach((node) => {
+      const clone = node.cloneNode(true) as HTMLElement;
+      clone.setAttribute("data-cloned", "");
+      d.head.appendChild(clone);
+    });
+    setDoc(d);
+  }, [doc]);
+
+  return (
+    <iframe
+      ref={(el) => mount(el?.contentDocument)}
+      onLoad={(e) => mount(e.currentTarget.contentDocument)}
+      title={title}
+      className={className}
+    >
+      {doc ? createPortal(children, doc.body) : null}
+    </iframe>
+  );
 }

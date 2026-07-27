@@ -9,11 +9,51 @@ import { ChevronDown, ChevronUp, ImageIcon, Loader2, Plus, Trash2, X } from "luc
 import type { FieldDef } from "@/templates/types";
 import { getPath, setPath } from "@/templates/content";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { MenuSelect } from "@/components/ui/dropdown";
+import { SegmentedControl } from "@/components/ui/segmented";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { api, ApiClientError } from "@/lib/api-client";
 
 type Content = Record<string, unknown>;
 type Upload = (file: File) => Promise<string>;
+
+/* ── weekly hours: a fixed set of days, each open (from→to) or closed ── */
+
+export interface DayHours {
+  day: string;
+  closed?: boolean;
+  open?: string;
+  close?: string;
+}
+
+/** Syrian week order — the row set the hours editor always renders. */
+const WEEK_DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+
+const AR = "٠١٢٣٤٥٦٧٨٩";
+const arDigits = (s: string | number) => String(s).replace(/\d/g, (d) => AR[Number(d)]);
+
+/** Half-hourly clock labels for a full day, in Arabic 12-hour form (ص/م). */
+const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "٠٠" : "٣٠";
+  const period = h < 12 ? "ص" : "م";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const label = `${arDigits(h12)}:${m} ${period}`;
+  return { value: label, label };
+});
+
+/** Merge the stored hours (matched by day) over the canonical week so the editor
+ *  always shows all seven days regardless of what's saved. */
+function normalizeWeek(stored: unknown): DayHours[] {
+  const byDay = new Map<string, DayHours>();
+  if (Array.isArray(stored)) {
+    for (const r of stored) {
+      const row = r as DayHours;
+      if (row && typeof row.day === "string") byDay.set(row.day, row);
+    }
+  }
+  return WEEK_DAYS.map((day) => byDay.get(day) ?? { day, closed: false, open: "", close: "" });
+}
 
 /** Resolve a `select` field's options from a sibling list in the root content,
  *  e.g. the dish "category" dropdown reads the "groups" list. */
@@ -80,6 +120,16 @@ function FieldRow({
     return <CategoriesEditor field={field} root={root} onChange={(next) => onRoot(next)} />;
   }
 
+  if (field.type === "weekhours") {
+    return (
+      <WeekHoursEditor
+        field={field}
+        value={getPath(content, field.key)}
+        onChange={(next) => set(field.key, next)}
+      />
+    );
+  }
+
   if (field.type === "list") {
     const items = getPath(content, field.key);
     return (
@@ -132,10 +182,74 @@ function FieldRow({
         <Input
           value={value}
           placeholder={field.placeholder}
+          dir={field.ltr ? "ltr" : undefined}
+          className={field.ltr ? "text-start font-mono text-[13px]" : undefined}
           onChange={(e) => set(field.key, e.target.value)}
         />
       )}
     </Field>
+  );
+}
+
+/** Weekly opening hours: a fixed row per day, each toggled open/closed, with our
+ *  own from/to dropdowns (not native <select>). Writes the whole 7-day array. */
+function WeekHoursEditor({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: unknown;
+  onChange: (next: DayHours[]) => void;
+}) {
+  const week = normalizeWeek(value);
+  const setDay = (i: number, patch: Partial<DayHours>) =>
+    onChange(week.map((d, idx) => (idx === i ? { ...d, ...patch } : d)));
+
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium text-faint">{field.label}</p>
+      <div className="space-y-2">
+        {week.map((d, i) => (
+          <div key={d.day} className="rounded-lg border border-line p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-ink">{d.day}</span>
+              <SegmentedControl
+                size="sm"
+                value={d.closed ? "closed" : "open"}
+                onChange={(v) => setDay(i, { closed: v === "closed" })}
+                options={[
+                  { value: "open", label: "مفتوح" },
+                  { value: "closed", label: "مغلق" },
+                ]}
+              />
+            </div>
+            {!d.closed && (
+              <div className="mt-2 flex items-center gap-2">
+                <MenuSelect
+                  className="min-w-0 flex-1"
+                  ariaLabel={`فتح ${d.day}`}
+                  placeholder="من"
+                  value={d.open ?? ""}
+                  options={TIME_OPTIONS}
+                  onChange={(v) => setDay(i, { open: v })}
+                />
+                <span className="shrink-0 text-xs text-faint">–</span>
+                <MenuSelect
+                  className="min-w-0 flex-1"
+                  ariaLabel={`إغلاق ${d.day}`}
+                  placeholder="إلى"
+                  value={d.close ?? ""}
+                  options={TIME_OPTIONS}
+                  onChange={(v) => setDay(i, { close: v })}
+                />
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {field.help && <p className="mt-1.5 text-xs text-faint">{field.help}</p>}
+    </div>
   );
 }
 

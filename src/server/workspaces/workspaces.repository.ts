@@ -38,4 +38,16 @@ export const workspacesRepository = {
       orderBy: { joinedAt: "asc" },
     });
   },
+
+  /** How many sites this workspace owns — gates deletion (must be empty). */
+  countSites(workspaceId: string) {
+    return getPrisma().site.count({ where: { workspaceId } });
+  },
+
+  /** Delete the workspace. Members + invites cascade (see schema.prisma). Only
+   *  ever called for an EMPTY workspace — the service guards on countSites so the
+   *  Site cascade never fires. */
+  delete(id: string) {
+    return getPrisma().workspace.delete({ where: { id } });
+  },
 };

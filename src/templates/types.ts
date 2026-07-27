@@ -16,7 +16,7 @@ import type * as React from "react";
  *  come from a sibling list in the content (see `optionsFrom`). Keys are relative
  *  to their container (top level for a step field; item-relative for a list's
  *  item fields). */
-export type FieldType = "text" | "textarea" | "phone" | "image" | "list" | "select" | "categories";
+export type FieldType = "text" | "textarea" | "phone" | "image" | "list" | "select" | "categories" | "weekhours";
 
 export interface FieldDef {
   key: string;
@@ -24,6 +24,8 @@ export interface FieldDef {
   type: FieldType;
   placeholder?: string;
   help?: string;
+  /** render the input left-to-right (URLs, latin handles) even in the RTL form. */
+  ltr?: boolean;
   /** list only */
   itemLabel?: string;
   item?: FieldDef[];
@@ -54,6 +56,24 @@ export interface StepDef {
   title: string;
   hint?: string;
   fields: FieldDef[];
+}
+
+/** A named, ready-made colorway. Instead of picking raw accent/ground/ink, the
+ *  owner chooses one of these; `colors` maps each token key (accent/ground/ink)
+ *  to its value. Keeps every site tasteful and on-brand. */
+export interface TemplatePalette {
+  key: string;
+  label: string;
+  /** groups the palette under a heading in the appearance tab. */
+  tone: "dark" | "light";
+  /** A template marks TWO palettes as defaults — one `dark`, one `light` — shown
+   *  pinned at the top of the appearance tab as the recommended starting points.
+   *  The `dark` default should equal the token defaults (the untouched site). */
+  isDefault?: boolean;
+  /** short mood tag shown under the name, e.g. "داكن دافئ" / "مرِح". */
+  mood?: string;
+  /** value per token key (accent/ground/ink) — must cover the template's tokens. */
+  colors: Record<string, string>;
 }
 
 /** A themeable color the template reads from a CSS variable. Kept to a SMALL set
@@ -94,8 +114,19 @@ export interface TemplateModule {
   nameKey?: string;
   /** Onboarding steps (== editor groups) covering every editable field. */
   steps: StepDef[];
-  /** Small themeable color set surfaced as pickers. */
+  /** Small themeable color set (the token→cssVar mapping the host applies). */
   tokens: TemplateToken[];
+  /** Named colorways shown in the appearance tab. When present, the owner picks
+   *  a palette instead of raw colors. Each palette's `colors` cover `tokens`. */
+  palettes?: TemplatePalette[];
+  /** Which token is the template's DOMINANT page surface — used to draw the
+   *  palette-card preview faithfully. Defaults to "ground" (the usual page
+   *  background). Templates whose main surface is a different token set it (e.g.
+   *  foul-fatteh's menu sits on `ink`, so its cards preview that as the fill). */
+  surfaceToken?: string;
   /** True if a font picker applies (maps to --tpl-font). */
   themeFont?: boolean;
+  /** Whitelist of font keys (from lib/palette FONTS) offered for this template.
+   *  Omit to offer all. The template's own font is always the default option. */
+  fontKeys?: string[];
 }

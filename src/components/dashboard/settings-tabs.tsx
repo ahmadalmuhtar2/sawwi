@@ -2,47 +2,41 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight, Info, Scissors,
-  Clock, Search, Building2, QrCode,
-} from "lucide-react";
+import { useRef } from "react";
+import { ArrowRight, ImageUp, Loader2, Search, Building2, QrCode, Trash2 } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { siteHost } from "@/lib/site-url";
-import { WebsiteInfoEditor, type WebsiteInfo } from "@/components/dashboard/website-info-editor";
 import { Field, Select } from "@/components/ui/field";
+import { uploadStaging } from "@/components/templates/fields";
 import { CURRENCIES } from "@/shared/currency";
-import { LogoUploader } from "@/components/dashboard/logo-uploader";
-import { HoursEditor } from "@/components/dashboard/hours-editor";
-import { ContentListEditor } from "@/components/dashboard/content-list-editor";
 import { SiteSeoEditor } from "@/components/dashboard/site-seo-editor";
 import { BasicsEditor } from "@/components/dashboard/basics-editor";
 import { SharePrint } from "@/components/dashboard/share-print";
 import type { SiteSeo } from "@/shared/seo";
 
-interface FullSettings extends WebsiteInfo {
-  openingHours: Record<string, unknown>;
+// The template model keeps ALL business content (contact, services, hours, …) in
+// Site.content, edited inline in the builder. Site settings now surfaces only what
+// the live site still reads from the settings/site tables: basics, currency, SEO,
+// plus the share/print helpers. The other SiteSettings columns are still carried
+// through the (full-replace) save so switching to the template model doesn't wipe
+// them.
+interface FullSettings {
   currency: string;
-  logoMediaId: string | null;
-  loadingIconId: string | null;
-}
-
-type Item = { id: string } & Record<string, unknown>;
-
-interface Lists {
-  services: Item[];
-  team: Item[];
-  testimonials: Item[];
-  faq: Item[];
+  phone?: string | null;
+  whatsappNumber?: string | null;
+  address?: string | null;
+  googleMapsUrl?: string | null;
+  socials?: Record<string, string>;
+  openingHours?: Record<string, unknown>;
+  logoMediaId?: string | null;
+  loadingIconId?: string | null;
 }
 
 const TABS = [
   { id: "basics", label: "الأساسيات", icon: Building2 },
-  { id: "info", label: "معلومات الموقع", icon: Info },
-  { id: "services", label: "الخدمات والأسعار", icon: Scissors },
-  { id: "hours", label: "ساعات العمل", icon: Clock },
   { id: "share", label: "المشاركة والطباعة", icon: QrCode },
   { id: "seo", label: "محركات البحث", icon: Search },
 ] as const;
@@ -55,38 +49,28 @@ export function SettingsTabs({
   slug,
   siteUrl,
   initialLogoUrl,
+  initialLogo,
   initialBasics,
-  initialTheme,
   initialSettings,
   initialSeo,
-  lists,
 }: {
   siteId: string;
   businessName: string;
   slug: string;
   siteUrl: string;
   initialLogoUrl: string | null;
+  /** the site-header logo (content.shop.logo) */
+  initialLogo: string;
   initialBasics: { businessName: string; slug: string; language: "ar" | "en" };
-  initialTheme: {
-    paletteKey: string | null;
-    primaryColor?: string | null;
-    secondaryColor?: string | null;
-    fontKey: string | null;
-    headerVariant?: string | null;
-    headerScheme?: string | null;
-    footerVariant?: string | null;
-    footerScheme?: string | null;
-  };
   initialSettings: FullSettings;
   initialSeo: SiteSeo;
-  lists: Lists;
 }) {
   const toast = useToast();
-  const [tab, setTab] = useState<TabId>("info");
+  const [tab, setTab] = useState<TabId>("basics");
   const [settings, setSettings] = useState<FullSettings>(initialSettings);
 
-  // The settings PUT is a full replace, so every partial edit must send the
-  // complete merged object — otherwise one tab would wipe another's fields.
+  // The settings PUT is a full replace, so every save sends the complete merged
+  // object — carrying the legacy (template-model-unused) columns through unchanged.
   async function saveSettings(patch: Partial<FullSettings>) {
     const next = { ...settings, ...patch };
     setSettings(next);
@@ -98,8 +82,8 @@ export function SettingsTabs({
       socials: next.socials ?? {},
       openingHours: next.openingHours ?? {},
       currency: next.currency ?? "SYP",
-      logoMediaId: next.logoMediaId,
-      loadingIconId: next.loadingIconId,
+      logoMediaId: next.logoMediaId ?? null,
+      loadingIconId: next.loadingIconId ?? null,
     });
     toast("تم الحفظ ✓");
   }
@@ -142,62 +126,27 @@ export function SettingsTabs({
 
       <div className="mt-6">
         {tab === "basics" && (
-          <Panel title="أساسيات الموقع" desc="اسم النشاط ورابط الموقع ولغته.">
+          <Panel title="أساسيات الموقع" desc="اسم النشاط ولغته وشعاره وعملة الأسعار. باقي المحتوى يُحرَّر مباشرةً على الموقع.">
             <BasicsEditor siteId={siteId} initial={initialBasics} />
-          </Panel>
-        )}
-
-        {tab === "info" && (
-          <Panel title="معلومات الموقع" desc="بيانات التواصل التي تظهر في الترويسة والتذييل وأقسام التواصل.">
-            <div className="mb-6 border-b border-line pb-6">
-              <LogoUploader siteId={siteId} initialUrl={initialLogoUrl} />
+            <div className="mt-6 border-t border-line pt-6">
+              <p className="mb-2 text-sm font-medium text-ink">شعار الموقع</p>
+              <SiteLogoField siteId={siteId} initialLogo={initialLogo} />
             </div>
-            <WebsiteInfoEditor
-              initial={settings}
-              onSave={(info) => saveSettings(info)}
-            />
-          </Panel>
-        )}
-
-        {tab === "services" && (
-          <Panel title="الخدمات والأسعار" desc="القائمة التي تظهر في قسم الخدمات وقائمة الأسعار.">
-            <Field label="عملة الأسعار" className="mb-5 max-w-xs">
-              <Select
-                value={settings.currency ?? "SYP"}
-                onChange={(e) => saveSettings({ currency: e.target.value })}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.key} value={c.key}>{c.label}</option>
-                ))}
-              </Select>
-              <p className="mt-1.5 text-xs text-muted">
-                تُطبَّق على كل الأسعار في الموقع. أدخل الأرقام فقط — تتحوّل تلقائيًا إلى أرقام عربية وتُضاف العملة.
-              </p>
-            </Field>
-            <ContentListEditor
-              siteId={siteId}
-              type="services"
-              itemNoun="خدمات"
-              addLabel="إضافة خدمة"
-              initial={lists.services}
-              fields={[
-                { key: "name", label: "اسم الخدمة", required: true, placeholder: "مثال: قص شعر" },
-                { key: "price", label: "السعر", placeholder: "مثال: ٥٠٠٠٠" },
-                { key: "duration", label: "المدة", placeholder: "مثال: ٣٠ دقيقة" },
-                { key: "description", label: "الوصف", textarea: true, placeholder: "وصف مختصر (اختياري)" },
-              ]}
-            />
-          </Panel>
-        )}
-
-
-
-        {tab === "hours" && (
-          <Panel title="ساعات العمل" desc="تظهر في قسم المواعيد وتُستخدم لبيانات محركات البحث.">
-            <HoursEditor
-              initial={settings.openingHours}
-              onSave={(openingHours) => saveSettings({ openingHours })}
-            />
+            <div className="mt-6 border-t border-line pt-6">
+              <Field label="عملة الأسعار" className="max-w-xs">
+                <Select
+                  value={settings.currency ?? "SYP"}
+                  onChange={(e) => saveSettings({ currency: e.target.value })}
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c.key} value={c.key}>{c.label}</option>
+                  ))}
+                </Select>
+                <p className="mt-1.5 text-xs text-muted">
+                  تُطبَّق على كل الأسعار في الموقع. أدخل الأرقام فقط — تتحوّل تلقائيًا إلى أرقام عربية وتُضاف العملة.
+                </p>
+              </Field>
+            </div>
           </Panel>
         )}
 
@@ -208,10 +157,9 @@ export function SettingsTabs({
               siteUrl={siteUrl}
               businessName={businessName}
               logoUrl={initialLogoUrl}
-              paletteKey={initialTheme.paletteKey}
-              phone={settings.phone}
-              whatsapp={settings.whatsappNumber}
-              address={settings.address}
+              phone={settings.phone ?? ""}
+              whatsapp={settings.whatsappNumber ?? ""}
+              address={settings.address ?? ""}
             />
           </Panel>
         )}
@@ -223,6 +171,87 @@ export function SettingsTabs({
       <p className="mt-8 text-center font-label text-xs text-faint">
         {siteHost(slug)}
       </p>
+    </div>
+  );
+}
+
+/**
+ * Site-header logo, stored in content.shop.logo. Uploads to staging, then writes
+ * the merged content — fetching the LATEST content first so it never clobbers
+ * inline edits (updateContent is a full replace that also prunes dropped images).
+ */
+function SiteLogoField({ siteId, initialLogo }: { siteId: string; initialLogo: string }) {
+  const toast = useToast();
+  const ref = useRef<HTMLInputElement>(null);
+  const [logo, setLogo] = useState(initialLogo);
+  const [busy, setBusy] = useState(false);
+
+  async function commit(url: string) {
+    setBusy(true);
+    try {
+      const site = await api.get<{ content?: Record<string, unknown> }>(`/api/sites/${siteId}`);
+      const content = site.content ?? {};
+      const shop = (content.shop as Record<string, unknown>) ?? {};
+      await api.put(`/api/sites/${siteId}/content`, { ...content, shop: { ...shop, logo: url } });
+      setLogo(url);
+      toast("تم حفظ الشعار ✓");
+    } catch {
+      toast("تعذّر حفظ الشعار", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    try {
+      await commit(await uploadStaging(file));
+    } catch {
+      toast("تعذّر رفع الشعار", "error");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        disabled={busy}
+        className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-md border border-line bg-neutral-100 text-faint transition hover:border-accent disabled:opacity-60 cursor-pointer"
+      >
+        {busy ? (
+          <Loader2 className="size-5 animate-spin" />
+        ) : logo ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logo} alt="الشعار" className="size-full object-contain" />
+        ) : (
+          <ImageUp className="size-5" />
+        )}
+      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => ref.current?.click()}
+          disabled={busy}
+          className="rounded-md border border-line px-3 py-1.5 text-sm text-ink transition hover:border-accent disabled:opacity-60 cursor-pointer"
+        >
+          {logo ? "تغيير الشعار" : "رفع شعار"}
+        </button>
+        {logo && !busy && (
+          <button
+            type="button"
+            onClick={() => commit("")}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-muted transition hover:text-danger cursor-pointer"
+          >
+            <Trash2 className="size-4" /> إزالة
+          </button>
+        )}
+      </div>
+      <input ref={ref} type="file" accept="image/*" hidden onChange={pick} />
     </div>
   );
 }

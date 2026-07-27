@@ -3,7 +3,7 @@ import { getSessionClaims } from "@/lib/auth";
 import { getPrisma } from "@/lib/db";
 import { listMyWorkspaces } from "@/server/workspaces/workspaces.service";
 import { DashboardShell } from "@/components/dashboard/shell";
-import { THEME_INIT_SCRIPT } from "@/components/dashboard/theme-toggle";
+import { ThemeInit } from "@/components/dashboard/theme-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -28,12 +28,11 @@ export default async function DashboardLayout({
   ]);
 
   return (
-    // display:contents wrapper carries data-theme for the dark-mode scope. The
-    // inline script applies the saved/OS theme before paint (no flash); it runs
-    // as soon as the parser reaches it, when #sw-app already exists in the DOM.
-    // suppressHydrationWarning: the script adds data-theme that the server didn't.
+    // display:contents wrapper carries data-theme for the dark-mode scope.
+    // <ThemeInit> applies the saved/OS theme to this element before paint.
+    // suppressHydrationWarning: the theme attribute is added client-side.
     <div id="sw-app" style={{ display: "contents" }} suppressHydrationWarning>
-      <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      <ThemeInit />
       <DashboardShell
         user={{ name: user?.name ?? "", email: user?.email ?? "", image: user?.image }}
         workspaces={workspaces}

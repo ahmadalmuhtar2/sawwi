@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { Lock } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
-import { ROOT_DOMAIN, siteHost } from "@/lib/site-url";
+import { ROOT_DOMAIN } from "@/lib/site-url";
 
 export function BasicsEditor({
   siteId,
@@ -19,21 +19,19 @@ export function BasicsEditor({
   const toast = useToast();
   const router = useRouter();
   const [businessName, setBusinessName] = useState(initial.businessName);
-  const [slug, setSlug] = useState(initial.slug);
   const [language, setLanguage] = useState<"ar" | "en">(initial.language);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const slugChanged = slug.trim() !== initial.slug;
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setErrors({});
     try {
+      // The slug is FIXED after creation — it's the public address; changing it
+      // would break existing links. Only the name and language are editable here.
       await api.patch(`/api/sites/${siteId}`, {
         businessName: businessName.trim(),
-        slug: slug.trim(),
         language,
       });
       toast("تم حفظ الأساسيات ✓");
@@ -51,27 +49,15 @@ export function BasicsEditor({
         <Input value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
       </Field>
 
-      <Field
-        label="الرابط (النطاق الفرعي)"
-        hint="أحرف إنجليزية صغيرة وأرقام وشرطات"
-        error={errors.slug}
-      >
-        <div className="flex items-center gap-2" dir="ltr">
-          <Input value={slug} onChange={(e) => setSlug(e.target.value)} className="text-left" />
-          <span className="shrink-0 font-label text-sm text-faint">.{ROOT_DOMAIN}</span>
+      <Field label="الرابط (النطاق الفرعي)" hint="ثابت بعد الإنشاء — هذا عنوان موقعك.">
+        <div
+          dir="ltr"
+          className="flex items-center gap-2 rounded-md border border-line bg-neutral-100 px-3 py-2 text-sm text-muted"
+        >
+          <Lock className="size-3.5 shrink-0 text-faint" />
+          <span className="font-label" dir="ltr">{initial.slug}.{ROOT_DOMAIN}</span>
         </div>
       </Field>
-
-      {slugChanged && (
-        <div className="flex items-start gap-2 rounded-md border border-warn/40 bg-warn-100/50 p-3 text-sm text-ink">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warn" />
-          <span>
-            تغيير الرابط سيغيّر عنوان الموقع العام إلى
-            <span className="font-label" dir="ltr"> {siteHost(slug || "…")}</span>.
-            الروابط القديمة لن تعمل بعد الآن.
-          </span>
-        </div>
-      )}
 
       <Field label="لغة الموقع" className="max-w-xs" error={errors.language}>
         <Select value={language} onChange={(e) => setLanguage(e.target.value as "ar" | "en")}>

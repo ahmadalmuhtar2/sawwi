@@ -11,7 +11,7 @@ import Component from "./component";
 const defaults = {
   shop: {
     name: "دار الياسمين",
-    latinName: "Dar Al-Yasmine",
+    logo: "",
     tagline: "مطبخ شامي · أبو رمّانة",
     heroLine: "طعام دمشقي يُطبَخ كما كان يُطبَخ",
     heroLatin: "Dar Al-Yasmine · Damascus, since 1974",
@@ -21,10 +21,10 @@ const defaults = {
     brandNote: "Damascus · since 1974",
     openNote: "مفتوح الآن حتى ١٢:٠٠",
     address: "دمشق — أبو رمّانة، شارع الجلاء ١٢، مقابل حديقة السبكي",
-    mapsUrl: "",
     whatsapp: "+963933337788",
     phone: "+963 11 333 7788",
     since: "١٩٧٤",
+    socials: { instagram: "", facebook: "", tiktok: "" },
   },
   pillars: [
     { icon: "farm", title: "من المزارع مباشرة", body: "اثنا عشر مزارعًا حول دمشق يوصلون الخضار واللبن أسبوعيًا — نعرفهم بالاسم." },
@@ -87,10 +87,16 @@ const defaults = {
     { label: "الصالة", photo: "" },
     { label: "التحضير", photo: "" },
   ],
+  // One row per weekday (Syrian week order). Same-hours days are collapsed into
+  // ranges on the site; edited via dropdowns in the settings panel.
   hours: [
-    { days: "الثلاثاء – الخميس", time: "١٢:٣٠ – ١١:٣٠" },
-    { days: "الجمعة – الأحد", time: "١٢:٣٠ – ١٢:٠٠" },
-    { days: "الاثنين", time: "مغلق" },
+    { day: "السبت", open: "١٢:٣٠ م", close: "١٢:٠٠ ص" },
+    { day: "الأحد", open: "١٢:٣٠ م", close: "١٢:٠٠ ص" },
+    { day: "الاثنين", closed: true },
+    { day: "الثلاثاء", open: "١٢:٣٠ م", close: "١١:٣٠ م" },
+    { day: "الأربعاء", open: "١٢:٣٠ م", close: "١١:٣٠ م" },
+    { day: "الخميس", open: "١٢:٣٠ م", close: "١١:٣٠ م" },
+    { day: "الجمعة", open: "١٢:٣٠ م", close: "١٢:٠٠ ص" },
   ],
   reservation: {
     days: [
@@ -99,19 +105,10 @@ const defaults = {
       { label: "السبت", date: "١/٨" },
       { label: "الأحد", date: "٢/٨" },
     ],
-    times: ["٧:٣٠", "٨:٣٠", "٩:٣٠", "١٠:٣٠"],
-    party: ["٢", "٣", "٤", "٦", "٨"],
   },
   visit: {
     parking: "مواقف مجانية في الشارع الخلفي بعد السابعة مساءً",
-    mapPhoto: "",
-    directionsUrl: "",
   },
-  socials: [
-    { title: "إنستغرام", glyph: "◎" },
-    { title: "فيسبوك", glyph: "f" },
-    { title: "تيك توك", glyph: "♪" },
-  ],
   showGallery: true,
 };
 
@@ -130,125 +127,66 @@ export const restaurant: TemplateModule = {
   Component: Component as unknown as TemplateModule["Component"],
   defaults,
   nameKey: "shop.name",
-  themeFont: true,
+  // The template ships its own font — no font override in the appearance tab.
+  themeFont: false,
   tokens: [
     { key: "accent", label: "لون التمييز", cssVar: "--color-gold", default: "oklch(0.76 0.09 85)" },
     { key: "ground", label: "الخلفية", cssVar: "--color-warm", default: "oklch(0.115 0.006 60)" },
     { key: "ink", label: "لون النص", cssVar: "--color-cream", default: "oklch(0.96 0.01 85)" },
   ],
+  // Ready-made colorways — the owner picks one instead of raw colors. "ذهبي دمشقي"
+  // equals the token defaults so an untouched site reads as that palette.
+  palettes: [
+    // ── Dark ──────────────────────────────────────────────────────────────
+    { key: "damascene", label: "ذهبي دمشقي", tone: "dark", isDefault: true, mood: "داكن دافئ", colors: { accent: "oklch(0.76 0.09 85)", ground: "oklch(0.115 0.006 60)", ink: "oklch(0.96 0.01 85)" } },
+    { key: "midnight", label: "منتصف الليل", tone: "dark", mood: "داكن أزرق", colors: { accent: "oklch(0.6 0.13 235)", ground: "oklch(0.15 0.025 250)", ink: "oklch(0.93 0.02 245)" } },
+    { key: "forest", label: "غابة", tone: "dark", mood: "داكن أخضر", colors: { accent: "oklch(0.58 0.13 150)", ground: "oklch(0.14 0.02 160)", ink: "oklch(0.93 0.02 130)" } },
+    { key: "graphite", label: "غرافيت", tone: "dark", mood: "رمادي أنيق", colors: { accent: "oklch(0.68 0.14 55)", ground: "oklch(0.17 0.004 250)", ink: "oklch(0.92 0.01 250)" } },
+    { key: "espresso", label: "إسبريسو", tone: "dark", mood: "بنّي دافئ", colors: { accent: "oklch(0.66 0.11 60)", ground: "oklch(0.155 0.018 50)", ink: "oklch(0.92 0.02 75)" } },
+    { key: "wine", label: "نبيذ", tone: "dark", mood: "خمري داكن", colors: { accent: "oklch(0.6 0.15 8)", ground: "oklch(0.15 0.03 12)", ink: "oklch(0.92 0.02 30)" } },
+    { key: "ocean", label: "محيط", tone: "dark", mood: "أزرق عميق", colors: { accent: "oklch(0.68 0.12 200)", ground: "oklch(0.145 0.03 220)", ink: "oklch(0.93 0.02 210)" } },
+    { key: "plum", label: "برقوقي", tone: "dark", mood: "أرجواني", colors: { accent: "oklch(0.62 0.17 330)", ground: "oklch(0.16 0.035 320)", ink: "oklch(0.93 0.02 320)" } },
+    { key: "onyx", label: "أونيكس", tone: "dark", mood: "أسود كهربائي", colors: { accent: "oklch(0.62 0.16 260)", ground: "oklch(0.135 0.003 250)", ink: "oklch(0.93 0.005 250)" } },
+    { key: "emerald", label: "زمرّد", tone: "dark", mood: "أخضر لامع", colors: { accent: "oklch(0.7 0.15 162)", ground: "oklch(0.13 0.02 158)", ink: "oklch(0.94 0.02 150)" } },
+    { key: "copper", label: "نحاسي", tone: "dark", mood: "داكن نحاسي", colors: { accent: "oklch(0.64 0.13 48)", ground: "oklch(0.15 0.012 40)", ink: "oklch(0.92 0.02 60)" } },
+    { key: "royal", label: "ملكي", tone: "dark", mood: "نيلي وذهبي", colors: { accent: "oklch(0.76 0.13 85)", ground: "oklch(0.155 0.035 278)", ink: "oklch(0.93 0.02 280)" } },
+    { key: "teal", label: "طاووسي", tone: "dark", mood: "أخضر مزرقّ", colors: { accent: "oklch(0.66 0.12 185)", ground: "oklch(0.14 0.025 195)", ink: "oklch(0.93 0.02 190)" } },
+    { key: "neon", label: "نيون", tone: "dark", mood: "جريء", colors: { accent: "oklch(0.66 0.24 330)", ground: "oklch(0.16 0.035 300)", ink: "oklch(0.95 0.02 320)" } },
+    { key: "sunset", label: "غروب", tone: "dark", mood: "برتقالي دافئ", colors: { accent: "oklch(0.68 0.19 40)", ground: "oklch(0.165 0.03 28)", ink: "oklch(0.93 0.03 50)" } },
+    { key: "tropical", label: "استوائي", tone: "dark", mood: "مرجاني", colors: { accent: "oklch(0.68 0.19 18)", ground: "oklch(0.155 0.03 200)", ink: "oklch(0.94 0.02 190)" } },
+    // ── Light ─────────────────────────────────────────────────────────────
+    { key: "sand", label: "رملي", tone: "light", isDefault: true, mood: "فاتح دافئ", colors: { accent: "oklch(0.52 0.14 40)", ground: "oklch(0.95 0.022 75)", ink: "oklch(0.26 0.03 50)" } },
+    { key: "ivory", label: "عاجي", tone: "light", mood: "فاتح نظيف", colors: { accent: "oklch(0.5 0.16 25)", ground: "oklch(0.97 0.006 80)", ink: "oklch(0.24 0.01 60)" } },
+    { key: "linen", label: "كتّان", tone: "light", mood: "فاتح مريمي", colors: { accent: "oklch(0.5 0.1 150)", ground: "oklch(0.96 0.015 110)", ink: "oklch(0.26 0.02 130)" } },
+    { key: "blush", label: "وردي فاتح", tone: "light", mood: "فاتح وردي", colors: { accent: "oklch(0.56 0.15 6)", ground: "oklch(0.96 0.015 15)", ink: "oklch(0.26 0.02 20)" } },
+    { key: "sky", label: "سماوي", tone: "light", mood: "فاتح أزرق", colors: { accent: "oklch(0.52 0.13 245)", ground: "oklch(0.965 0.012 230)", ink: "oklch(0.26 0.02 250)" } },
+    { key: "mint", label: "نعناعي", tone: "light", mood: "فاتح فيروزي", colors: { accent: "oklch(0.5 0.11 185)", ground: "oklch(0.965 0.02 165)", ink: "oklch(0.25 0.02 175)" } },
+    { key: "sunny", label: "مشمس", tone: "light", mood: "مرِح", colors: { accent: "oklch(0.72 0.17 65)", ground: "oklch(0.97 0.02 90)", ink: "oklch(0.3 0.035 60)" } },
+  ],
   steps: [
     {
       key: "shop",
-      title: "معلومات المطعم",
-      hint: "الاسم، نبذة الواجهة، وطرق التواصل.",
+      title: "معلومات التواصل",
+      hint: "طرق التواصل والعنوان. النصوص والصور والأقسام والأطباق تُحرَّر مباشرةً على الموقع.",
       fields: [
-        { key: "shop.name", label: "اسم المطعم", type: "text", placeholder: "دار الياسمين" },
-        { key: "shop.latinName", label: "الاسم اللاتيني", type: "text", placeholder: "Dar Al-Yasmine" },
-        { key: "shop.tagline", label: "الشعار", type: "text", placeholder: "مطبخ شامي · أبو رمّانة" },
-        { key: "shop.heroLine", label: "عنوان الواجهة", type: "text" },
-        { key: "shop.heroBlurb", label: "نبذة الواجهة", type: "textarea" },
-        { key: "shop.heroPhoto", label: "صورة الواجهة", type: "image" },
-        { key: "shop.openNote", label: "ملاحظة الدوام", type: "text", placeholder: "مفتوح الآن حتى ١٢:٠٠" },
+        // الاسم، الشعار، نصوص الواجهة، الأطباق، القصة، المعرض — كلها inline على
+        // المعاينة (نقر مزدوج). هنا فقط ما لا يظهر كنص قابل للتحرير.
         { key: "shop.whatsapp", label: "رقم واتساب", type: "phone", help: "إلزامي — عليه تصل طلبات الحجز." },
         { key: "shop.phone", label: "الهاتف", type: "phone" },
         { key: "shop.address", label: "العنوان", type: "text" },
-        { key: "shop.mapsUrl", label: "رابط الخريطة", type: "text" },
+        { key: "shop.socials.instagram", label: "رابط إنستغرام", type: "text", ltr: true, placeholder: "https://instagram.com/…", help: "تظهر الأيقونة في الترويسة والتذييل عند إضافة الرابط." },
+        { key: "shop.socials.facebook", label: "رابط فيسبوك", type: "text", ltr: true, placeholder: "https://facebook.com/…" },
+        { key: "shop.socials.tiktok", label: "رابط تيك توك", type: "text", ltr: true, placeholder: "https://tiktok.com/@…" },
       ],
     },
+    // القائمة، قصة المطعم، والمعرض تُحرَّر INLINE على المعاينة الحيّة (نقر مزدوج
+    // للتعديل، تمرير للحذف، ＋ للإضافة) — انظر مكوّن المطعم. لا تظهر في اللوحة الجانبية.
     {
-      key: "menu",
-      title: "القائمة",
-      hint: "الأقسام والأطباق مع الأسعار ومسبّبات الحساسية.",
+      key: "hours",
+      title: "أوقات العمل",
+      hint: "لكل يوم: مفتوح (من/إلى) أو مغلق. تُجمَع الأيام المتشابهة تلقائيًا على الموقع.",
       fields: [
-        {
-          key: "courses", label: "أقسام القائمة", type: "categories", itemLabel: "قسم",
-          optionValue: "id", optionLabel: "label",
-          dependents: { list: "dishes", key: "course" },
-          placeholder: "مثال: مقبّلات",
-        },
-        {
-          key: "dishes", label: "الأطباق", type: "list", itemLabel: "طبق",
-          blank: { course: "", name: "", latin: "", desc: "", price: "", mark: "", pair: "", photo: "" },
-          item: [
-            {
-              key: "course", label: "القسم", type: "select",
-              optionsFrom: "courses", optionValue: "id", optionLabel: "label",
-              placeholder: "اختر القسم",
-            },
-            { key: "name", label: "اسم الطبق", type: "text" },
-            { key: "latin", label: "الاسم اللاتيني", type: "text" },
-            { key: "desc", label: "الوصف", type: "textarea" },
-            { key: "price", label: "السعر", type: "text", placeholder: "٦٥٬٠٠٠" },
-            { key: "mark", label: "وسم (اختياري)", type: "text", placeholder: "الأكثر طلبًا" },
-            { key: "pair", label: "يُقترح معه (اختياري)", type: "text" },
-            { key: "photo", label: "صورة", type: "image" },
-          ],
-        },
-      ],
-    },
-    {
-      key: "about",
-      title: "قصة المطعم",
-      hint: "الشيف، «لماذا هنا»، والمسيرة.",
-      fields: [
-        { key: "chef.name", label: "اسم الشيف", type: "text", placeholder: "الشيف نديم الحلبي" },
-        { key: "chef.quote", label: "اقتباس الشيف", type: "textarea" },
-        { key: "chef.photo", label: "صورة الشيف", type: "image" },
-        {
-          key: "chef.stats", label: "أرقام لافتة", type: "list", itemLabel: "رقم",
-          blank: { value: "", label: "" },
-          item: [
-            { key: "value", label: "القيمة", type: "text", placeholder: "٥٠" },
-            { key: "label", label: "الوصف", type: "text", placeholder: "عامًا" },
-          ],
-        },
-        {
-          key: "pillars", label: "لماذا هنا", type: "list", itemLabel: "ميزة",
-          blank: { icon: "", title: "", body: "" },
-          item: [
-            { key: "icon", label: "الأيقونة (farm / coal / book)", type: "text", placeholder: "farm" },
-            { key: "title", label: "العنوان", type: "text" },
-            { key: "body", label: "الوصف", type: "textarea" },
-          ],
-        },
-        {
-          key: "milestones", label: "المسيرة", type: "list", itemLabel: "محطة",
-          blank: { year: "", title: "", body: "" },
-          item: [
-            { key: "year", label: "السنة", type: "text", placeholder: "١٩٧٤" },
-            { key: "title", label: "العنوان", type: "text" },
-            { key: "body", label: "الوصف", type: "textarea" },
-          ],
-        },
-        { key: "hall.title", label: "قاعة المناسبات — العنوان", type: "text", placeholder: "الطابق العلوي للمجموعات" },
-        { key: "hall.body", label: "قاعة المناسبات — الوصف", type: "textarea" },
-        { key: "hall.photo", label: "قاعة المناسبات — الصورة", type: "image" },
-        {
-          key: "gallery", label: "معرض الصور", type: "list", itemLabel: "صورة",
-          blank: { label: "", photo: "" },
-          item: [
-            { key: "label", label: "الوصف", type: "text", placeholder: "الصالة" },
-            { key: "photo", label: "الصورة", type: "image" },
-          ],
-        },
-      ],
-    },
-    {
-      key: "visit",
-      title: "الحجز والزيارة",
-      hint: "أوقات العمل، خيارات الحجز، والوصول.",
-      fields: [
-        {
-          key: "hours", label: "أوقات العمل", type: "list", itemLabel: "صف",
-          blank: { days: "", time: "" },
-          item: [
-            { key: "days", label: "الأيام", type: "text", placeholder: "الثلاثاء – الخميس" },
-            { key: "time", label: "الوقت", type: "text", placeholder: "١٢:٣٠ – ١١:٣٠" },
-          ],
-        },
-        { key: "visit.parking", label: "المواقف", type: "text", placeholder: "مواقف مجانية في الشارع الخلفي" },
-        { key: "visit.mapPhoto", label: "صورة الخريطة", type: "image" },
-        { key: "visit.directionsUrl", label: "رابط الاتجاهات", type: "text" },
+        { key: "hours", label: "أوقات الدوام", type: "weekhours" },
       ],
     },
   ],

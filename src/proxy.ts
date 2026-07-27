@@ -40,7 +40,11 @@ export function proxy(request: NextRequest) {
   // Auth guard for the dashboard app.
   if (pathname.startsWith("/dashboard") || pathname === "/onboarding") {
     if (!getSessionCookie(request)) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      // Preserve where they were headed so login returns them there, not a
+      // generic landing page.
+      const login = new URL("/login", request.url);
+      login.searchParams.set("next", pathname + request.nextUrl.search);
+      return NextResponse.redirect(login);
     }
   }
   return NextResponse.next();

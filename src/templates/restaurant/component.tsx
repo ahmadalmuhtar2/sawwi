@@ -4,10 +4,11 @@
  * Restaurant — Sawwi template
  * A Damascene restaurant, full-bleed responsive website, Arabic RTL.
  *
- *   الرئيسية  season specials + course-filtered dishes with allergen codes
- *   المطعم    hero + tasting menu + why + signature dishes + gallery + reviews
+ *   الرئيسية  course-filtered dishes with allergen codes
+ *   المطعم    hero + why + signature dishes + gallery + reviews
  *             followed by chef quote + stats + history timeline + private hall
- *   الحجز     day/time/party reservation picker → a ready WhatsApp message
+ *   الحجز     day-only reservation picker → a ready WhatsApp message (the
+ *             restaurant confirms the time)
  *
  * ─────────────────────────────────────────────────────────────────────────
  * Static vs. editable is a TYPE-LEVEL split (same idea as the barbershop):
@@ -15,7 +16,11 @@
  *   ALLERGEN_LABELS — universal, frozen. Ships inside the component; a restaurant
  *                     never retypes "G = جلوتين".
  *   RestaurantProps — everything a restaurant fills in: shop info, dishes,
- *                     season, story, hours, reservation options, photos.
+ *                     story, hours, reservation days, photos.
+ *
+ * The SAME markup renders on the published site and in the builder — the inline
+ * primitives (EditableText / EditableImage) are inert without an EditProvider
+ * and become double-click editable inside it. See inline-edit.tsx.
  * ─────────────────────────────────────────────────────────────────────────
  *
  * Tokenization mirrors the barbershop: only THREE colors are themeable, read
@@ -26,6 +31,18 @@
 
 import * as React from "react";
 import { whatsappLink } from "@/lib/whatsapp";
+import { EditableText, EditableImage, useEdit, useEditList } from "@/components/templates/inline-edit";
+import {
+  WhatsAppIcon,
+  PhoneIcon,
+  SocialLinks,
+  useOpenNow,
+  groupHours,
+  type HoursRow,
+} from "@/components/templates/site-chrome";
+
+/** Restaurant palette for the shared social chips (dark warm ground, cream text). */
+const SOCIAL_CHIP = "size-8 rounded-full border border-cream/15 text-cream/70 hover:border-gold/60 hover:text-cream";
 
 /* ────────────────────────────── types ────────────────────────────── */
 
@@ -59,12 +76,6 @@ export interface Pillar {
   body?: string;
 }
 
-export interface SeasonItem {
-  tag?: string;
-  name: string;
-  note?: string;
-}
-
 export interface Review {
   stars?: string;
   quote: string;
@@ -84,11 +95,6 @@ export interface GalleryItem {
   photo?: string;
 }
 
-export interface HoursRow {
-  days: string;
-  time: string;
-}
-
 export interface ChefStat {
   value: string;
   label: string;
@@ -96,7 +102,8 @@ export interface ChefStat {
 
 export interface ShopContent {
   name: string;
-  latinName?: string;
+  /** optional uploaded logo (storage URL); shows in the header when set. */
+  logo?: string;
   tagline?: string;
   heroLine?: string;
   heroLatin?: string;
@@ -105,19 +112,29 @@ export interface ShopContent {
   brandNote?: string;
   openNote?: string;
   address?: string;
-  mapsUrl?: string;
   /** digits only — REQUIRED */
   whatsapp: string;
   phone?: string;
   since?: string;
-}
-
-export interface TastingContent {
-  title?: string;
-  blurb?: string;
-  price?: string;
-  unit?: string;
-  photo?: string;
+  socials?: { instagram?: string; facebook?: string; tiktok?: string };
+  /** editable section-heading overrides (inline, builder only) */
+  pillarsKicker?: string;
+  pillarsTitle?: string;
+  signaturesKicker?: string;
+  signaturesTitle?: string;
+  galleryKicker?: string;
+  galleryTitle?: string;
+  reviewsKicker?: string;
+  reviewsTitle?: string;
+  chefKicker?: string;
+  milestonesKicker?: string;
+  milestonesTitle?: string;
+  hallKicker?: string;
+  reserveKicker?: string;
+  reserveTitle?: string;
+  reserveIntro?: string;
+  visitKicker?: string;
+  visitTitle?: string;
 }
 
 export interface ChefContent {
@@ -135,14 +152,10 @@ export interface HallContent {
 
 export interface ReservationContent {
   days?: Array<{ label: string; date?: string }>;
-  times?: string[];
-  party?: string[];
 }
 
 export interface VisitContent {
   parking?: string;
-  mapPhoto?: string;
-  directionsUrl?: string;
 }
 
 export interface RestaurantProps {
@@ -160,7 +173,6 @@ export interface RestaurantProps {
   hours: HoursRow[];
   reservation?: ReservationContent;
   visit?: VisitContent;
-  socials?: Array<{ title: string; glyph: string }>;
   showGallery?: boolean;
   currency?: string;
   className?: string;
@@ -194,14 +206,9 @@ export const defaultReservation: Required<ReservationContent> = {
     { label: "السبت", date: "١/٨" },
     { label: "الأحد", date: "٢/٨" },
   ],
-  times: ["٧:٣٠", "٨:٣٠", "٩:٣٠", "١٠:٣٠"],
-  party: ["٢", "٣", "٤", "٦", "٨"],
 };
 
 /* ───────────────────────────── helpers ───────────────────────────── */
-
-const AR = "٠١٢٣٤٥٦٧٨٩";
-export const arInt = (n: number | string) => String(n).replace(/\d/g, (d) => AR[Number(d)]);
 
 /** Arabic label — Readex/sans, never mono (mono has no Arabic coverage). */
 const K = "whitespace-nowrap font-sans text-[11.5px] font-semibold leading-[1.5] tracking-[0.07em]";
@@ -210,11 +217,6 @@ const K_SM = "whitespace-nowrap font-sans text-[11px] font-semibold leading-[1.5
 const ON_GOLD = "text-[oklch(0.16_0.03_70)]";
 
 /* ── icons ── */
-const WhatsAppIcon = ({ className = "size-[17px]" }: { className?: string }) => (
-  <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden className={className}>
-    <path d="M8 1.5a6.5 6.5 0 0 0-5.6 9.8L1.5 14.5l3.4-.9A6.5 6.5 0 1 0 8 1.5z" />
-  </svg>
-);
 const Chevron = ({ className = "size-3.5" }: { className?: string }) => (
   <svg viewBox="0 0 16 16" fill="none" className={`${className} -scale-x-100`} aria-hidden>
     <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -288,14 +290,38 @@ function GoldCta({ href, label, className = "" }: { href: string; label: string;
   );
 }
 
-/** Section kicker + title. */
-function Kicker({ kicker, title, size = "text-[21px]" }: { kicker: string; title?: string; size?: string }) {
+/** Section kicker + title — inline-editable when a path is supplied (builder). */
+function Kicker({
+  kicker,
+  title,
+  size = "text-[21px]",
+  kickerPath,
+  titlePath,
+}: {
+  kicker: string;
+  title?: string;
+  size?: string;
+  kickerPath?: string;
+  titlePath?: string;
+}) {
   return (
     <span className="flex flex-col gap-[7px]">
-      <span className={`${K} text-gold-300`}>{kicker}</span>
-      {title && (
-        <span className={`font-display font-extrabold leading-[1.42] text-cream ${size}`}>{title}</span>
+      {kickerPath ? (
+        <EditableText path={kickerPath} value={kicker} className={`${K} text-gold-300`} />
+      ) : (
+        <span className={`${K} text-gold-300`}>{kicker}</span>
       )}
+      {(title || titlePath) &&
+        (titlePath ? (
+          <EditableText
+            path={titlePath}
+            value={title ?? ""}
+            placeholder="عنوان القسم"
+            className={`font-display font-extrabold leading-[1.42] text-cream ${size}`}
+          />
+        ) : (
+          <span className={`font-display font-extrabold leading-[1.42] text-cream ${size}`}>{title}</span>
+        ))}
     </span>
   );
 }
@@ -316,22 +342,36 @@ export default function Restaurant({
   hours,
   reservation,
   visit = {},
-  socials = [],
   showGallery = true,
   currency = "ل.س",
   className,
 }: RestaurantProps) {
   const res = { ...defaultReservation, ...reservation };
   const resDaysList = res.days.length ? res.days : defaultReservation.days;
-  const resTimesList = res.times.length ? res.times : defaultReservation.times;
-  const resPartyList = res.party.length ? res.party : defaultReservation.party;
+
+  const openNow = useOpenNow(hours);
+  const editApi = useEdit();
+  const courseEdit = useEditList("courses", courses);
+  const dishEdit = useEditList("dishes", dishes);
+  const pillarEdit = useEditList("pillars", pillars);
+  const reviewEdit = useEditList("reviews", reviews);
+  const chefStatEdit = useEditList("chef.stats", chef.stats ?? []);
+  const milestoneEdit = useEditList("milestones", milestones);
+  const galleryEdit = useEditList("gallery", gallery);
+
+  // Removing a course also drops its dishes, in one commit (atomic).
+  const removeCourse = (index: number) => {
+    const cid = courses[index]?.id;
+    editApi?.setMany({
+      courses: courses.filter((_, i) => i !== index),
+      dishes: dishes.filter((d) => d.course !== cid),
+    });
+  };
 
   const [page, setPage] = React.useState<Page>("home");
   const [course, setCourse] = React.useState(courses[0]?.id);
   const [dish, setDish] = React.useState(-1);
   const [resDay, setResDay] = React.useState(Math.min(1, resDaysList.length - 1));
-  const [resTime, setResTime] = React.useState(Math.min(1, resTimesList.length - 1));
-  const [party, setParty] = React.useState(Math.min(1, resPartyList.length - 1));
   const [toast, setToast] = React.useState<string | null>(null);
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -347,11 +387,9 @@ export default function Restaurant({
   const featuredDishes = featured.map((i) => ({ d: dishes[i], i })).filter(({ d }) => d);
 
   const resDayObj = resDaysList[resDay] ?? resDaysList[0];
-  const resSummary = `${resDayObj?.label ?? ""} · ${resTimesList[resTime] ?? ""}`;
-  const resPartyLabel = `${resPartyList[party] ?? ""} أشخاص`;
+  const resDayLabel = `${resDayObj?.label ?? ""}${resDayObj?.date ? ` (${resDayObj.date})` : ""}`.trim();
   const waMessage =
-    `مرحبًا ${shop.name}، أرغب بحجز طاولة: ${resSummary}` +
-    `${resDayObj?.date ? ` (${resDayObj.date})` : ""} لـ ${resPartyLabel}. شكرًا.`;
+    `مرحبًا ${shop.name}، أرغب بحجز طاولة يوم ${resDayLabel}. ما هو الوقت المتاح في هذا اليوم؟ شكرًا.`;
   const waHref = whatsappLink(shop.whatsapp, waMessage);
   const telHref = shop.phone ? `tel:${shop.phone.replace(/\s/g, "")}` : undefined;
 
@@ -387,7 +425,7 @@ export default function Restaurant({
   return (
     <div
       dir="rtl"
-      className={`relative min-h-dvh w-full overflow-x-hidden bg-warm font-sans text-cream ${className ?? ""}`}
+      className={`relative min-h-dvh w-full overflow-x-clip bg-warm font-sans text-cream ${className ?? ""}`}
     >
       {/* Content column — a single readable column on phones, full-width website
           on desktop. Each section re-centers its content in a max-w container. */}
@@ -395,20 +433,25 @@ export default function Restaurant({
         {/* ══ site header (holds the desktop top-nav) ══ */}
         <header className="sticky top-0 z-50 border-b border-cream/[0.12] bg-warm/95 backdrop-blur-md">
           <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-[22px] py-3 lg:px-14">
-            <button
-              type="button"
-              onClick={() => go("home")}
-              className="flex flex-col gap-0.5 text-start"
-            >
-              <span className="font-display text-base font-extrabold leading-[1.4] text-cream lg:text-lg">
-                {shop.name}
-              </span>
-              {shop.brandNote && (
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-gold-400">
-                  {shop.brandNote}
-                </span>
-              )}
-            </button>
+            {(shop.logo || editApi?.editing) && (
+              <EditableImage path="shop.logo" className="size-10 shrink-0 self-center overflow-hidden rounded-md">
+                <Photo src={shop.logo} alt={shop.name} className="size-10" />
+              </EditableImage>
+            )}
+            <span className="flex flex-col gap-0.5">
+              <EditableText
+                path="shop.name"
+                value={shop.name}
+                className="font-display text-base font-extrabold leading-[1.4] text-cream lg:text-lg"
+              />
+              <EditableText
+                path="shop.brandNote"
+                value={shop.brandNote ?? ""}
+                placeholder="Damascus · since 1974"
+                keepLatinDigits
+                className="font-mono text-[9px] uppercase tracking-[0.12em] text-gold-400"
+              />
+            </span>
 
             {/* desktop top-nav — the three pages as horizontal links */}
             <nav className="mx-auto hidden items-center gap-1 lg:flex">
@@ -430,41 +473,57 @@ export default function Restaurant({
               })}
             </nav>
 
-            <GoldCta href={waHref} label="احجز طاولة" className="ms-auto h-9 px-3.5 text-[12.5px] lg:ms-0 lg:h-[38px] lg:px-[17px] lg:text-[13px]" />
+            <div className="ms-auto flex items-center gap-2 lg:ms-0 lg:gap-3">
+              <SocialLinks socials={shop.socials} size="size-3.5" itemClassName={SOCIAL_CHIP} />
+              <GoldCta href={waHref} label="احجز طاولة" className="h-9 px-3.5 text-[12.5px] lg:h-[38px] lg:px-[17px] lg:text-[13px]" />
+            </div>
           </div>
         </header>
 
-        {/* ══════════ المطعم · part one — hero, tasting, why, signatures, gallery, reviews ══════════ */}
+        {/* ══════════ المطعم · part one — hero, why, signatures, gallery, reviews ══════════ */}
         {page === "about" && (
           <div className="flex flex-col animate-rst-page motion-reduce:animate-none">
             {/* hero */}
             <section className="relative overflow-hidden">
-              <span aria-hidden className="absolute inset-0 opacity-[0.32]">
-                <Photo src={shop.heroPhoto} alt={shop.name} className="size-full" />
-              </span>
+              {(shop.heroPhoto || editApi?.editing) && (
+                <span aria-hidden className="absolute inset-0 opacity-[0.32]">
+                  <EditableImage path="shop.heroPhoto" className="block size-full">
+                    <Photo src={shop.heroPhoto} alt={shop.name} className="size-full" />
+                  </EditableImage>
+                </span>
+              )}
               <span
                 aria-hidden
                 className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,oklch(0.115_0.006_60)_8%,oklch(0.115_0.006_60/.82)_55%,oklch(0.115_0.006_60/.4)_100%)]"
               />
               <div className="mx-auto w-full max-w-6xl px-[22px] py-[26px] pb-[30px] lg:px-14 lg:py-16">
                 <div className="relative flex max-w-[46ch] flex-col gap-[18px] lg:max-w-[38ch]">
-                  <span className={`${K} text-gold-300 animate-rst-rise motion-reduce:animate-none`}>
-                    {shop.tagline ?? "مطبخ شامي"}
-                  </span>
-                  <span className="font-display text-[27px] font-extrabold leading-[1.32] -tracking-[0.02em] text-balance text-cream lg:text-5xl">
-                    {shop.heroLine ?? "طعام يُطبَخ كما كان يُطبَخ"}
-                  </span>
-                  {shop.heroLatin && (
-                    <span className="font-serif text-sm italic tracking-[0.04em] text-gold-200">
-                      {shop.heroLatin}
-                    </span>
-                  )}
+                  <EditableText
+                    path="shop.tagline"
+                    value={shop.tagline ?? "مطبخ شامي"}
+                    className={`${K} text-gold-300 animate-rst-rise motion-reduce:animate-none`}
+                  />
+                  <EditableText
+                    path="shop.heroLine"
+                    value={shop.heroLine ?? "طعام يُطبَخ كما كان يُطبَخ"}
+                    multiline
+                    className="font-display text-[27px] font-extrabold leading-[1.32] -tracking-[0.02em] text-balance text-cream lg:text-5xl"
+                  />
+                  <EditableText
+                    path="shop.heroLatin"
+                    value={shop.heroLatin ?? ""}
+                    placeholder="بالإنجليزية"
+                    keepLatinDigits
+                    className="font-serif text-sm italic tracking-[0.04em] text-gold-200"
+                  />
                   <span aria-hidden className="h-px w-full origin-right bg-[linear-gradient(to_left,oklch(0.76_0.09_85/.55),transparent)] animate-rst-rule motion-reduce:animate-none" />
-                  {shop.heroBlurb && (
-                    <span className="max-w-[46ch] text-sm leading-[1.9] text-cream/[0.84] text-pretty">
-                      {shop.heroBlurb}
-                    </span>
-                  )}
+                  <EditableText
+                    path="shop.heroBlurb"
+                    value={shop.heroBlurb ?? ""}
+                    placeholder="نبذة قصيرة عن المطعم…"
+                    multiline
+                    className="max-w-[46ch] text-sm leading-[1.9] text-cream/[0.84] text-pretty"
+                  />
                   <div className="flex flex-wrap gap-[9px]">
                     <GoldCta href={waHref} label="احجز طاولة" className="h-12 px-[22px] text-[14.5px]" />
                     <button
@@ -476,16 +535,21 @@ export default function Restaurant({
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-x-[22px] gap-y-2 pt-1.5">
-                    {shop.openNote && (
+                    {(shop.openNote || editApi?.editing) && (
                       <span className="inline-flex items-center gap-[7px] text-[12.5px] text-[oklch(0.82_0.06_145)]">
                         <span className="size-[7px] rounded-full bg-current animate-pulse-soft motion-reduce:animate-none" />
-                        {shop.openNote}
+                        <EditableText
+                          path="shop.openNote"
+                          value={shop.openNote ?? ""}
+                          placeholder="مفتوح الآن حتى ١٢:٠٠"
+                          className="text-[oklch(0.82_0.06_145)]"
+                        />
                       </span>
                     )}
-                    {shop.address && (
+                    {(shop.address || editApi?.editing) && (
                       <span className="inline-flex items-center gap-[7px] text-[12.5px] text-cream/80">
                         <span aria-hidden className="text-gold-200">◉</span>
-                        {shop.address}
+                        <EditableText path="shop.address" value={shop.address ?? ""} placeholder="العنوان" className="text-cream/80" />
                       </span>
                     )}
                     {shop.phone && (
@@ -500,18 +564,42 @@ export default function Restaurant({
             </section>
 
             {/* why — pillars */}
-            {pillars.length > 0 && (
+            {(pillars.length > 0 || pillarEdit.editing) && (
               <section className="border-t border-cream/10 px-[22px] py-[26px] lg:px-14 lg:py-16">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px]">
-                  <Kicker kicker="لماذا هنا" title="ما لا نتنازل عنه" />
+                  <Kicker
+                    kicker={shop.pillarsKicker ?? "لماذا هنا"}
+                    kickerPath="shop.pillarsKicker"
+                    title={shop.pillarsTitle ?? "ما لا نتنازل عنه"}
+                    titlePath="shop.pillarsTitle"
+                  />
                   <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
-                    {pillars.map((p) => (
-                      <div key={p.title} className="flex flex-col gap-2.5 rounded border border-cream/[0.12] bg-cream/[0.04] p-[18px]">
+                    {pillars.map((p, i) => (
+                      <div key={`pillar-${i}`} className="relative flex flex-col gap-2.5 rounded border border-cream/[0.12] bg-cream/[0.04] p-[18px]">
                         <span className="text-gold-300">{p.icon && PILLAR_ICONS[p.icon] ? PILLAR_ICONS[p.icon] : <span className="block size-[9px] rounded-sm bg-gold" />}</span>
-                        <span className="font-display text-[15px] font-bold text-cream">{p.title}</span>
-                        {p.body && <span className="text-[12.5px] leading-[1.75] text-cream/[0.78] text-pretty">{p.body}</span>}
+                        <EditableText value={p.title} placeholder="العنوان" onCommit={(t) => pillarEdit.setField(i, "title", t)} className="font-display text-[15px] font-bold text-cream" />
+                        <EditableText value={p.body ?? ""} placeholder="الوصف…" multiline onCommit={(t) => pillarEdit.setField(i, "body", t)} className="text-[12.5px] leading-[1.75] text-cream/[0.78] text-pretty" />
+                        {pillarEdit.editing && (
+                          <button
+                            type="button"
+                            onClick={() => pillarEdit.remove(i)}
+                            aria-label="حذف الميزة"
+                            className={`absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-gold text-xs shadow ${ON_GOLD}`}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     ))}
+                    {pillarEdit.editing && (
+                      <button
+                        type="button"
+                        onClick={() => pillarEdit.add({ icon: "", title: "ميزة جديدة", body: "" })}
+                        className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-cream/30 p-[18px] text-sm font-semibold text-cream/70 transition-colors hover:border-gold/50 hover:text-cream"
+                      >
+                        <span className="text-lg leading-none">＋</span> إضافة ميزة
+                      </button>
+                    )}
                   </div>
                 </div>
               </section>
@@ -522,7 +610,12 @@ export default function Restaurant({
               <section className="border-t border-cream/10 px-[22px] py-[26px] lg:px-14 lg:py-16">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px]">
                   <div className="flex items-baseline justify-between gap-3.5">
-                    <Kicker kicker="من القائمة" title="أطباق يعرفها زبائننا" />
+                    <Kicker
+                      kicker={shop.signaturesKicker ?? "من القائمة"}
+                      kickerPath="shop.signaturesKicker"
+                      title={shop.signaturesTitle ?? "أطباق يعرفها زبائننا"}
+                      titlePath="shop.signaturesTitle"
+                    />
                     <button
                       type="button"
                       onClick={() => go("home")}
@@ -535,7 +628,7 @@ export default function Restaurant({
                   <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
                     {featuredDishes.map(({ d, i }) => (
                       <button
-                        key={d.name}
+                        key={`sig-${i}`}
                         type="button"
                         onClick={() => openFeatured(i)}
                         className="flex flex-col overflow-hidden rounded border border-cream/[0.12] bg-cream/[0.04] text-start text-current transition-colors hover:border-gold/40"
@@ -556,41 +649,102 @@ export default function Restaurant({
             )}
 
             {/* gallery drift band */}
-            {showGallery && gallery.length > 0 && (
+            {showGallery && (gallery.length > 0 || galleryEdit.editing) && (
               <section className="flex flex-col overflow-hidden border-t border-cream/10 py-[26px]">
                 <div className="mx-auto mb-4 w-full max-w-6xl px-[22px] lg:px-14">
-                  <Kicker kicker="من المطبخ والصالة" title="لمحات" size="text-xl" />
+                  <Kicker
+                    kicker={shop.galleryKicker ?? "من المطبخ والصالة"}
+                    kickerPath="shop.galleryKicker"
+                    title={shop.galleryTitle ?? "لمحات"}
+                    titlePath="shop.galleryTitle"
+                    size="text-xl"
+                  />
                 </div>
-                <div className="overflow-hidden">
-                  <div className="flex w-max gap-2.5 animate-rst-drift motion-reduce:animate-none">
-                    {[...gallery, ...gallery].map((g, i) => (
-                      <figure key={i} className="relative m-0 h-[120px] w-[168px] shrink-0 overflow-hidden rounded-[3px] lg:h-[180px] lg:w-[260px]">
-                        <Photo src={g.photo} alt={g.label} className="absolute inset-0 size-full" />
-                        <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,oklch(0.115_0.006_60/.85),transparent)] px-[11px] pb-[9px] pt-5 text-[11.5px] text-cream/95">
-                          {g.label}
-                        </figcaption>
-                      </figure>
-                    ))}
+                {galleryEdit.editing ? (
+                  <div className="mx-auto w-full max-w-6xl px-[22px] lg:px-14">
+                    <div className="flex flex-wrap gap-2.5">
+                      {gallery.map((g, i) => (
+                        <div key={`gallery-${i}`} className="relative">
+                          <EditableImage onChange={(url) => galleryEdit.setField(i, "photo", url)} className="block h-[120px] w-[168px] overflow-hidden rounded-[3px]">
+                            <Photo src={g.photo} alt={g.label} className="h-[120px] w-[168px]" />
+                          </EditableImage>
+                          <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,oklch(0.115_0.006_60/.85),transparent)] px-[11px] pb-[9px] pt-5 text-[11.5px] text-cream/95">
+                            <EditableText value={g.label} placeholder="وصف" onCommit={(t) => galleryEdit.setField(i, "label", t)} className="pointer-events-auto" />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => galleryEdit.remove(i)}
+                            aria-label="حذف الصورة"
+                            className={`absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-gold text-xs shadow ${ON_GOLD}`}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => galleryEdit.add({ label: "لمحة جديدة", photo: "" })}
+                        className="flex h-[120px] w-[168px] cursor-pointer flex-col items-center justify-center gap-1 rounded-[3px] border border-dashed border-cream/30 text-cream/70 transition-colors hover:border-gold/50 hover:text-cream"
+                      >
+                        <span className="text-lg leading-none">＋</span>
+                        <span className={K_SM}>صورة</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="overflow-hidden">
+                    <div className="flex w-max gap-2.5 animate-rst-drift motion-reduce:animate-none">
+                      {[...gallery, ...gallery].map((g, i) => (
+                        <figure key={`g-${i}`} className="relative m-0 h-[120px] w-[168px] shrink-0 overflow-hidden rounded-[3px] lg:h-[180px] lg:w-[260px]">
+                          <Photo src={g.photo} alt={g.label} className="absolute inset-0 size-full" />
+                          <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(to_top,oklch(0.115_0.006_60/.85),transparent)] px-[11px] pb-[9px] pt-5 text-[11.5px] text-cream/95">
+                            {g.label}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </section>
             )}
 
             {/* reviews */}
-            {reviews.length > 0 && (
+            {(reviews.length > 0 || reviewEdit.editing) && (
               <section className="border-t border-cream/10 bg-warm-800 px-[22px] py-[30px] lg:px-14 lg:py-16">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px]">
-                  <Kicker kicker="قالوا عنّا" title="٤٫٩ من ٥ على خرائط جوجل" />
+                  <Kicker
+                    kicker={shop.reviewsKicker ?? "قالوا عنّا"}
+                    kickerPath="shop.reviewsKicker"
+                    title={shop.reviewsTitle ?? "٤٫٩ من ٥ على خرائط جوجل"}
+                    titlePath="shop.reviewsTitle"
+                  />
                   <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-3">
-                    {reviews.map((r) => (
-                      <figure key={r.name} className="m-0 flex flex-col gap-3 rounded border border-cream/[0.12] p-[18px]">
-                        <span className="text-[13px] tracking-[0.18em] text-gold-200">{r.stars ?? "★★★★★"}</span>
-                        <blockquote className="m-0 font-serif text-[15.5px] leading-[1.8] text-cream/90 text-pretty">
-                          {r.quote}
-                        </blockquote>
-                        <figcaption className={`${K_SM} text-cream/[0.74]`}>{r.name}</figcaption>
+                    {reviews.map((r, i) => (
+                      <figure key={`review-${i}`} className="relative m-0 flex flex-col gap-3 rounded border border-cream/[0.12] p-[18px]">
+                        <EditableText value={r.stars ?? "★★★★★"} placeholder="★★★★★" keepLatinDigits onCommit={(t) => reviewEdit.setField(i, "stars", t)} className="text-[13px] tracking-[0.18em] text-gold-200" />
+                        <EditableText value={r.quote} as="blockquote" placeholder="اقتباس المراجعة…" multiline onCommit={(t) => reviewEdit.setField(i, "quote", t)} className="m-0 font-serif text-[15.5px] leading-[1.8] text-cream/90 text-pretty" />
+                        <EditableText value={r.name} as="figcaption" placeholder="الاسم · المدينة" onCommit={(t) => reviewEdit.setField(i, "name", t)} className={`${K_SM} text-cream/[0.74]`} />
+                        {reviewEdit.editing && (
+                          <button
+                            type="button"
+                            onClick={() => reviewEdit.remove(i)}
+                            aria-label="حذف المراجعة"
+                            className={`absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-gold text-xs shadow ${ON_GOLD}`}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </figure>
                     ))}
+                    {reviewEdit.editing && (
+                      <button
+                        type="button"
+                        onClick={() => reviewEdit.add({ stars: "★★★★★", quote: "مراجعة جديدة…", name: "الاسم · المدينة" })}
+                        className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-cream/30 p-[18px] text-sm font-semibold text-cream/70 transition-colors hover:border-gold/50 hover:text-cream"
+                      >
+                        <span className="text-lg leading-none">＋</span> إضافة مراجعة
+                      </button>
+                    )}
                   </div>
                 </div>
               </section>
@@ -598,31 +752,68 @@ export default function Restaurant({
           </div>
         )}
 
-        {/* ══════════ الرئيسية · the menu — season specials, courses, dishes, allergens ══════════ */}
+        {/* ══════════ الرئيسية · the menu — courses, dishes, allergens ══════════ */}
         {page === "home" && (
           <div className="flex flex-col animate-rst-page motion-reduce:animate-none">
             {/* course filter (sticky) */}
             <div className="sticky top-[57px] z-40 border-y border-cream/[0.12] bg-warm/95 px-[22px] pb-3 pt-3.5 backdrop-blur-md lg:top-[65px] lg:px-14">
               <div className="mx-auto w-full max-w-6xl">
-                <div className="mb-3 flex items-baseline justify-between gap-3">
+                <div className="mb-3 flex items-baseline gap-3">
                   <span className="font-display text-xl font-extrabold text-cream">القائمة</span>
-                  <span className={`${K_SM} text-cream/70`}>{arInt(dishes.length)} طبقًا</span>
                 </div>
-                <div className="flex gap-[7px] overflow-x-auto pb-0.5">
-                  {courses.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      aria-pressed={activeCourse === c.id}
-                      onClick={() => setCourse(c.id)}
-                      className={`inline-flex h-9 shrink-0 items-center gap-[7px] whitespace-nowrap rounded-full border px-[15px] text-[13px] font-semibold leading-none ${chip(activeCourse === c.id)}`}
-                    >
-                      {c.label}
-                      <span className="font-serif text-[12.5px] opacity-60">
-                        {arInt(dishes.filter((d) => d.course === c.id).length)}
+                <div className="flex gap-[7px] overflow-x-auto overscroll-x-contain scroll-smooth pb-0.5 [-webkit-overflow-scrolling:touch]">
+                  {courses.map((c, ci) =>
+                    courseEdit.editing ? (
+                      <span
+                        key={c.id}
+                        onClick={() => setCourse(c.id)}
+                        title="انقر للاختيار · انقر مرتين لإعادة التسمية"
+                        className={`group/tab relative inline-flex h-11 shrink-0 cursor-pointer items-center gap-2 whitespace-nowrap rounded-full border ps-[18px] pe-3 text-[13.5px] font-semibold leading-none transition-shadow ${chip(activeCourse === c.id)} ${activeCourse === c.id ? "ring-2 ring-gold/60 ring-offset-2 ring-offset-warm" : ""}`}
+                      >
+                        <EditableText
+                          value={c.label}
+                          placeholder="القسم"
+                          keepLatinDigits
+                          onCommit={(t) => courseEdit.setField(ci, "label", t)}
+                        />
+                        {courses.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); removeCourse(ci); }}
+                            aria-label="حذف القسم"
+                            title="حذف القسم"
+                            className={`inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gold/90 text-[11px] leading-none shadow transition-colors hover:bg-gold ${ON_GOLD}`}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </span>
+                    ) : (
+                      <button
+                        key={c.id}
+                        type="button"
+                        aria-pressed={activeCourse === c.id}
+                        onClick={() => setCourse(c.id)}
+                        className={`inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full border px-[15px] text-[13px] font-semibold leading-none ${chip(activeCourse === c.id)}`}
+                      >
+                        {c.label}
+                      </button>
+                    ),
+                  )}
+                  {courseEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const id = "c" + Math.random().toString(36).slice(2, 8);
+                        courseEdit.add({ id, label: "قسم جديد" });
+                        setCourse(id); // select it so its (empty) dishes show for editing
+                      }}
+                      aria-label="إضافة قسم"
+                      className="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full border border-dashed border-cream/35 px-4 text-[13.5px] font-semibold leading-none text-cream/70 transition-colors hover:border-gold/60 hover:text-cream"
+                    >
+                      <span className="text-base leading-none">＋</span> قسم
                     </button>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -630,42 +821,76 @@ export default function Restaurant({
             {/* dish list */}
             <div className="px-[22px] pb-[26px] pt-1 lg:px-14">
               <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-[34px] lg:grid-cols-2">
-                {visibleDishes.map(({ d, i }, n) => (
-                  <button
-                    key={d.name}
-                    type="button"
-                    onClick={() => setDish(i)}
-                    style={{ animationDelay: `${n * 55}ms` }}
-                    className="flex items-start gap-3.5 border-b border-cream/10 py-[18px] text-start text-current animate-rst-rise motion-reduce:animate-none"
-                  >
-                    <Photo src={d.photo} alt={d.name} className="size-[78px] shrink-0 rounded-[3px]" />
-                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                      <span className="flex flex-wrap items-baseline gap-[9px]">
-                        <span className="font-display text-[15.5px] font-bold text-cream">{d.name}</span>
-                        {d.mark && <span className={`${K_SM} text-gold-200`}>{d.mark}</span>}
-                      </span>
-                      {d.latin && <span className="font-serif text-xs italic text-cream/[0.7]">{d.latin}</span>}
-                      {d.desc && <span className="text-[12.5px] leading-[1.7] text-cream/[0.76] text-pretty">{d.desc}</span>}
-                      <span className="flex items-center gap-2.5 pt-[3px]">
-                        <span className="font-serif text-lg text-gold-100">{d.price}</span>
-                        <span className="flex gap-[5px]">
-                          {(d.allergens ?? []).map((code) => (
-                            <span
-                              key={code}
-                              title={ALLERGEN_LABELS[code]}
-                              className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px] text-cream/80"
-                            >
-                              {code}
+                {visibleDishes.map(({ d, i }, n) => {
+                  const inner = (
+                    <>
+                      <EditableImage onChange={(url) => dishEdit.setField(i, "photo", url)} className="size-[78px] shrink-0 rounded-[3px]">
+                        <Photo src={d.photo} alt={d.name} className="size-[78px] shrink-0 rounded-[3px]" />
+                      </EditableImage>
+                      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <span className="flex flex-wrap items-baseline gap-[9px]">
+                          <EditableText value={d.name} onCommit={(t) => dishEdit.setField(i, "name", t)} className="font-display text-[15.5px] font-bold text-cream" />
+                          <EditableText value={d.mark ?? ""} placeholder="وسم" onCommit={(t) => dishEdit.setField(i, "mark", t)} className={`${K_SM} text-gold-200`} />
+                        </span>
+                        <EditableText value={d.latin ?? ""} placeholder="بالإنجليزية" keepLatinDigits onCommit={(t) => dishEdit.setField(i, "latin", t)} className="font-serif text-xs italic text-cream/[0.7]" />
+                        <EditableText value={d.desc ?? ""} placeholder="أضف وصفًا…" multiline onCommit={(t) => dishEdit.setField(i, "desc", t)} className="text-[12.5px] leading-[1.7] text-cream/[0.76] text-pretty" />
+                        <span className="flex items-center gap-2.5 pt-[3px]">
+                          <EditableText value={d.price} onCommit={(t) => dishEdit.setField(i, "price", t)} className="font-serif text-lg text-gold-100" />
+                          <span className="flex gap-[5px]">
+                            {(d.allergens ?? []).map((code, ci) => (
+                              <span
+                                key={`al-${ci}`}
+                                title={ALLERGEN_LABELS[code]}
+                                className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px] text-cream/80"
+                              >
+                                {code}
+                              </span>
+                            ))}
+                          </span>
+                          {!dishEdit.editing && (
+                            <span className="ms-auto text-cream/60">
+                              <Chevron />
                             </span>
-                          ))}
-                        </span>
-                        <span className="ms-auto text-cream/60">
-                          <Chevron />
+                          )}
                         </span>
                       </span>
-                    </span>
+                    </>
+                  );
+                  const cardClass =
+                    "flex items-start gap-3.5 border-b border-cream/10 py-[18px] text-start text-current animate-rst-rise motion-reduce:animate-none";
+                  return dishEdit.editing ? (
+                    <div key={`dish-${i}`} className={`relative ${cardClass}`}>
+                      {inner}
+                      <button
+                        type="button"
+                        onClick={() => dishEdit.remove(i)}
+                        aria-label="حذف الطبق"
+                        className={`absolute -end-2 -top-2 z-10 inline-flex size-6 cursor-pointer items-center justify-center rounded-full bg-gold text-xs shadow ${ON_GOLD}`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      key={`dish-${i}`}
+                      type="button"
+                      onClick={() => setDish(i)}
+                      style={{ animationDelay: `${n * 55}ms` }}
+                      className={cardClass}
+                    >
+                      {inner}
+                    </button>
+                  );
+                })}
+                {dishEdit.editing && (
+                  <button
+                    type="button"
+                    onClick={() => dishEdit.add({ course: activeCourse, name: "طبق جديد", price: "٠", desc: "", mark: "", latin: "", pair: "", allergens: [], photo: "" })}
+                    className="flex cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-cream/30 py-4 text-sm font-semibold text-cream/70 transition-colors hover:border-gold/50 hover:text-cream"
+                  >
+                    <span className="text-lg leading-none">＋</span> إضافة طبق
                   </button>
-                ))}
+                )}
               </div>
             </div>
 
@@ -696,23 +921,54 @@ export default function Restaurant({
             <section className="px-[22px] py-[26px] lg:px-14 lg:py-16">
               <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-[26px] lg:grid-cols-2">
                 <div className="relative min-h-[230px] overflow-hidden rounded-[3px] lg:min-h-[330px]">
-                  <Photo src={chef.photo} alt={chef.name ?? "الشيف"} className="absolute inset-0 size-full" />
+                  <EditableImage path="chef.photo" className="absolute inset-0 block">
+                    <Photo src={chef.photo} alt={chef.name ?? "الشيف"} className="absolute inset-0 size-full" />
+                  </EditableImage>
                 </div>
                 <div className="flex flex-col gap-3.5">
-                  <Kicker kicker="المطبخ" title={chef.name ?? "الشيف"} size="text-[22px]" />
-                  {chef.quote && (
-                    <blockquote className="m-0 font-serif text-[17.5px] leading-[1.78] text-cream/90 text-pretty">
-                      {chef.quote}
-                    </blockquote>
-                  )}
-                  {chef.stats && chef.stats.length > 0 && (
+                  <Kicker
+                    kicker={shop.chefKicker ?? "المطبخ"}
+                    kickerPath="shop.chefKicker"
+                    title={chef.name ?? "الشيف"}
+                    titlePath="chef.name"
+                    size="text-[22px]"
+                  />
+                  <EditableText
+                    path="chef.quote"
+                    value={chef.quote ?? ""}
+                    as="blockquote"
+                    placeholder="اقتباس الشيف…"
+                    multiline
+                    className="m-0 font-serif text-[17.5px] leading-[1.78] text-cream/90 text-pretty"
+                  />
+                  {(chef.stats?.length || chefStatEdit.editing) && (
                     <div className="flex flex-wrap gap-x-[26px] gap-y-3 border-t border-cream/[0.14] pt-4">
-                      {chef.stats.map((s) => (
-                        <span key={s.label} className="flex flex-col gap-1">
-                          <span className="font-serif text-2xl leading-none text-gold-100">{s.value}</span>
-                          <span className={`${K_SM} text-cream/70`}>{s.label}</span>
+                      {(chef.stats ?? []).map((s, i) => (
+                        <span key={`stat-${i}`} className="relative flex flex-col gap-1">
+                          <EditableText value={s.value} onCommit={(t) => chefStatEdit.setField(i, "value", t)} className="font-serif text-2xl leading-none text-gold-100" />
+                          <EditableText value={s.label} onCommit={(t) => chefStatEdit.setField(i, "label", t)} className={`${K_SM} text-cream/70`} />
+                          {chefStatEdit.editing && (
+                            <button
+                              type="button"
+                              onClick={() => chefStatEdit.remove(i)}
+                              aria-label="حذف الرقم"
+                              className={`absolute -end-2.5 -top-2.5 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-gold text-[11px] leading-none shadow ${ON_GOLD}`}
+                            >
+                              ✕
+                            </button>
+                          )}
                         </span>
                       ))}
+                      {chefStatEdit.editing && (
+                        <button
+                          type="button"
+                          onClick={() => chefStatEdit.add({ value: "٠", label: "رقم جديد" })}
+                          className="inline-flex cursor-pointer flex-col items-center gap-0.5 rounded-md border border-dashed border-cream/40 px-3.5 py-1.5 text-cream/70 hover:border-gold/60 hover:text-cream"
+                        >
+                          <span className="text-lg leading-none">＋</span>
+                          <span className={K_SM}>رقم</span>
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -720,24 +976,48 @@ export default function Restaurant({
             </section>
 
             {/* history timeline */}
-            {milestones.length > 0 && (
+            {(milestones.length > 0 || milestoneEdit.editing) && (
               <section className="border-t border-cream/10 bg-warm-800 px-[22px] py-[30px] lg:px-14 lg:py-16">
                 <div className="mx-auto flex w-full max-w-6xl flex-col gap-[18px]">
-                  <Kicker kicker="مسيرتنا" title="خمسون عامًا على النار" />
+                  <Kicker
+                    kicker={shop.milestonesKicker ?? "مسيرتنا"}
+                    kickerPath="shop.milestonesKicker"
+                    title={shop.milestonesTitle ?? "خمسون عامًا على النار"}
+                    titlePath="shop.milestonesTitle"
+                  />
                   <div className="relative grid grid-cols-1 gap-x-10 gap-y-5 ps-[22px] lg:grid-cols-2">
                     <span aria-hidden className="absolute bottom-1.5 start-1 top-1.5 w-px bg-cream/[0.16]" />
-                    {milestones.map((m) => (
-                      <span key={m.year + m.title} className="relative flex flex-col gap-1">
+                    {milestones.map((m, i) => (
+                      <span key={`milestone-${i}`} className="relative flex flex-col gap-1">
                         <span
                           aria-hidden
                           className={`absolute -start-[22px] top-[5px] size-[9px] rounded-full shadow-[0_0_0_3px_oklch(0.13_0.008_60)] lg:hidden ${m.now ? "bg-gold" : "bg-cream/[0.3]"}`}
                         />
-                        <span className="font-serif text-[15px] tracking-[0.06em] text-gold-200">{m.year}</span>
-                        <span className="text-[14.5px] font-semibold text-cream/95">{m.title}</span>
-                        {m.body && <span className="text-[12.5px] leading-[1.75] text-cream/[0.78] text-pretty">{m.body}</span>}
+                        <EditableText value={m.year} placeholder="السنة" onCommit={(t) => milestoneEdit.setField(i, "year", t)} className="font-serif text-[15px] tracking-[0.06em] text-gold-200" />
+                        <EditableText value={m.title} placeholder="العنوان" onCommit={(t) => milestoneEdit.setField(i, "title", t)} className="text-[14.5px] font-semibold text-cream/95" />
+                        <EditableText value={m.body ?? ""} placeholder="الوصف…" multiline onCommit={(t) => milestoneEdit.setField(i, "body", t)} className="text-[12.5px] leading-[1.75] text-cream/[0.78] text-pretty" />
+                        {milestoneEdit.editing && (
+                          <button
+                            type="button"
+                            onClick={() => milestoneEdit.remove(i)}
+                            aria-label="حذف المحطة"
+                            className={`absolute -end-1 -top-1 z-10 inline-flex size-5 cursor-pointer items-center justify-center rounded-full bg-gold text-[11px] shadow ${ON_GOLD}`}
+                          >
+                            ✕
+                          </button>
+                        )}
                       </span>
                     ))}
                   </div>
+                  {milestoneEdit.editing && (
+                    <button
+                      type="button"
+                      onClick={() => milestoneEdit.add({ year: "٢٠٢٤", title: "محطة جديدة", body: "" })}
+                      className="inline-flex w-fit cursor-pointer items-center justify-center gap-2 rounded border border-dashed border-cream/30 px-4 py-2.5 text-[13px] font-semibold text-cream/70 transition-colors hover:border-gold/50 hover:text-cream"
+                    >
+                      <span className="text-base leading-none">＋</span> إضافة محطة
+                    </button>
+                  )}
                 </div>
               </section>
             )}
@@ -746,16 +1026,26 @@ export default function Restaurant({
             <section className="border-t border-cream/10 px-[22px] py-[30px] lg:px-14 lg:py-16">
               <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-[26px] lg:grid-cols-2">
                 <div className="flex flex-col gap-3.5">
-                  <Kicker kicker="المناسبات" title={hall.title ?? "قاعة للمجموعات"} size="text-[21px]" />
-                  {hall.body && (
-                    <span className="max-w-[46ch] text-[13.5px] leading-[1.85] text-cream/80 text-pretty">
-                      {hall.body}
-                    </span>
-                  )}
+                  <Kicker
+                    kicker={shop.hallKicker ?? "المناسبات"}
+                    kickerPath="shop.hallKicker"
+                    title={hall.title ?? "قاعة للمجموعات"}
+                    titlePath="hall.title"
+                    size="text-[21px]"
+                  />
+                  <EditableText
+                    path="hall.body"
+                    value={hall.body ?? ""}
+                    placeholder="وصف القاعة…"
+                    multiline
+                    className="max-w-[46ch] text-[13.5px] leading-[1.85] text-cream/80 text-pretty"
+                  />
                   <GoldCta href={waHref} label="اسأل عن القاعة" className="h-[46px] w-fit px-5 text-[13.5px]" />
                 </div>
                 <div className="relative min-h-[230px] overflow-hidden rounded-[3px] lg:min-h-[330px]">
-                  <Photo src={hall.photo} alt={hall.title ?? "القاعة"} className="absolute inset-0 size-full" />
+                  <EditableImage path="hall.photo" className="absolute inset-0 block">
+                    <Photo src={hall.photo} alt={hall.title ?? "القاعة"} className="absolute inset-0 size-full" />
+                  </EditableImage>
                 </div>
               </div>
             </section>
@@ -765,19 +1055,29 @@ export default function Restaurant({
         {/* ══════════ الحجز والزيارة ══════════ */}
         {page === "visit" && (
           <div className="flex flex-col animate-rst-page motion-reduce:animate-none">
-            {/* reservation picker */}
+            {/* reservation picker — day only; the restaurant confirms the time */}
             <section className="px-[22px] py-[26px] lg:px-14 lg:py-16">
               <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-[26px] lg:grid-cols-2">
                 <div className="flex flex-col gap-[17px]">
-                  <Kicker kicker="الحجز" title="اختر موعدًا وأرسله لنا" size="text-[22px]" />
-                  <span className="text-[13.5px] leading-[1.85] text-cream/80 text-pretty">
-                    اختيارك يُرسَل كرسالة جاهزة على واتساب، ونؤكّده لك خلال دقائق.
-                  </span>
+                  <Kicker
+                    kicker={shop.reserveKicker ?? "الحجز"}
+                    kickerPath="shop.reserveKicker"
+                    title={shop.reserveTitle ?? "اختر يومًا وأرسله لنا"}
+                    titlePath="shop.reserveTitle"
+                    size="text-[22px]"
+                  />
+                  <EditableText
+                    path="shop.reserveIntro"
+                    value={shop.reserveIntro ?? "اختر اليوم فقط ويصلنا طلبك كرسالة جاهزة على واتساب — نؤكّد لك الوقت المتاح خلال دقائق."}
+                    placeholder="نبذة قصيرة…"
+                    multiline
+                    className="text-[13.5px] leading-[1.85] text-cream/80 text-pretty"
+                  />
 
                   <Picker label="اليوم">
                     {resDaysList.map((r, i) => (
                       <button
-                        key={r.label + i}
+                        key={`resday-${i}`}
                         type="button"
                         aria-pressed={resDay === i}
                         onClick={() => setResDay(i)}
@@ -789,44 +1089,21 @@ export default function Restaurant({
                     ))}
                   </Picker>
 
-                  <Picker label="الوقت">
-                    {resTimesList.map((t, i) => (
-                      <button
-                        key={t + i}
-                        type="button"
-                        aria-pressed={resTime === i}
-                        onClick={() => setResTime(i)}
-                        className={`h-[42px] whitespace-nowrap rounded-[3px] border px-4 font-serif text-[14.5px] leading-none ${chip(resTime === i)}`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </Picker>
-
-                  <Picker label="عدد الأشخاص">
-                    {resPartyList.map((p, i) => (
-                      <button
-                        key={p + i}
-                        type="button"
-                        aria-pressed={party === i}
-                        onClick={() => setParty(i)}
-                        className={`h-[42px] min-w-[46px] rounded-[3px] border px-3 font-serif text-[14.5px] leading-none ${chip(party === i)}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </Picker>
+                  <span className="flex items-start gap-2.5 rounded-[3px] border border-cream/[0.13] bg-cream/[0.05] p-3.5 text-[12.5px] leading-[1.7] text-cream/[0.78]">
+                    <span aria-hidden className="mt-0.5 text-gold-200">✓</span>
+                    اختر اليوم فقط — نؤكّد لك الوقت المتاح عبر واتساب خلال دقائق.
+                  </span>
                 </div>
 
                 <div className="flex flex-col gap-[13px] rounded border border-cream/[0.12] bg-cream/[0.05] p-5 lg:sticky lg:top-24">
                   <span className={`${K_SM} text-cream/70`}>ملخّص الطلب</span>
                   <span className="flex items-baseline justify-between gap-3">
-                    <span className="text-[13px] text-cream/[0.78]">الموعد</span>
-                    <span className="font-serif text-base text-cream/95">{resSummary}</span>
+                    <span className="text-[13px] text-cream/[0.78]">اليوم</span>
+                    <span className="font-serif text-base text-cream/95">{resDayLabel}</span>
                   </span>
                   <span className="flex items-baseline justify-between gap-3 border-t border-cream/[0.12] pt-3">
-                    <span className="text-[13px] text-cream/[0.78]">الأشخاص</span>
-                    <span className="font-serif text-base text-cream/95">{resPartyLabel}</span>
+                    <span className="text-[13px] text-cream/[0.78]">الوقت</span>
+                    <span className="font-serif text-base text-cream/95">يؤكّده المطعم</span>
                   </span>
                   <a
                     href={waHref}
@@ -846,37 +1123,42 @@ export default function Restaurant({
                     </a>
                   )}
                   <span className="text-[12.5px] leading-[1.75] text-cream/70">
-                    للمجموعات فوق ثمانية أشخاص والمناسبات، الاتصال أسرع.
+                    للمجموعات الكبيرة والمناسبات، الاتصال أسرع.
                   </span>
                 </div>
               </div>
             </section>
 
-            {/* hours + map */}
+            {/* hours + address */}
             <section className="border-t border-cream/10 bg-warm-800 px-[22px] py-[30px] lg:px-14 lg:py-16">
-              <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-[26px] lg:grid-cols-2">
+              <div className="mx-auto w-full max-w-6xl">
                 <div className="flex flex-col gap-4">
-                  <Kicker kicker="الزيارة" title="أوقات العمل والوصول" />
+                  <Kicker
+                    kicker={shop.visitKicker ?? "الزيارة"}
+                    kickerPath="shop.visitKicker"
+                    title={shop.visitTitle ?? "أوقات العمل والوصول"}
+                    titlePath="shop.visitTitle"
+                  />
                   <div className="flex flex-col gap-2.5">
-                    {hours.map((h) => (
-                      <span key={h.days} className="flex items-baseline gap-2.5 text-[13.5px] text-cream/[0.82]">
-                        <span className="whitespace-nowrap">{h.days}</span>
+                    {groupHours(hours).map((g, i) => (
+                      <span key={`hours-${i}`} className="flex items-baseline gap-2.5 text-[13.5px] text-cream/[0.82]">
+                        <span className="whitespace-nowrap">{g.label}</span>
                         <span aria-hidden className="min-w-4 flex-[1_0_16px] border-b border-dotted border-cream/[0.22]" />
-                        <span className="whitespace-nowrap font-serif text-cream/95">{h.time}</span>
+                        <span className={`whitespace-nowrap font-serif ${g.time === "مغلق" ? "text-gold-200" : "text-cream/95"}`}>{g.time}</span>
                       </span>
                     ))}
                   </div>
                   <div className="flex flex-col gap-[11px] border-t border-cream/[0.14] pt-4">
-                    {shop.address && (
+                    {(shop.address || editApi?.editing) && (
                       <span className="flex items-start gap-2.5 text-[13.5px] leading-[1.7] text-cream/[0.82]">
                         <span aria-hidden className="text-gold-200">◉</span>
-                        <span className="text-pretty">{shop.address}</span>
+                        <EditableText path="shop.address" value={shop.address ?? ""} placeholder="العنوان" multiline className="text-pretty" />
                       </span>
                     )}
-                    {visit.parking && (
+                    {(visit.parking || editApi?.editing) && (
                       <span className="flex items-start gap-2.5 text-[13.5px] leading-[1.7] text-cream/[0.82]">
                         <span aria-hidden className="text-gold-200">⌁</span>
-                        <span className="text-pretty">{visit.parking}</span>
+                        <EditableText path="visit.parking" value={visit.parking ?? ""} placeholder="المواقف…" multiline className="text-pretty" />
                       </span>
                     )}
                     {shop.phone && (
@@ -891,19 +1173,6 @@ export default function Restaurant({
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2.5">
-                  <div className="relative h-[200px] overflow-hidden rounded-[3px] border border-cream/[0.14] lg:h-[270px]">
-                    <Photo src={visit.mapPhoto} alt="الموقع" className="absolute inset-0 size-full" />
-                  </div>
-                  <a
-                    href={visit.directionsUrl || shop.mapsUrl || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex h-[46px] items-center justify-center rounded-[3px] border border-gold/[0.45] bg-gold/10 font-display text-[13.5px] font-bold text-gold-200"
-                  >
-                    افتح الاتجاهات
-                  </a>
-                </div>
               </div>
             </section>
           </div>
@@ -913,16 +1182,24 @@ export default function Restaurant({
         <footer className="border-t border-cream/[0.14] bg-warm-900 px-[22px] py-[28px] pb-[30px] lg:px-14 lg:py-14">
           <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-10 gap-y-[22px] lg:grid-cols-[1.4fr_1fr_1fr]">
             <div className="flex flex-col gap-2.5">
-              <span className="font-display text-lg font-extrabold text-cream">{shop.name}</span>
-              {shop.brandNote && (
-                <span className="font-serif text-[12.5px] italic tracking-[0.04em] text-cream/[0.74]">
-                  {shop.brandNote}
-                </span>
-              )}
-              {shop.openNote && (
-                <span className="inline-flex items-center gap-[7px] text-[12.5px] text-[oklch(0.82_0.06_145)]">
-                  <span className="size-[7px] rounded-full bg-current animate-pulse-soft motion-reduce:animate-none" />
-                  مفتوح الآن
+              <EditableText path="shop.name" value={shop.name} className="font-display text-lg font-extrabold text-cream" />
+              <EditableText
+                path="shop.brandNote"
+                value={shop.brandNote ?? ""}
+                placeholder="Damascus · since 1974"
+                keepLatinDigits
+                className="font-serif text-[12.5px] italic tracking-[0.04em] text-cream/[0.74]"
+              />
+              {openNow !== null && (
+                <span
+                  className={`inline-flex items-center gap-[7px] text-[12.5px] ${
+                    openNow ? "text-[oklch(0.82_0.06_145)]" : "text-gold-200"
+                  }`}
+                >
+                  <span
+                    className={`size-[7px] rounded-full bg-current ${openNow ? "animate-pulse-soft motion-reduce:animate-none" : ""}`}
+                  />
+                  {openNow ? "مفتوح الآن" : "مغلق الآن"}
                 </span>
               )}
             </div>
@@ -936,33 +1213,28 @@ export default function Restaurant({
             </div>
             <div className="flex flex-col gap-2.5">
               <span className={`${K_SM} text-cream/70`}>تواصل</span>
+              {shop.whatsapp && (
+                <a
+                  href={whatsappLink(shop.whatsapp, `مرحبًا ${shop.name}، أودّ الاستفسار عن الحجز.`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 self-start text-[13px] text-cream/[0.84] transition-colors hover:text-cream"
+                >
+                  <WhatsAppIcon className="size-4 text-gold-200" /> واتساب
+                </a>
+              )}
               {shop.phone && (
-                <a href={telHref} dir="ltr" className="self-start font-mono text-xs text-cream/[0.84]">{shop.phone}</a>
+                <a href={telHref} className="inline-flex items-center gap-2 self-start text-cream/[0.84] transition-colors hover:text-cream">
+                  <PhoneIcon className="size-4 text-gold-200" />
+                  <span dir="ltr" className="font-mono text-xs">{shop.phone}</span>
+                </a>
               )}
-              <a href={waHref} target="_blank" rel="noopener noreferrer" className="self-start text-[13px] text-cream/[0.84]">واتساب</a>
-              {shop.address && (
-                <span className="text-[13px] leading-[1.7] text-cream/[0.78] text-pretty">{shop.address}</span>
+              {(shop.address || editApi?.editing) && (
+                <EditableText path="shop.address" value={shop.address ?? ""} placeholder="العنوان" multiline className="text-[13px] leading-[1.7] text-cream/[0.78] text-pretty" />
               )}
-              {socials.length > 0 && (
-                <div className="flex items-center gap-2 pt-1">
-                  {socials.map((s) => (
-                    <span
-                      key={s.title}
-                      title={s.title}
-                      className="inline-flex size-[38px] items-center justify-center rounded-[3px] border border-cream/[0.16] text-sm text-cream/[0.88]"
-                    >
-                      {s.glyph}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <SocialLinks socials={shop.socials} className="pt-1" itemClassName={SOCIAL_CHIP} />
             </div>
           </div>
-          {shop.latinName && (
-            <span className="mt-6 block border-t border-cream/10 pt-3.5 font-mono text-[10px] uppercase tracking-[0.08em] text-cream/[0.55]">
-              © {shop.latinName} · Sawwi
-            </span>
-          )}
         </footer>
 
         {/* ══ bottom tab bar (mobile only): FIXED to the screen bottom ══ */}
@@ -1028,9 +1300,9 @@ export default function Restaurant({
                     <span className="flex flex-col gap-[5px]">
                       <span className={`${K_SM} text-cream/70`}>حساسية</span>
                       <span className="flex gap-[5px]">
-                        {openDish.allergens.map((code) => (
+                        {openDish.allergens.map((code, ci) => (
                           <span
-                            key={code}
+                            key={`al-${ci}`}
                             title={ALLERGEN_LABELS[code]}
                             className="inline-flex size-6 items-center justify-center rounded-full bg-cream/10 font-mono text-[10px] text-cream/[0.86]"
                           >
