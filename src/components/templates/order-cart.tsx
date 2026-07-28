@@ -121,16 +121,29 @@ export function CartStepper({
   theme,
   className = "",
   addLabel = "أضف للطلب",
+  compact = false,
 }: {
   cart: CartApi;
   item: CartItemInput;
   theme: CartTheme;
   className?: string;
   addLabel?: string;
+  /** compact = a small ＋ / stepper for inline use on a menu row (no wide pill). */
+  compact?: boolean;
 }) {
   const qty = cart.qtyOf(item.id);
+  const stepSize = compact ? "size-8" : "size-9";
   if (qty === 0) {
-    return (
+    return compact ? (
+      <button
+        type="button"
+        onClick={() => cart.add(item)}
+        aria-label={addLabel}
+        className={`inline-flex size-9 shrink-0 cursor-pointer items-center justify-center text-xl leading-none ${theme.cta} ${className}`}
+      >
+        ＋
+      </button>
+    ) : (
       <button
         type="button"
         onClick={() => cart.add(item)}
@@ -142,23 +155,27 @@ export function CartStepper({
     );
   }
   return (
-    <span className={`inline-flex h-[46px] items-center justify-center gap-2.5 ${className}`}>
+    <span
+      className={`inline-flex items-center justify-center ${compact ? "gap-1.5" : "h-[46px] gap-2.5"} ${className}`}
+    >
       <button
         type="button"
         onClick={() => cart.dec(item.id)}
         aria-label="إنقاص"
-        className={`inline-flex size-9 cursor-pointer items-center justify-center text-lg leading-none ${theme.step}`}
+        className={`inline-flex ${stepSize} cursor-pointer items-center justify-center text-lg leading-none ${theme.step}`}
       >
         −
       </button>
-      <span className="min-w-[2ch] text-center font-serif text-lg leading-none tabular-nums">
+      <span
+        className={`min-w-[2ch] text-center font-serif leading-none tabular-nums ${compact ? "text-base" : "text-lg"}`}
+      >
         {toArabicDigits(String(qty))}
       </span>
       <button
         type="button"
         onClick={() => cart.inc(item.id)}
         aria-label="زيادة"
-        className={`inline-flex size-9 cursor-pointer items-center justify-center text-lg leading-none ${theme.step}`}
+        className={`inline-flex ${stepSize} cursor-pointer items-center justify-center text-lg leading-none ${theme.step}`}
       >
         ＋
       </button>

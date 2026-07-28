@@ -342,13 +342,16 @@ export default function FoulFatteh({
                   style={{ boxShadow: "inset 0 0 0 6px oklch(0.27 0.05 165), inset 0 0 0 7px oklch(0.68 0.11 82 / .55)" }}
                 >
                   <Texture size={56} opacity={0.28} />
-                  {/* editable hero photo — dimmed background layer. Positioning is on
-                      the <Photo> itself so it survives on the published site (where
-                      EditableImage renders its children directly, no wrapper). */}
+                  {/* editable hero photo — dimmed background layer. The absolute
+                      positioning lives on this OUTER span (present in both contexts);
+                      EditableImage drops its own wrapper on the published site, so we
+                      must not rely on its className for layout. Photo just fills. */}
                   {(shop.heroPhoto || editApi?.editing) && (
-                    <EditableImage path="shop.heroPhoto" className="absolute inset-0">
-                      <Photo src={shop.heroPhoto} alt={shop.name} className="absolute inset-0 size-full opacity-40" />
-                    </EditableImage>
+                    <span aria-hidden className="absolute inset-0">
+                      <EditableImage path="shop.heroPhoto" className="block size-full">
+                        <Photo src={shop.heroPhoto} alt={shop.name} className="size-full opacity-40" />
+                      </EditableImage>
+                    </span>
                   )}
                   <span
                     aria-hidden
@@ -520,15 +523,32 @@ export default function FoulFatteh({
                       </button>
                     </div>
                   ) : (
-                    <button
+                    // published: a details button (opens the sheet) + a sibling
+                    // quick-add stepper, so a visitor can order straight from the
+                    // list. Split (not nested) so the stepper's buttons aren't
+                    // inside the card button.
+                    <div
                       key={`item-${i}`}
-                      type="button"
-                      onClick={() => setSheet(i)}
                       style={{ animationDelay: `${n * 55}ms` }}
-                      className={`${rowClass} cursor-pointer text-current transition-colors hover:border-aj-gold/60`}
+                      className={`${rowClass} transition-colors hover:border-aj-gold/60`}
                     >
-                      {inner}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setSheet(i)}
+                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-3.5 text-start text-current"
+                      >
+                        {inner}
+                      </button>
+                      {priceNumber(it.price) != null && (
+                        <CartStepper
+                          cart={cart}
+                          theme={CART_THEME}
+                          compact
+                          className="self-center"
+                          item={{ id: `item-${i}`, name: it.name, price: priceNumber(it.price)! }}
+                        />
+                      )}
+                    </div>
                   );
                 })}
                 {itemEdit.editing && (

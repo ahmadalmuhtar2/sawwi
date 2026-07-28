@@ -890,15 +890,32 @@ export default function Restaurant({
                       </button>
                     </div>
                   ) : (
-                    <button
+                    // published: a details button (opens the sheet) + a sibling
+                    // quick-add stepper, so a visitor can order straight from the
+                    // list without opening the dish. Split (not nested) so the
+                    // stepper's buttons aren't inside the card button.
+                    <div
                       key={`dish-${i}`}
-                      type="button"
-                      onClick={() => setDish(i)}
                       style={{ animationDelay: `${n * 55}ms` }}
-                      className={cardClass}
+                      className={`relative flex items-start gap-3.5 border-b border-cream/10 py-[18px] animate-rst-rise motion-reduce:animate-none`}
                     >
-                      {inner}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setDish(i)}
+                        className="flex min-w-0 flex-1 items-start gap-3.5 text-start text-current"
+                      >
+                        {inner}
+                      </button>
+                      {priceNumber(d.price) != null && (
+                        <CartStepper
+                          cart={cart}
+                          theme={CART_THEME}
+                          compact
+                          className="self-center"
+                          item={{ id: `dish-${i}`, name: d.name, price: priceNumber(d.price)! }}
+                        />
+                      )}
+                    </div>
                   );
                 })}
                 {dishEdit.editing && (

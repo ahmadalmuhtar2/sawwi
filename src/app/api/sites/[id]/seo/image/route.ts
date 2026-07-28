@@ -9,8 +9,11 @@ import { errors } from "@/shared/errors";
 // (the Open Graph share image or the site favicon) and returns its URL. The
 // caller writes the URL into the SEO payload. Settings-level edit (same gate as
 // the logo). Favicons may be SVG/ICO; the OG share image is a raster photo.
+// The OG share image is JPG/PNG ONLY — WhatsApp (a primary share channel here)
+// does not render WebP link-preview images, so we never store the share image as
+// WebP. Favicons may still be WebP (they're not used for social previews).
 const KEYS = {
-  og: { max: 10 * 1024 * 1024, exts: { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" } as Record<string, string> },
+  og: { max: 10 * 1024 * 1024, exts: { "image/jpeg": "jpg", "image/png": "png" } as Record<string, string> },
   favicon: { max: 1 * 1024 * 1024, exts: { "image/png": "png", "image/svg+xml": "svg", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico", "image/webp": "webp" } as Record<string, string> },
 } as const;
 
@@ -41,7 +44,7 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
     throw errors.validation("صيغة غير مدعومة", {
       file: key === "favicon"
         ? "الصيغ المدعومة: PNG أو SVG أو ICO"
-        : "الصيغ المدعومة: JPG أو PNG أو WEBP",
+        : "الصيغ المدعومة: JPG أو PNG فقط (واتساب لا يعرض صور WEBP في المعاينة)",
     });
   }
   if (file.size > spec.max) {

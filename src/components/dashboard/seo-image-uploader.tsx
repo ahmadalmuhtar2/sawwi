@@ -7,11 +7,12 @@ import { Spinner } from "@/components/ui/feedback";
 
 // Accepted client-side types per asset. The server re-validates.
 const ACCEPT: Record<"og" | "favicon", string> = {
-  og: "image/png,image/jpeg,image/webp",
+  og: "image/png,image/jpeg",
   favicon: "image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,image/webp",
 };
 const HINT: Record<"og" | "favicon", string> = {
-  og: "JPG أو PNG أو WEBP — ١٠ ميغابايت كحد أقصى",
+  // OG is JPG/PNG only — WhatsApp doesn't render WebP link-preview images.
+  og: "JPG أو PNG — ١٠ ميغابايت كحد أقصى (لا تدعم واتساب صور WEBP)",
   favicon: "PNG أو SVG أو ICO — ١ ميغابايت كحد أقصى",
 };
 
