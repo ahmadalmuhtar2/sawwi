@@ -13,7 +13,7 @@
 
 import * as React from "react";
 import { ImageUp, Loader2, Trash2 } from "lucide-react";
-import { getPath, setPath } from "@/templates/content";
+import { setPath } from "@/templates/content";
 import { uploadStaging } from "./fields";
 import { cn } from "@/lib/cn";
 
@@ -156,9 +156,11 @@ export function EditableImage({
   };
 
   return (
-    <span className={cn("group/img relative block", className)}>
+    <span className={cn("group/img relative block touch-manipulation", className)}>
       {children}
-      <span className="absolute inset-0 z-20 flex items-center justify-center gap-1.5 bg-black/45 opacity-0 transition-opacity group-hover/img:opacity-100">
+      {/* controls: hover-reveal on desktop; always shown (lighter scrim) on
+          touch/coarse pointers, since there's no hover to reveal them. */}
+      <span className="absolute inset-0 z-20 flex items-center justify-center gap-1.5 bg-black/45 opacity-0 transition-opacity group-hover/img:opacity-100 pointer-coarse:bg-black/25 pointer-coarse:opacity-100">
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -270,6 +272,15 @@ function InlineText({
     });
   };
 
+  // Touch/coarse pointers: a single TAP edits (mobile has no reliable
+  // double-click, and double-tap zooms). Mouse keeps double-click (below), so
+  // desktop text selection isn't hijacked by a stray single click.
+  const startTap = (e: React.MouseEvent) => {
+    if (active) return;
+    const coarse = ref.current?.ownerDocument.defaultView?.matchMedia?.("(pointer: coarse)").matches;
+    if (coarse) start(e);
+  };
+
   const commit = () => {
     setActive(false);
     const text = (ref.current?.innerText ?? "").trim();
@@ -293,11 +304,14 @@ function InlineText({
   return (
     <Tag
       ref={ref}
-      className={cn(className, "sw-edit", active && "sw-edit-active", empty && "opacity-45 italic")}
+      // touch-manipulation: kill the browser's double-tap-to-zoom on editable
+      // text (mobile) while keeping pinch-zoom + scroll. Single-tap edits (above).
+      className={cn(className, "sw-edit touch-manipulation", active && "sw-edit-active", empty && "opacity-45 italic")}
       contentEditable={active}
       suppressContentEditableWarning
       role="textbox"
       title={active ? undefined : "انقر مرتين للتعديل"}
+      onClick={startTap}
       onDoubleClick={start}
       onBlur={commit}
       onKeyDown={onKeyDown}
