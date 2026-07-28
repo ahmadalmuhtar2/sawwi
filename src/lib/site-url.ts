@@ -19,3 +19,11 @@ export function siteUrl(slug: string): string {
   const local = ROOT_DOMAIN.startsWith("localhost") || ROOT_DOMAIN.startsWith("127.0.0.1");
   return `${local ? "http" : "https"}://${slug}.${ROOT_DOMAIN}`;
 }
+
+/** The platform's OWN canonical origin — the apex marketing site, e.g.
+ *  https://sawwi.online. This is what SEO (metadataBase, canonicals, sitemap,
+ *  structured data) points at, so the brand pages consolidate onto one host. */
+export const PLATFORM_URL = (() => {
+  const local = ROOT_DOMAIN.startsWith("localhost") || ROOT_DOMAIN.startsWith("127.0.0.1");
+  return `${local ? "http" : "https"}://${ROOT_DOMAIN}`;
+})();

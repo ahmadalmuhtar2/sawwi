@@ -22,6 +22,8 @@ type Upload = (file: File) => Promise<string>;
 export interface DayHours {
   day: string;
   closed?: boolean;
+  /** true → open 24 hours; open/close are ignored. */
+  h24?: boolean;
   open?: string;
   close?: string;
 }
@@ -52,7 +54,7 @@ function normalizeWeek(stored: unknown): DayHours[] {
       if (row && typeof row.day === "string") byDay.set(row.day, row);
     }
   }
-  return WEEK_DAYS.map((day) => byDay.get(day) ?? { day, closed: false, open: "", close: "" });
+  return WEEK_DAYS.map((day) => byDay.get(day) ?? { day, closed: false, h24: false, open: "", close: "" });
 }
 
 /** Resolve a `select` field's options from a sibling list in the root content,
@@ -216,15 +218,16 @@ function WeekHoursEditor({
               <span className="text-sm font-semibold text-ink">{d.day}</span>
               <SegmentedControl
                 size="sm"
-                value={d.closed ? "closed" : "open"}
-                onChange={(v) => setDay(i, { closed: v === "closed" })}
+                value={d.closed ? "closed" : d.h24 ? "h24" : "open"}
+                onChange={(v) => setDay(i, { closed: v === "closed", h24: v === "h24" })}
                 options={[
                   { value: "open", label: "مفتوح" },
+                  { value: "h24", label: "٢٤ ساعة" },
                   { value: "closed", label: "مغلق" },
                 ]}
               />
             </div>
-            {!d.closed && (
+            {!d.closed && !d.h24 && (
               <div className="mt-2 flex items-center gap-2">
                 <MenuSelect
                   className="min-w-0 flex-1"

@@ -2,6 +2,7 @@
 // site's current draft, and read/write snapshots.
 
 import { getPrisma } from "@/lib/db";
+import { defaultCurrencyOf } from "@/templates/registry";
 import type { Prisma } from "@/generated/prisma/client";
 
 export const publishingRepository = {
@@ -20,7 +21,7 @@ export const publishingRepository = {
       seo: site.seo,
       templateKey: site.templateKey,
       content: site.content,
-      currency: site.settings?.currency ?? "SYP",
+      currency: site.settings?.currency ?? defaultCurrencyOf(site.templateKey),
       theme: {
         accent: site.theme?.primaryColor ?? null,
         ground: site.theme?.bgColor ?? null,

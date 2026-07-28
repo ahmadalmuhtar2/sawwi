@@ -26,7 +26,14 @@
  */
 
 import * as React from "react";
+import { priceNumber } from "@/shared/currency";
 import { EditableText, EditableImage, useEdit, useEditList, useEditStrings } from "@/components/templates/inline-edit";
+import {
+  useOrderCart,
+  OrderCart,
+  CartStepper,
+  type CartTheme,
+} from "@/components/templates/order-cart";
 import {
   WhatsAppIcon,
   PhoneIcon,
@@ -38,6 +45,17 @@ import {
 
 /** Barbershop palette for the shared social chips (dark ground, bone text). */
 const SOCIAL_CHIP = "size-8 rounded-full border border-bone/15 text-bone/75 hover:border-oxblood/60 hover:text-bone";
+
+/** Order-cart palette — oxblood bar/CTA on the dark ink drawer, bone text. */
+const CART_THEME: CartTheme = {
+  scrim: "bg-[rgba(12,8,6,.7)]",
+  panel: "rounded-t-[14px] border border-oxblood/35 bg-ink-700 text-bone lg:rounded-[14px]",
+  bar: "rounded-full bg-oxblood text-white",
+  cta: "rounded-[3px] bg-oxblood text-white",
+  step: "rounded-full border border-bone/25 text-bone",
+  divider: "border-bone/[0.12]",
+  muted: "text-bone/70",
+};
 
 /* ────────────────────────────── types ────────────────────────────── */
 
@@ -282,6 +300,7 @@ export default function BarbershopFiveStar({
 
   const openNow = useOpenNow(hours);
   const editApi = useEdit();
+  const cart = useOrderCart();
   const statEdit = useEditList("shop.stats", shop.stats ?? []);
   const svcEdit = useEditList("services", services);
   const groupEdit = useEditList("groups", groups);
@@ -1161,24 +1180,40 @@ export default function BarbershopFiveStar({
                   ))}
                 </div>
               ) : null}
-              <div className="flex items-center justify-between gap-3.5 border-t border-bone/[0.12] pt-4">
-                <span className="flex flex-col gap-1">
-                  <span className="font-serif text-[26px] leading-none text-oxblood-100">
-                    {open.price} {currency}
+              <div className="flex flex-col gap-3 border-t border-bone/[0.12] pt-4">
+                <div className="flex items-center justify-between gap-3.5">
+                  <span className="flex flex-col gap-1">
+                    <span className="font-serif text-[26px] leading-none text-oxblood-100">
+                      {open.price} {currency}
+                    </span>
+                    <span className={`${K_SM} text-bone/[0.68]`}>{open.duration}</span>
                   </span>
-                  <span className={`${K_SM} text-bone/[0.68]`}>{open.duration}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={bookFromSheet}
-                  className="inline-flex h-[46px] items-center whitespace-nowrap rounded-[3px] border-0 bg-oxblood px-5 font-display text-sm font-bold text-white"
-                >
-                  احجز هذه الخدمة
-                </button>
+                  <button
+                    type="button"
+                    onClick={bookFromSheet}
+                    className="inline-flex h-[46px] items-center whitespace-nowrap rounded-[3px] border-0 bg-oxblood px-5 font-display text-sm font-bold text-white"
+                  >
+                    احجز هذه الخدمة
+                  </button>
+                </div>
+                {priceNumber(open.price) != null && (
+                  <CartStepper
+                    cart={cart}
+                    theme={CART_THEME}
+                    className="w-full"
+                    addLabel="أضف إلى الطلب"
+                    item={{ id: `svc-${sheet}`, name: open.name, price: priceNumber(open.price)! }}
+                  />
+                )}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══ order cart (published/preview only — not in the builder) ══ */}
+      {!editApi?.editing && (
+        <OrderCart cart={cart} currency={currency} whatsapp={shop.whatsapp} shopName={shop.name} theme={CART_THEME} />
       )}
     </div>
   );

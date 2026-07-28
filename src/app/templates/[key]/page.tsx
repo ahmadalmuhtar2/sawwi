@@ -14,11 +14,19 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { key } = await params;
   const tpl = getTemplate(key);
   if (!tpl) return { title: "قالب — سوّي" };
+  const title = `${tpl.label} — قالب موقع جاهز من سوّي`;
   return {
-    title: `${tpl.label} — قالب سوّي`,
+    title,
     description: tpl.description,
     keywords: tpl.tags,
-    openGraph: { title: `${tpl.label} — قالب سوّي`, description: tpl.description },
+    alternates: { canonical: `/templates/${key}` },
+    openGraph: {
+      type: "website",
+      url: `/templates/${key}`,
+      title,
+      description: tpl.description,
+    },
+    twitter: { card: "summary_large_image", title, description: tpl.description },
   };
 }
 

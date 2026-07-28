@@ -15,11 +15,54 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { ROOT_DOMAIN } from "@/lib/site-url";
+import { ROOT_DOMAIN, PLATFORM_URL } from "@/lib/site-url";
+
+// Structured data (schema.org) so Google can show Sawwi as an organization /
+// web app and understand the brand + what it does. One @graph, rendered once on
+// the homepage.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${PLATFORM_URL}/#organization`,
+      name: "سوّي",
+      alternateName: "Sawwi",
+      url: PLATFORM_URL,
+      logo: `${PLATFORM_URL}/icon.svg`,
+      description:
+        "منصّة عربية لبناء مواقع الأعمال المحلية بقوالب جاهزة، بدون برمجة.",
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${PLATFORM_URL}/#website`,
+      url: PLATFORM_URL,
+      name: "سوّي",
+      alternateName: "Sawwi",
+      inLanguage: "ar",
+      publisher: { "@id": `${PLATFORM_URL}/#organization` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: "سوّي",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      inLanguage: "ar",
+      url: PLATFORM_URL,
+      description:
+        "أنشئ موقع عملك بقوالب عربية جاهزة (مطعم، صالون حلاقة، متجر…) وانشره على نطاقك الفرعي في دقائق — بدون تصميم أو برمجة.",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    },
+  ],
+};
 
 export default function LandingPage() {
   return (
     <div className="bg-bg text-ink">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-line/70 bg-bg/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">

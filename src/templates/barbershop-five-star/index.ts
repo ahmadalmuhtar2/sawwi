@@ -72,6 +72,8 @@ export const barbershopFiveStar: TemplateModule = {
   Component: Component as unknown as TemplateModule["Component"],
   defaults,
   nameKey: "shop.name",
+  // Default price unit shown across the site (owner can change it in settings).
+  defaultCurrency: "SYP",
   // The template ships its own font — no font override in the appearance tab.
   themeFont: false,
   tokens: [

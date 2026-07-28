@@ -6,6 +6,7 @@
 import { cache } from "react";
 import { getPrisma } from "@/lib/db";
 import { symbolOf } from "@/shared/currency";
+import { defaultCurrencyOf } from "@/templates/registry";
 import { asSiteSeo, type SiteSeo } from "@/shared/seo";
 
 /** The 3 themeable colors (mapped onto existing SiteTheme columns) + font. */
@@ -53,7 +54,7 @@ export const getDraftTemplateData = cache(
       templateKey: site.templateKey,
       content: (site.content as Record<string, unknown>) ?? {},
       theme: themeFrom(site.theme),
-      currency: symbolOf(site.settings?.currency ?? "SYP"),
+      currency: symbolOf(site.settings?.currency ?? defaultCurrencyOf(site.templateKey)),
       meta: {
         businessName: site.businessName,
         language: site.language === "en" ? "en" : "ar",

@@ -81,6 +81,8 @@ export const foulFatteh: TemplateModule = {
   // not the green chrome (`ground`). This makes the palette-card preview show the
   // menu as the fill — matching how the site actually reads.
   surfaceToken: "ink",
+  // Default price unit shown across the site (owner can change it in settings).
+  defaultCurrency: "SYP",
   // The template ships its own font — no font override in the appearance tab.
   themeFont: false,
   tokens: [

@@ -124,6 +124,11 @@ export interface TemplateModule {
    *  background). Templates whose main surface is a different token set it (e.g.
    *  foul-fatteh's menu sits on `ink`, so its cards preview that as the fill). */
   surfaceToken?: string;
+  /** The template's default site currency KEY (see shared/currency `CURRENCIES`,
+   *  e.g. "SYP" → ل.س, "SYP_NEW" → ل.س.ج). Used as the starting unit for a new
+   *  site and whenever the owner hasn't chosen one in settings; still overridable
+   *  per site. Omit to fall back to the platform default (SYP). */
+  defaultCurrency?: string;
   /** True if a font picker applies (maps to --tpl-font). */
   themeFont?: boolean;
   /** Whitelist of font keys (from lib/palette FONTS) offered for this template.
