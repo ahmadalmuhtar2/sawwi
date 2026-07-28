@@ -7,12 +7,11 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Eye, Loader2, Monitor, Smartphone, Rocket, Undo2, Redo2 } from "lucide-react";
+import { ArrowRight, Eye, Loader2, Monitor, Smartphone, Rocket, SlidersHorizontal, Undo2, Redo2, X } from "lucide-react";
 import { getTemplate } from "@/templates/registry";
 import { deepMerge } from "@/templates/content";
 import { FieldForm, uploadStaging } from "./fields";
-import { AppearancePanel, useIsMobile } from "./editor-shared";
-import { MobileContentEditor } from "./mobile-content-editor";
+import { AppearancePanel } from "./editor-shared";
 import { TemplateHost } from "@/components/public/template-host";
 import type { TemplateTheme } from "@/server/sites/template-data";
 import { api, ApiClientError } from "@/lib/api-client";
@@ -46,7 +45,10 @@ export function ContentEditor({
   const [saved, setSaved] = React.useState(true);
   const [publishing, setPublishing] = React.useState(false);
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
-  const isMobile = useIsMobile();
+  // Mobile only (< lg): the settings sidebar collapses into a drawer toggled by
+  // a small floating button. Purely CSS-gated so it never depends on JS width
+  // detection (which proved unreliable across mobile emulators).
+  const [panelOpen, setPanelOpen] = React.useState(false);
   const firstRun = React.useRef(true);
 
   // In-session undo/redo. History holds content snapshots; every edit (inline or
@@ -154,33 +156,38 @@ export function ContentEditor({
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
 
-  // Below `lg` the two-pane layout doesn't fit — hand off to the mobile editor
-  // (same state + callbacks, phone-friendly one-pane layout).
-  if (isMobile) {
-    return (
-      <MobileContentEditor
-        tpl={tpl}
-        siteId={siteId}
-        templateKey={templateKey}
-        tabs={tabs}
-        tab={tab}
-        setTab={setTab}
-        isAppearance={isAppearance}
-        content={content}
-        applyContent={applyContent}
-        theme={theme}
-        saveTheme={saveTheme}
-        saving={saving}
-        saved={saved}
-        publish={publish}
-        publishing={publishing}
-        undo={undo}
-        redo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
-    );
-  }
+  // The settings panel (section chips + fields OR appearance) — shared by the
+  // desktop sidebar and the mobile drawer so both render identical controls.
+  const settingsBody = (
+    <>
+      <div className="flex flex-wrap gap-1.5 border-b border-line p-3">
+        {tabs.map((t, i) => (
+          <button
+            key={t}
+            onClick={() => setTab(i)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium transition cursor-pointer",
+              i === tab ? "bg-accent-100 text-accent-900" : "text-muted hover:bg-neutral-200 hover:text-ink",
+            )}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+        {isAppearance ? (
+          <AppearancePanel tpl={tpl} theme={theme} saveTheme={saveTheme} />
+        ) : (
+          <FieldForm
+            fields={tpl.steps[tab].fields}
+            content={content}
+            onChange={applyContent}
+            upload={uploadStaging}
+          />
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="-m-6 flex h-[calc(100dvh-4rem)] flex-col">
@@ -237,34 +244,9 @@ export function ContentEditor({
       </div>
 
       <div className="flex min-h-0 flex-1">
-        {/* editor column */}
-        <aside className="flex w-[380px] shrink-0 flex-col border-e border-line bg-surface">
-          <div className="flex flex-wrap gap-1.5 border-b border-line p-3">
-            {tabs.map((t, i) => (
-              <button
-                key={t}
-                onClick={() => setTab(i)}
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-medium transition cursor-pointer",
-                  i === tab ? "bg-accent-100 text-accent-900" : "text-muted hover:bg-neutral-200 hover:text-ink",
-                )}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            {isAppearance ? (
-              <AppearancePanel tpl={tpl} theme={theme} saveTheme={saveTheme} />
-            ) : (
-              <FieldForm
-                fields={tpl.steps[tab].fields}
-                content={content}
-                onChange={applyContent}
-                upload={uploadStaging}
-              />
-            )}
-          </div>
+        {/* editor column — pinned sidebar on desktop; a drawer on mobile (below) */}
+        <aside className="hidden w-[380px] shrink-0 flex-col border-e border-line bg-surface lg:flex">
+          {settingsBody}
         </aside>
 
         {/* live preview with a device toggle */}
@@ -317,6 +299,48 @@ export function ContentEditor({
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── mobile only (< lg): small button opens the settings drawer ─────── */}
+      <button
+        type="button"
+        onClick={() => setPanelOpen(true)}
+        className="fixed bottom-4 start-4 z-40 inline-flex items-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-accent-700 cursor-pointer lg:hidden"
+      >
+        <SlidersHorizontal className="size-4" />
+        تعديل
+      </button>
+
+      <div
+        className={cn(
+          "fixed inset-0 z-50 transition-opacity duration-200 lg:hidden",
+          panelOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+        aria-hidden={!panelOpen}
+      >
+        <div className="absolute inset-0 bg-black/40" onClick={() => setPanelOpen(false)} />
+        <aside
+          className={cn(
+            "absolute inset-x-0 bottom-0 flex max-h-[88dvh] flex-col rounded-t-2xl bg-surface shadow-2xl transition-transform duration-300",
+            panelOpen ? "translate-y-0" : "translate-y-full",
+          )}
+          role="dialog"
+          aria-modal="true"
+          aria-label="تعديل البيانات والمظهر"
+        >
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-line px-3">
+            <span className="text-sm font-bold text-ink">تعديل البيانات والمظهر</span>
+            <button
+              type="button"
+              onClick={() => setPanelOpen(false)}
+              aria-label="إغلاق"
+              className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+          {settingsBody}
+        </aside>
       </div>
     </div>
   );
