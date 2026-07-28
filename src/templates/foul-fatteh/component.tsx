@@ -24,7 +24,14 @@
  */
 
 import * as React from "react";
+import { priceNumber } from "@/shared/currency";
 import { EditableText, EditableImage, useEdit, useEditList } from "@/components/templates/inline-edit";
+import {
+  useOrderCart,
+  OrderCart,
+  CartStepper,
+  type CartTheme,
+} from "@/components/templates/order-cart";
 import {
   WhatsAppIcon,
   PhoneIcon,
@@ -110,6 +117,17 @@ const K_SM = "whitespace-nowrap font-sans text-[11px] font-semibold leading-[1.5
 /** dark green text on a gold fill — kept fixed so it stays legible on gold. */
 const ON_GOLD = "text-[oklch(0.24_0.04_165)]";
 
+/** Order-cart palette — gold bar/CTA, cream drawer (matches the dish sheet). */
+const CART_THEME: CartTheme = {
+  scrim: "bg-[oklch(0.2_0.04_165/.72)]",
+  panel: "rounded-t-[14px] border-2 border-aj-gold bg-aj-cream text-aj-ink lg:rounded-[6px]",
+  bar: `rounded-[2px] bg-aj-gold ${ON_GOLD}`,
+  cta: `rounded-[2px] bg-aj-gold ${ON_GOLD}`,
+  step: "rounded-[2px] border border-aj-ink/25 text-aj-ink",
+  divider: "border-aj-ink/15",
+  muted: "text-aj-ink-soft",
+};
+
 const waLink = (n: string) => `https://wa.me/${n.replace(/\D/g, "")}`;
 
 /** Self-contained Ajami lattice — an inline SVG data URI (gold stroke). Replaces
@@ -139,6 +157,12 @@ const PinIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" className="size-5" aria-hidden>
     <path d="M12 21s6.5-6 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15 12 21 12 21z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     <circle cx="12" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+);
+/** "open the dish" affordance — mirrored for RTL, shown on published cards. */
+const Chevron = () => (
+  <svg viewBox="0 0 16 16" fill="none" className="size-3.5 -scale-x-100" aria-hidden>
+    <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -173,6 +197,7 @@ export default function FoulFatteh({
 }: FoulFattehProps) {
   const openNow = useOpenNow(hours);
   const editApi = useEdit();
+  const cart = useOrderCart();
   const itemEdit = useEditList("items", items);
   const groupEdit = useEditList("groups", groups);
   // Removing a category also drops its dishes, in one commit (atomic).
@@ -186,6 +211,10 @@ export default function FoulFatteh({
 
   const [page, setPage] = React.useState<Page>("menu");
   const [group, setGroup] = React.useState(groups[0]?.id);
+  // Which dish's detail sheet is open (-1 = none). Index is against the FULL
+  // items list (like the barbershop), so filtering the view can't misopen it.
+  const [sheet, setSheet] = React.useState(-1);
+  const openItem = sheet >= 0 ? items[sheet] : null;
   const [toast, setToast] = React.useState<string | null>(null);
   const toastTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -199,7 +228,7 @@ export default function FoulFatteh({
 
   const telHref = shop.phone ? `tel:${shop.phone.replace(/\s/g, "")}` : undefined;
 
-  const go = (p: Page) => setPage(p);
+  const go = (p: Page) => { setPage(p); setSheet(-1); };
 
   const copyPhone = () => {
     if (!shop.phone) return;
@@ -448,28 +477,39 @@ export default function FoulFatteh({
             {/* menu list — two columns on desktop */}
             <section className="px-[22px] pb-[26px] pt-[18px] lg:px-14">
               <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-x-[44px] lg:grid-cols-2">
-                {visible.map(({ it, i }, n) => (
-                  <div
-                    key={`item-${i}`}
-                    style={{ animationDelay: `${n * 55}ms` }}
-                    className="group/item relative flex items-start gap-3.5 border-b border-aj-ink/15 py-4 animate-aj-rise motion-reduce:animate-none"
-                  >
-                    <EditableImage onChange={(url) => itemEdit.setField(i, "photo", url)} className="size-[62px] shrink-0 rounded-[2px]">
-                      <Photo src={it.photo} alt={it.name} className="size-[62px] shrink-0 rounded-[2px] border border-aj-gold/50" />
-                    </EditableImage>
-                    <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                      <span className="flex flex-wrap items-baseline gap-[9px]">
-                        <EditableText value={it.name} onCommit={(t) => itemEdit.setField(i, "name", t)} className="font-display text-[15.5px] font-bold text-aj-ink" />
-                        <EditableText value={it.mark ?? ""} placeholder="وسم" onCommit={(t) => itemEdit.setField(i, "mark", t)} className={`${K_SM} rounded-[2px] bg-aj-gold/20 px-2 py-[3px] text-aj-gold-deep`} />
+                {visible.map(({ it, i }, n) => {
+                  // Shared card body. The EditableText/EditableImage primitives are
+                  // inert when published, so the SAME markup is a plain (clickable)
+                  // card on the live site and an editable row in the builder.
+                  const inner = (
+                    <>
+                      <EditableImage onChange={(url) => itemEdit.setField(i, "photo", url)} className="size-[62px] shrink-0 rounded-[2px]">
+                        <Photo src={it.photo} alt={it.name} className="size-[62px] shrink-0 rounded-[2px] border border-aj-gold/50" />
+                      </EditableImage>
+                      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                        <span className="flex flex-wrap items-baseline gap-[9px]">
+                          <EditableText value={it.name} onCommit={(t) => itemEdit.setField(i, "name", t)} className="font-display text-[15.5px] font-bold text-aj-ink" />
+                          <EditableText value={it.mark ?? ""} placeholder="وسم" onCommit={(t) => itemEdit.setField(i, "mark", t)} className={`${K_SM} rounded-[2px] bg-aj-gold/20 px-2 py-[3px] text-aj-gold-deep`} />
+                        </span>
+                        <EditableText value={it.latin ?? ""} placeholder="بالإنجليزية" keepLatinDigits onCommit={(t) => itemEdit.setField(i, "latin", t)} className="font-serif text-xs text-aj-ink-soft" />
+                        <EditableText value={it.desc ?? ""} placeholder="أضف وصفًا…" multiline onCommit={(t) => itemEdit.setField(i, "desc", t)} className="text-[12.5px] leading-[1.7] text-aj-ink-soft text-pretty" />
                       </span>
-                      <EditableText value={it.latin ?? ""} placeholder="بالإنجليزية" keepLatinDigits onCommit={(t) => itemEdit.setField(i, "latin", t)} className="font-serif text-xs text-aj-ink-soft" />
-                      <EditableText value={it.desc ?? ""} placeholder="أضف وصفًا…" multiline onCommit={(t) => itemEdit.setField(i, "desc", t)} className="text-[12.5px] leading-[1.7] text-aj-ink-soft text-pretty" />
-                    </span>
-                    <span className="flex shrink-0 flex-col items-end gap-[3px]">
-                      <EditableText value={it.price} onCommit={(t) => itemEdit.setField(i, "price", t)} className="font-serif text-[19px] leading-none text-aj-gold-deep" />
-                      <span className={`${K_SM} text-aj-ink-soft`}>{currency}</span>
-                    </span>
-                    {itemEdit.editing && (
+                      <span className="flex shrink-0 flex-col items-end gap-[3px]">
+                        <EditableText value={it.price} onCommit={(t) => itemEdit.setField(i, "price", t)} className="font-serif text-[19px] leading-none text-aj-gold-deep" />
+                        <span className={`${K_SM} text-aj-ink-soft`}>{currency}</span>
+                        {!itemEdit.editing && (
+                          <span className="mt-1 text-aj-gold-deep/70 transition-colors group-hover/item:text-aj-gold-deep">
+                            <Chevron />
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  );
+                  const rowClass =
+                    "group/item relative flex w-full items-start gap-3.5 border-b border-aj-ink/15 py-4 text-start animate-aj-rise motion-reduce:animate-none";
+                  return itemEdit.editing ? (
+                    <div key={`item-${i}`} style={{ animationDelay: `${n * 55}ms` }} className={rowClass}>
+                      {inner}
                       <button
                         type="button"
                         onClick={() => itemEdit.remove(i)}
@@ -478,9 +518,19 @@ export default function FoulFatteh({
                       >
                         ✕
                       </button>
-                    )}
-                  </div>
-                ))}
+                    </div>
+                  ) : (
+                    <button
+                      key={`item-${i}`}
+                      type="button"
+                      onClick={() => setSheet(i)}
+                      style={{ animationDelay: `${n * 55}ms` }}
+                      className={`${rowClass} cursor-pointer text-current transition-colors hover:border-aj-gold/60`}
+                    >
+                      {inner}
+                    </button>
+                  );
+                })}
                 {itemEdit.editing && (
                   <button
                     type="button"
@@ -634,6 +684,75 @@ export default function FoulFatteh({
           })}
         </nav>
       </div>
+
+      {/* ── dish sheet: fixed, covers the whole page (published + builder) ── */}
+      {openItem && (
+        <div
+          onClick={() => setSheet(-1)}
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-[oklch(0.2_0.04_165/.72)] backdrop-blur-[4px] animate-aj-page motion-reduce:animate-none lg:items-center lg:p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[80vh] w-full max-w-[392px] overflow-y-auto rounded-t-[14px] border-t-2 border-aj-gold bg-aj-cream animate-aj-rise motion-reduce:animate-none lg:max-h-[86vh] lg:max-w-md lg:rounded-[6px] lg:border-2"
+          >
+            <div className="relative">
+              <Photo src={openItem.photo} alt={openItem.name} className="h-[200px] w-full" />
+              <button
+                type="button"
+                onClick={() => setSheet(-1)}
+                aria-label="إغلاق"
+                className="absolute end-3 top-3 z-[3] inline-flex size-9 items-center justify-center rounded-full border-0 bg-[oklch(0.2_0.04_165/.6)] text-aj-cream backdrop-blur-[6px]"
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="size-[15px]">
+                  <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex flex-col gap-[15px] px-[22px] pb-[26px] pt-5">
+              <div className="flex flex-col gap-1.5">
+                <span className="flex flex-wrap items-baseline gap-[9px]">
+                  <span className="font-display text-[21px] font-extrabold leading-[1.42] text-aj-ink">{openItem.name}</span>
+                  {openItem.mark && (
+                    <span className={`${K_SM} rounded-[2px] bg-aj-gold/20 px-2 py-[3px] text-aj-gold-deep`}>{openItem.mark}</span>
+                  )}
+                </span>
+                {openItem.latin && <span className="font-serif text-[13px] text-aj-ink-soft">{openItem.latin}</span>}
+              </div>
+              {openItem.desc && (
+                <span className="text-sm leading-[1.85] text-aj-ink-soft text-pretty">{openItem.desc}</span>
+              )}
+              <div className="flex items-center justify-between gap-3.5 border-t border-aj-gold/45 pt-4">
+                <span className="flex items-baseline gap-2">
+                  <span className="font-serif text-[26px] leading-none text-aj-gold-deep">{openItem.price}</span>
+                  <span className={`${K_SM} text-aj-ink-soft`}>{currency}</span>
+                </span>
+                {priceNumber(openItem.price) != null ? (
+                  <CartStepper
+                    cart={cart}
+                    theme={CART_THEME}
+                    item={{ id: `item-${sheet}`, name: openItem.name, price: priceNumber(openItem.price)! }}
+                  />
+                ) : (
+                  telHref && (
+                    <a
+                      href={telHref}
+                      className={`inline-flex h-[46px] items-center gap-2 whitespace-nowrap rounded-[2px] bg-aj-gold px-5 font-display text-sm font-bold ${ON_GOLD}`}
+                    >
+                      <PhoneIcon className="size-4" />
+                      اتصل واطلب
+                    </a>
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ order cart (published/preview only — not in the builder) ══ */}
+      {!editApi?.editing && (
+        <OrderCart cart={cart} currency={currency} whatsapp={shop.whatsapp} shopName={shop.name} theme={CART_THEME} />
+      )}
 
       {/* ══ toast (copy phone) ══ */}
       {toast && (

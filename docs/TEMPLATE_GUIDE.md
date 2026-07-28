@@ -109,6 +109,7 @@ export const myTemplate: TemplateModule = {
   tokens: [ … ],                   // the 3 themeable color tokens → cssVars (see §7.1)
   palettes: [ … ],                 // named colorways shown in the appearance tab (see §7.2)
 
+  defaultCurrency: "SYP",          // default price unit KEY (see shared/currency CURRENCIES); "SYP_NEW" → ل.س.ج
   themeFont: false,                // true → offer a font override; false → template's own font only
   fontKeys: ["cairo", "rubik"],    // (optional) whitelist of offered fonts when themeFont is true
 };
@@ -320,6 +321,45 @@ kicker/title render as `EditableText`; otherwise as static spans. Store the over
 optional fields on the relevant content object (`house.hygieneKicker`, `shop.teamTitle`, …) and
 seed them with `?? "default text"`.
 
+### 5.8 The order cart (menu templates)
+
+Templates whose items have prices can offer a **visitor order cart** — add items, see
+a running total, and send the order to the shop on WhatsApp — via the shared module
+[`src/components/templates/order-cart.tsx`](../src/components/templates/order-cart.tsx).
+Like site-chrome, the **logic is shared and the look is yours**: you pass a small
+`CartTheme` of palette class strings. All three shipped templates use it.
+
+```tsx
+import { priceNumber } from "@/shared/currency";
+import { useOrderCart, OrderCart, CartStepper, type CartTheme } from "@/components/templates/order-cart";
+
+const CART_THEME: CartTheme = {           // complete class strings (colors + rounding + borders)
+  scrim: "bg-[rgba(10,8,6,.7)]",
+  panel: "rounded-t-[14px] border border-gold/25 bg-warm-700 text-cream lg:rounded-[14px]",
+  bar:   "rounded-[3px] bg-gold text-[oklch(0.16_0.03_70)]",   // floating bar
+  cta:   "rounded-[3px] bg-gold text-[oklch(0.16_0.03_70)]",   // send / add button
+  step:  "rounded-full border border-cream/25 text-cream",     // +/- buttons (own the rounding!)
+  divider: "border-cream/[0.12]",
+  muted:   "text-cream/70",
+};
+
+const cart = useOrderCart();  // { lines, count, total, add, inc, dec, remove, clear, qtyOf }
+```
+
+- **Add control** — put a `<CartStepper cart item={{id,name,price}} theme={CART_THEME} />` in each
+  item's **detail sheet** (next to the price). `price` is a **number** — parse the Arabic price
+  string with `priceNumber(raw)` and skip the stepper when it returns `null` (a "حسب الطلب" price
+  can't be summed). Use a **stable id** (the item's index in the FULL list, e.g. `` `dish-${i}` ``).
+- **Cart + drawer** — render `<OrderCart cart currency whatsapp shopName theme />` **once**, and
+  **only on the published/preview site**: gate it behind `{!editApi?.editing && …}` so it never
+  covers the builder. It shows a floating bar (hidden when empty), a preview drawer with per-line
+  steppers and the summed total, and — when `whatsapp` is set — an "أرسل الطلب عبر واتساب" button
+  with the itemized order pre-filled. No `whatsapp` → preview + total only.
+- **Totals** render with `formatArabicAmount(n)` + the `currency` prop, so the cart reads in the
+  same Arabic-Indic digits and unit as every price on the page.
+- **`step` owns its rounding** — the shared parts don't hardcode `rounded-*`, so a sharp template
+  (foul-fatteh: `rounded-[2px]`) and a pill template (barbershop: `rounded-full`) both look right.
+
 ---
 
 ## 6. The side panel (schema-driven fields)
@@ -355,7 +395,7 @@ steps: [
 | `list` | repeatable records | `itemLabel`, `blank` (new-row template), `item: FieldDef[]` (per-row fields); reorder + delete built in |
 | `select` | dropdown from a sibling list | `optionsFrom` (a content list key), `optionValue`/`optionLabel` (default `id`/`label`) |
 | `categories` | category manager | auto-generated ids; `dependents:{list,key}` reassigns orphaned rows on delete |
-| `weekhours` | 7-day hours editor | segmented مفتوح/مغلق + our custom from/to dropdowns; writes the whole `[{day,closed,open,close}]` array |
+| `weekhours` | 7-day hours editor | per-day segmented **مفتوح / ٢٤ ساعة / مغلق** + our custom from/to dropdowns (hidden when مغلق or ٢٤ ساعة); writes the whole `[{day,closed,h24,open,close}]` array. Set every day to ٢٤ ساعة for an always-open business. |
 
 ### 6.2 Panel vs. inline — how to decide
 
@@ -522,7 +562,7 @@ hard-code the domain.
 | Theme | `SiteTheme` (primaryColor/secondaryColor/bgColor/fontKey) | `PUT /api/sites/:id/theme`. `fontKey` defaults to `readex`. |
 | Draft render | `getDraftTemplateData` | live DB row → builder + `/preview`. |
 | Published render | `getPublishedTemplateData` | frozen `PublishSnapshot` payload (content+theme+currency). |
-| Currency | site settings → `symbolOf` | passed to the component as `currency` (a symbol like `ل.س`). |
+| Currency | site settings → `symbolOf`, falling back to the template's `defaultCurrency` | passed to the component as `currency` (a symbol like `ل.س`). A site with no chosen currency shows its template's default; the owner can change it in settings. Resolved in `template-data.ts` (draft) + `publishing.repository.ts` (published) via `defaultCurrencyOf`. |
 
 The **content editor** ([`content-editor.tsx`](../src/components/templates/content-editor.tsx)) provides:
 - Tabs from `steps` + an **appearance** tab (palettes; font picker only if `themeFont`).

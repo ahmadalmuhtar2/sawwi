@@ -95,6 +95,8 @@ export interface HoursRow {
   day: string;
   /** true → the shop is closed that day */
   closed?: boolean;
+  /** true → open around the clock; `open`/`close` are ignored. */
+  h24?: boolean;
   /** opening / closing clock labels, e.g. "١٠:٠٠ ص" */
   open?: string;
   close?: string;
@@ -106,7 +108,7 @@ export interface HoursRow {
  *  time: "مغلق" }. Days with no hours set (and not marked closed) are skipped. */
 export function groupHours(hours: HoursRow[]): Array<{ label: string; time: string }> {
   const timeOf = (h: HoursRow) =>
-    h.closed ? "مغلق" : h.open && h.close ? `${h.open} – ${h.close}` : "";
+    h.closed ? "مغلق" : h.h24 ? "٢٤ ساعة" : h.open && h.close ? `${h.open} – ${h.close}` : "";
 
   // Bucket day-indices by value, keeping the first-seen order for the output.
   const order: string[] = [];
@@ -159,6 +161,7 @@ export function useOpenNow(hours: HoursRow[]): boolean | null {
       const now = new Date();
       const row = hours.find((h) => h.day === WEEKDAY_BY_JS[now.getDay()]);
       if (!row || row.closed) return setOpen(false);
+      if (row.h24) return setOpen(true); // open around the clock
       const o = parseArTime(row.open);
       const c = parseArTime(row.close);
       if (o == null || c == null) return setOpen(false);

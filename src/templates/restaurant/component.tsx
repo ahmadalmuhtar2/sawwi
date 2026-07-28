@@ -31,7 +31,14 @@
 
 import * as React from "react";
 import { whatsappLink } from "@/lib/whatsapp";
+import { priceNumber } from "@/shared/currency";
 import { EditableText, EditableImage, useEdit, useEditList } from "@/components/templates/inline-edit";
+import {
+  useOrderCart,
+  OrderCart,
+  CartStepper,
+  type CartTheme,
+} from "@/components/templates/order-cart";
 import {
   WhatsAppIcon,
   PhoneIcon,
@@ -216,6 +223,17 @@ const K_SM = "whitespace-nowrap font-sans text-[11px] font-semibold leading-[1.5
 /** dark text on a gold fill — kept fixed so it stays legible on gold. */
 const ON_GOLD = "text-[oklch(0.16_0.03_70)]";
 
+/** Order-cart palette — gold bar/CTA on the warm ground, cream text/steppers. */
+const CART_THEME: CartTheme = {
+  scrim: "bg-[rgba(10,8,6,.7)]",
+  panel: "rounded-t-[14px] border border-gold/25 bg-warm-700 text-cream lg:rounded-[14px]",
+  bar: `rounded-[3px] bg-gold ${ON_GOLD}`,
+  cta: `rounded-[3px] bg-gold ${ON_GOLD}`,
+  step: "rounded-full border border-cream/25 text-cream",
+  divider: "border-cream/[0.12]",
+  muted: "text-cream/70",
+};
+
 /* ── icons ── */
 const Chevron = ({ className = "size-3.5" }: { className?: string }) => (
   <svg viewBox="0 0 16 16" fill="none" className={`${className} -scale-x-100`} aria-hidden>
@@ -351,6 +369,7 @@ export default function Restaurant({
 
   const openNow = useOpenNow(hours);
   const editApi = useEdit();
+  const cart = useOrderCart();
   const courseEdit = useEditList("courses", courses);
   const dishEdit = useEditList("dishes", dishes);
   const pillarEdit = useEditList("pillars", pillars);
@@ -1324,11 +1343,24 @@ export default function Restaurant({
                 <span className="font-serif text-[26px] leading-none text-gold-100">
                   {openDish.price} {currency}
                 </span>
-                <GoldCta href={waHref} label="احجز طاولة" className="h-[46px] px-5 text-sm" />
+                {priceNumber(openDish.price) != null ? (
+                  <CartStepper
+                    cart={cart}
+                    theme={CART_THEME}
+                    item={{ id: `dish-${dish}`, name: openDish.name, price: priceNumber(openDish.price)! }}
+                  />
+                ) : (
+                  <GoldCta href={waHref} label="احجز طاولة" className="h-[46px] px-5 text-sm" />
+                )}
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* ══ order cart (published/preview only — not in the builder) ══ */}
+      {!editApi?.editing && (
+        <OrderCart cart={cart} currency={currency} whatsapp={shop.whatsapp} shopName={shop.name} theme={CART_THEME} />
       )}
 
       {/* ══ toast (copy phone) ══ */}

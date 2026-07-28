@@ -34,6 +34,30 @@ const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
 /** Convert any Latin digits in a string to Arabic-Indic (٠-٩); other chars pass through. */
 export const toArabicDigits = (s: string): string => s.replace(/[0-9]/g, (d) => AR_DIGITS[Number(d)]);
 
+/**
+ * The numeric value of a price string, for summing in the order cart. Reads
+ * both Arabic-Indic and Latin digits, ignores currency tokens, thousands
+ * separators (٬ ,) and any other text. Returns null when the price carries no
+ * number (e.g. "حسب الطلب") — such an item can't be added to a running total.
+ */
+export function priceNumber(raw: string | null | undefined): number | null {
+  const latin = (raw ?? "").replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d)));
+  const digits = latin.replace(/[^\d]/g, ""); // drop separators, currency, spaces
+  if (!digits) return null;
+  const n = Number(digits);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Format a computed integer amount (e.g. a cart total) as Arabic-Indic digits
+ * with thousands separators (٦٥٬٠٠٠) — no currency symbol; the caller appends
+ * the site's unit so it matches every other price on the page.
+ */
+export function formatArabicAmount(n: number): string {
+  const grouped = Math.round(n).toLocaleString("en-US"); // "65,000"
+  return toArabicDigits(grouped).replace(/,/g, "٬");
+}
+
 // Any currency token a user might have typed into a price, so we can strip it and
 // re-append the site's chosen symbol — this is what makes every service share one
 // currency even if they were entered inconsistently. Longest variants first.
