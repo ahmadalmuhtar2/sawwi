@@ -404,6 +404,11 @@ export default function Restaurant({
   const visibleDishes = dishes.map((d, i) => ({ d, i })).filter(({ d }) => d.course === activeCourse);
   const openDish = dish >= 0 ? dishes[dish] : null;
   const featuredDishes = featured.map((i) => ({ d: dishes[i], i })).filter(({ d }) => d);
+  // Allergen codes actually present on at least one dish — the legend shows only
+  // these (kept in ALLERGEN_LABELS order), so it never lists an unused code.
+  const usedAllergens = Object.keys(ALLERGEN_LABELS).filter((code) =>
+    dishes.some((d) => (d.allergens ?? []).includes(code)),
+  );
 
   const resDayObj = resDaysList[resDay] ?? resDaysList[0];
   const resDayLabel = `${resDayObj?.label ?? ""}${resDayObj?.date ? ` (${resDayObj.date})` : ""}`.trim();
@@ -855,23 +860,33 @@ export default function Restaurant({
                         <EditableText value={d.desc ?? ""} placeholder="أضف وصفًا…" multiline onCommit={(t) => dishEdit.setField(i, "desc", t)} className="text-[12.5px] leading-[1.7] text-cream/[0.76] text-pretty" />
                         <span className="flex items-center gap-2.5 pt-[3px]">
                           <EditableText value={d.price} onCommit={(t) => dishEdit.setField(i, "price", t)} className="font-serif text-lg text-gold-100" />
-                          <span className="flex gap-[5px]">
-                            {(d.allergens ?? []).map((code, ci) => (
-                              <span
-                                key={`al-${ci}`}
-                                title={ALLERGEN_LABELS[code]}
-                                className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px] text-cream/80"
-                              >
-                                {code}
-                              </span>
-                            ))}
-                          </span>
+                          {/* read-only codes (published/preview); the edit toggles show below */}
+                          {!dishEdit.editing && (d.allergens?.length ?? 0) > 0 && (
+                            <span className="flex gap-[5px]">
+                              {(d.allergens ?? []).map((code, ci) => (
+                                <span
+                                  key={`al-${ci}`}
+                                  title={ALLERGEN_LABELS[code]}
+                                  className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px] text-cream/80"
+                                >
+                                  {code}
+                                </span>
+                              ))}
+                            </span>
+                          )}
                           {!dishEdit.editing && (
                             <span className="ms-auto text-cream/60">
                               <Chevron />
                             </span>
                           )}
                         </span>
+                        {/* builder-only: manage this dish's allergens by tapping */}
+                        {dishEdit.editing && (
+                          <AllergenPicker
+                            value={d.allergens ?? []}
+                            onChange={(next) => dishEdit.setField(i, "allergens", next)}
+                          />
+                        )}
                       </span>
                     </>
                   );
@@ -934,13 +949,17 @@ export default function Restaurant({
             <div className="px-[22px] pb-[30px] lg:px-14">
               <div className="mx-auto w-full max-w-6xl">
                 <div className="flex flex-wrap gap-x-4 gap-y-[11px] rounded bg-cream/[0.05] p-4">
-                  <span className={`w-full ${K_SM} whitespace-normal text-cream/[0.74]`}>دليل مسبّبات الحساسية</span>
-                  {Object.entries(ALLERGEN_LABELS).map(([code, label]) => (
-                    <span key={code} className="inline-flex items-center gap-[7px] text-[12.5px] text-cream/80">
-                      <span className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px]">{code}</span>
-                      {label}
-                    </span>
-                  ))}
+                  {usedAllergens.length > 0 && (
+                    <>
+                      <span className={`w-full ${K_SM} whitespace-normal text-cream/[0.74]`}>دليل مسبّبات الحساسية</span>
+                      {usedAllergens.map((code) => (
+                        <span key={code} className="inline-flex items-center gap-[7px] text-[12.5px] text-cream/80">
+                          <span className="inline-flex size-5 items-center justify-center rounded-full bg-cream/10 font-mono text-[9.5px]">{code}</span>
+                          {ALLERGEN_LABELS[code]}
+                        </span>
+                      ))}
+                    </>
+                  )}
                   <span className="w-full pt-0.5 text-[12.5px] leading-[1.7] text-cream/[0.74]">
                     الأسعار بالليرة السورية والخدمة غير مشمولة. لأي حساسية، أخبرنا عند الحجز — المطبخ يعدّل الطبق أو يقترح بديلًا.
                   </span>
@@ -1394,6 +1413,41 @@ export default function Restaurant({
 }
 
 /* ───────────────────────── small local parts ───────────────────────── */
+
+/** Builder-only allergen manager for a dish: tap a code to toggle it. Writes the
+ *  whole `allergens` array (kept in ALLERGEN_LABELS order) via the dish's edit
+ *  helper. The bottom legend then lists only the codes actually used. */
+function AllergenPicker({ value, onChange }: { value: string[]; onChange: (next: string[]) => void }) {
+  const toggle = (code: string) => {
+    const set = new Set(value);
+    if (set.has(code)) set.delete(code);
+    else set.add(code);
+    onChange(Object.keys(ALLERGEN_LABELS).filter((c) => set.has(c)));
+  };
+  return (
+    <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span className={`${K_SM} text-cream/60`}>الحساسية:</span>
+      {Object.entries(ALLERGEN_LABELS).map(([code, label]) => {
+        const on = value.includes(code);
+        return (
+          <button
+            key={code}
+            type="button"
+            onClick={() => toggle(code)}
+            aria-pressed={on}
+            title={label}
+            className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-2 py-[3px] text-[10.5px] font-semibold leading-none transition-colors ${
+              on ? `border-transparent bg-gold ${ON_GOLD}` : "border-cream/25 text-cream/70 hover:border-gold/50"
+            }`}
+          >
+            <span className="font-mono">{code}</span>
+            {label}
+          </button>
+        );
+      })}
+    </span>
+  );
+}
 
 function Picker({ label, children }: { label: string; children: React.ReactNode }) {
   return (
