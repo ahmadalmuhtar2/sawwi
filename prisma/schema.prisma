@@ -304,6 +304,11 @@ model Listing {
   features    Json            @default("[]") // string[] extras (the `multi` filter)
   specs       Json            @default("{}") // all other vertical fields, keyed by field key
   published   Boolean         @default(false)
+  /// Merchandising/monetization lever: featured listings sort first and show a
+  /// "مميّز" badge — the dealer's way to push high-margin stock (or a paid boost).
+  featured    Boolean         @default(false)
+  /// available | reserved | sold — keeps the showroom credible + creates urgency.
+  status      String          @default("available")
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 

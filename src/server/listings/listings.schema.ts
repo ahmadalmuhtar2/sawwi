@@ -19,6 +19,8 @@ export const CreateListingInput = z.object({
   features: z.array(z.string().trim().max(60)).max(40).default([]),
   specs: z.record(z.string().max(40), SpecValue).default({}),
   published: z.boolean().optional(),
+  featured: z.boolean().optional(),
+  status: z.enum(["available", "reserved", "sold"]).optional(),
 });
 export type CreateListingInput = z.infer<typeof CreateListingInput>;
 

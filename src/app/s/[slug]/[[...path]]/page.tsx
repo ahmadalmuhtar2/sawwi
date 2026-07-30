@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPrisma } from "@/lib/db";
 import { getPublishedTemplateData } from "@/server/sites/template-data";
+import { listPublishedListings } from "@/server/listings/listings.service";
+import { toMarketplaceListing } from "@/server/listings/listing-view";
 import { buildSiteMetadata } from "@/server/seo/metadata";
 import { isServable } from "@/server/billing/billing.rules";
 import { getTemplate } from "@/templates/registry";
@@ -113,6 +115,13 @@ export default async function PublicSitePage({ params }: { params: Params }) {
   const published = await getPublishedTemplateData(site.id);
   if (!published) notFound();
 
+  // Marketplace listings are served LIVE (not part of the snapshot): load the
+  // site's published inventory so the storefront always shows current stock.
+  const listings =
+    published.templateKey === "marketplace"
+      ? (await listPublishedListings(site.id)).map(toMarketplaceListing)
+      : undefined;
+
   return (
     <>
       <TemplateHost
@@ -120,6 +129,8 @@ export default async function PublicSitePage({ params }: { params: Params }) {
         content={published.content}
         theme={published.theme}
         currency={published.currency}
+        listings={listings}
+        slug={slug}
       />
       {/* Lead capture — visitors reach the owner without leaving the page. Only
           on served sites (this branch); never in the dashboard preview. */}

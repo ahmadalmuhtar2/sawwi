@@ -73,6 +73,8 @@ export async function createListing(
     features: (input.features ?? []) as Prisma.InputJsonValue,
     specs: (input.specs ?? {}) as Prisma.InputJsonValue,
     published: input.published ?? false,
+    featured: input.featured ?? false,
+    status: input.status ?? "available",
   });
 }
 
@@ -95,6 +97,8 @@ export async function updateListing(
   if (input.features !== undefined) data.features = input.features as Prisma.InputJsonValue;
   if (input.specs !== undefined) data.specs = input.specs as Prisma.InputJsonValue;
   if (input.published !== undefined) data.published = input.published;
+  if (input.featured !== undefined) data.featured = input.featured;
+  if (input.status !== undefined) data.status = input.status;
 
   const updated = await listingsRepository.update(listingId, data);
   // Free any images this edit removed or replaced (best-effort, non-blocking).

@@ -126,6 +126,24 @@
   --animate-rst-drift: rst-drift 54s linear infinite;
   --animate-rst-rule: rst-rule 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 
+  /* Marketplace template (cars & homes) — warm-paper classifieds. accent/bg/ink
+     are the 3 themeable tokens; the rest are constant (palettes vary the accent).
+     accent-soft/strong are re-derived per-site in [data-tpl="marketplace"]. */
+  --color-mk-accent: oklch(0.5 0.086 155);
+  --color-mk-bg: oklch(0.968 0.004 95);
+  --color-mk-ink: oklch(0.26 0.012 70);
+  --color-mk-surface: #ffffff;
+  --color-mk-muted: oklch(0.52 0.01 75);
+  --color-mk-faint: oklch(0.64 0.008 80);
+  --color-mk-line: oklch(0.9 0.006 85);
+  --color-mk-line-soft: oklch(0.948 0.005 85);
+  --color-mk-track: oklch(0.955 0.004 90);
+  --color-mk-soft: oklch(0.93 0.03 155);
+  --color-mk-strong: oklch(0.4 0.08 155);
+  --color-mk-danger: oklch(0.53 0.15 25);
+  --color-mk-danger-soft: oklch(0.96 0.03 25);
+  --shadow-mk: 0 1px 2px rgba(40, 35, 30, 0.03), 0 24px 48px -34px rgba(40, 35, 30, 0.2);
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -307,6 +325,13 @@
   --color-aj-cream-200: color-mix(in oklch, var(--color-aj-cream) 92%, var(--color-aj-green));
   --color-aj-ink: color-mix(in oklch, var(--color-aj-green) 88%, var(--color-aj-cream));
   --color-aj-ink-soft: color-mix(in oklch, var(--color-aj-green) 70%, var(--color-aj-cream));
+}
+
+/* Marketplace — only the accent varies across palettes, so just re-derive the
+   accent-soft/strong tints from it (bg/ink/surface/line stay constant). */
+[data-tpl="marketplace"] {
+  --color-mk-soft: color-mix(in srgb, var(--color-mk-accent) 12%, white);
+  --color-mk-strong: color-mix(in srgb, var(--color-mk-accent) 82%, black);
 }
 
 /* Keyframes for the section-design animations declared in @theme above. */

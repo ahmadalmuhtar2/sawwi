@@ -24,19 +24,20 @@ export const listingsRepository = {
     return getPrisma().listing.count({ where: { siteId } });
   },
 
-  /** Owner view: every listing (any status), newest first. */
+  /** Owner view: every listing (any status), featured first then newest. */
   listBySite(siteId: string) {
     return getPrisma().listing.findMany({
       where: { siteId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
     });
   },
 
-  /** Public view: only published listings — served LIVE to the marketplace. */
+  /** Public view: only published listings — served LIVE to the marketplace.
+   *  Featured (merchandised/boosted) listings surface first. */
   listPublished(siteId: string) {
     return getPrisma().listing.findMany({
       where: { siteId, published: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
     });
   },
 };

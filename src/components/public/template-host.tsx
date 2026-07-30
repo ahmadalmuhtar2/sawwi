@@ -19,6 +19,8 @@ export function TemplateHost({
   theme,
   currency,
   edit,
+  listings,
+  slug,
 }: {
   templateKey: string | null;
   content: Record<string, unknown>;
@@ -27,6 +29,11 @@ export function TemplateHost({
   /** Builder only: enables inline editing. Commits call onChange with the next
    *  content. Omitted on the published site → the template renders inert. */
   edit?: { onChange: (next: Record<string, unknown>) => void };
+  /** Data-backed templates (marketplace) get their live rows here. Undefined for
+   *  content-only templates and for the gallery (→ the template shows its demo). */
+  listings?: unknown[];
+  /** The public slug — forwarded so a template's enquiry form can reach the API. */
+  slug?: string;
 }) {
   const tpl = getTemplate(templateKey);
   if (!tpl) {
@@ -55,7 +62,10 @@ export function TemplateHost({
 
   const merged = deepMerge(tpl.defaults, content);
   const Component = tpl.Component;
-  const rendered = <Component {...merged} currency={currency} />;
+  // `listings`/`slug` are extra props only data-backed templates read; others
+  // ignore them. `listings` stays undefined for the gallery so those templates
+  // fall back to their own demo data.
+  const rendered = <Component {...merged} currency={currency} listings={listings} slug={slug} />;
 
   // data-theme="light": templates are always light and own their palette; this
   // stops the dashboard's dark chrome from bleeding into the builder preview.
