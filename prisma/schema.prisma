@@ -90,6 +90,14 @@ enum CommissionStatus {
   settled
 }
 
+/// Lifecycle of a lead/message a visitor submits through a published site's
+/// contact form. Owners triage from the dashboard inbox.
+enum SiteMessageStatus {
+  unread
+  read
+  archived
+}
+
 // ============================================================================
 // Identity
 // NOTE: provisional. Better Auth will own the auth tables (Session/Account/
@@ -259,9 +267,31 @@ model Site {
   testimonials Testimonial[]
   faq          FaqItem[]
   snapshots    PublishSnapshot[]
+  messages     SiteMessage[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// A lead captured from a published site's public contact form. Append-only
+/// from the visitor's side; the owner only changes `status` (read/archived) or
+/// deletes. No account is required to submit — anti-abuse is enforced in the
+/// service (honeypot + per-IP rate limit); `ipHash` is a coarse, non-PII signal.
+model SiteMessage {
+  id        String            @id @default(cuid())
+  siteId    String
+  name      String
+  contact   String? // phone / WhatsApp / email — free text, optional
+  body      String
+  status    SiteMessageStatus @default(unread)
+  ipHash    String? // sha256(ip)[:16] — abuse signal only, not stored PII
+  createdAt DateTime          @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, status])
+  @@index([siteId, createdAt])
+  @@map("site_messages")
 }
 
 /// Site-scoped invite: how a business owner edits ONLY their one site.

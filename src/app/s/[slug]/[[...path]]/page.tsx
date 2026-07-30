@@ -9,6 +9,7 @@ import { getTemplate } from "@/templates/registry";
 import { getPath } from "@/templates/content";
 import { TemplateHost } from "@/components/public/template-host";
 import { HoldingPage, type HoldingVariant } from "@/components/public/holding-page";
+import { ContactWidget } from "@/components/public/contact-widget";
 
 type Params = Promise<{ slug: string; path?: string[] }>;
 
@@ -113,11 +114,16 @@ export default async function PublicSitePage({ params }: { params: Params }) {
   if (!published) notFound();
 
   return (
-    <TemplateHost
-      templateKey={published.templateKey}
-      content={published.content}
-      theme={published.theme}
-      currency={published.currency}
-    />
+    <>
+      <TemplateHost
+        templateKey={published.templateKey}
+        content={published.content}
+        theme={published.theme}
+        currency={published.currency}
+      />
+      {/* Lead capture — visitors reach the owner without leaving the page. Only
+          on served sites (this branch); never in the dashboard preview. */}
+      <ContactWidget slug={slug} businessName={displayName(site)} />
+    </>
   );
 }

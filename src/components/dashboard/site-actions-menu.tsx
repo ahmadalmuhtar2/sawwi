@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { siteUrl } from "@/lib/site-url";
@@ -15,9 +15,12 @@ import { Button } from "@/components/ui/button";
 export function SiteActionsMenu({
   site,
   canDelete = false,
+  unread = 0,
 }: {
   site: { id: string; slug: string; businessName: string; status: string };
   canDelete?: boolean;
+  /** Unread visitor messages — shows a count badge on the الرسائل item. */
+  unread?: number;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -92,6 +95,15 @@ export function SiteActionsMenu({
           </Link>
           <Link href={`/dashboard/sites/${site.id}/settings`} onClick={() => setOpen(false)} className={itemCls}>
             <Settings className="size-4 text-muted" /> الإعدادات
+          </Link>
+          <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
+            <MessageSquare className="size-4 text-muted" />
+            <span className="flex-1">الرسائل</span>
+            {unread > 0 && (
+              <span className="min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white">
+                {unread > 99 ? "٩٩+" : unread.toLocaleString("ar-EG")}
+              </span>
+            )}
           </Link>
           <a href={`/preview/${site.id}`} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className={itemCls}>
             <Eye className="size-4 text-muted" /> معاينة

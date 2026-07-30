@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Globe, ExternalLink } from "lucide-react";
+import { Globe, ExternalLink, MessageSquare } from "lucide-react";
 import { getSessionClaims } from "@/lib/auth";
 import { listSites } from "@/server/sites/sites.service";
+import { unreadCountsForSites } from "@/server/messages/messages.service";
 import { canManageWorkspace } from "@/server/access/access.rules";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -13,6 +14,8 @@ import { siteHost, siteUrl } from "@/lib/site-url";
 export default async function SitesPage() {
   const claims = await getSessionClaims();
   const sites = claims ? await listSites(claims) : [];
+  // Unread visitor-message counts, for the badge on each site card + its menu.
+  const unreadBySite = sites.length ? await unreadCountsForSites(sites.map((s) => s.id)) : {};
   // Resellers create freely; a direct owner may create only their first site;
   // business owners (no workspace) never create.
   const canCreate =
@@ -56,10 +59,21 @@ export default async function SitesPage() {
                   </div>
                 )}
                 <div className="flex items-center gap-1">
+                  {(unreadBySite[s.id] ?? 0) > 0 && (
+                    <Link
+                      href={`/dashboard/sites/${s.id}/messages`}
+                      className="inline-flex items-center gap-1 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-900 transition hover:bg-accent-200"
+                      title="رسائل غير مقروءة"
+                    >
+                      <MessageSquare className="size-3" />
+                      {unreadBySite[s.id]!.toLocaleString("ar-EG")}
+                    </Link>
+                  )}
                   <StatusBadge status={s.status} />
                   <SiteActionsMenu
                     site={{ id: s.id, slug: s.slug, businessName: s.businessName, status: s.status }}
                     canDelete={claims ? canManageWorkspace(claims, s.workspaceId) : false}
+                    unread={unreadBySite[s.id] ?? 0}
                   />
                 </div>
               </div>
