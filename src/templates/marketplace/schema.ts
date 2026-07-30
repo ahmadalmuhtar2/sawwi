@@ -302,3 +302,51 @@ export const SEARCH_KEYS: Record<Vertical, string[]> = {
   car: ["make", "model"],
   home: ["type", "district"],
 };
+
+/* ─────────────────────── form ↔ listing payload ─────────────────────── */
+
+const AR_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+/** Spec keys stored as numbers (so sort/filter compare numerically). */
+const NUMERIC_SPEC = new Set([
+  "year", "km", "size", "rooms", "beds", "baths", "floor", "built", "hp", "owners", "seats", "doors", "plot",
+]);
+
+/** Parse an Arabic-or-Latin numeric string to a number (null if none). */
+export function parseNum(v: string | null | undefined): number | null {
+  if (v == null) return null;
+  const latin = String(v).replace(/[٠-٩]/g, (d) => String(AR_DIGITS.indexOf(d)));
+  const n = parseFloat(latin.replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+/** The listing payload shape (create/update) built from the stepper's flat form. */
+export interface ListingPayload {
+  vertical: Vertical;
+  title: string;
+  price: number | null;
+  offer: string | null;
+  place: string | null;
+  description: string | null;
+  images: string[];
+  features: string[];
+  specs: Record<string, string | number>;
+}
+
+/** Split the stepper's flat form map into the listing's columns + specs JSON. */
+export function formToListing(vertical: Vertical, form: Record<string, string | string[]>): ListingPayload {
+  const specs: Record<string, string | number> = {};
+  let title = "", price: number | null = null, offer: string | null = null;
+  let place: string | null = null, description: string | null = null;
+  let images: string[] = [], features: string[] = [];
+  for (const [k, v] of Object.entries(form)) {
+    if (k === "title") title = String(v);
+    else if (k === "price") price = parseNum(v as string);
+    else if (k === "offer") offer = (v as string) || null;
+    else if (k === "place") place = (v as string) || null;
+    else if (k === "desc") description = (v as string) || null;
+    else if (k === "photos") images = Array.isArray(v) ? v : [];
+    else if (k === "features") features = Array.isArray(v) ? v : [];
+    else if (typeof v === "string" && v.trim()) specs[k] = NUMERIC_SPEC.has(k) ? (parseNum(v) ?? v) : v;
+  }
+  return { vertical, title, price, offer, place, description, images, features, specs };
+}

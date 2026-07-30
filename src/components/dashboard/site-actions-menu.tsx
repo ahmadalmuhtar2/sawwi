@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { siteUrl } from "@/lib/site-url";
@@ -16,11 +16,14 @@ export function SiteActionsMenu({
   site,
   canDelete = false,
   unread = 0,
+  templateKey = null,
 }: {
   site: { id: string; slug: string; businessName: string; status: string };
   canDelete?: boolean;
   /** Unread visitor messages — shows a count badge on the الرسائل item. */
   unread?: number;
+  /** Marketplace sites get an "الإعلانات" (listings) entry. */
+  templateKey?: string | null;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -96,6 +99,11 @@ export function SiteActionsMenu({
           <Link href={`/dashboard/sites/${site.id}/settings`} onClick={() => setOpen(false)} className={itemCls}>
             <Settings className="size-4 text-muted" /> الإعدادات
           </Link>
+          {templateKey === "marketplace" && (
+            <Link href={`/dashboard/sites/${site.id}/listings`} onClick={() => setOpen(false)} className={itemCls}>
+              <Tag className="size-4 text-muted" /> الإعلانات
+            </Link>
+          )}
           <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
             <MessageSquare className="size-4 text-muted" />
             <span className="flex-1">الرسائل</span>

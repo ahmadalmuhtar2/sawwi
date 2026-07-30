@@ -74,6 +74,7 @@ export default async function SitesPage() {
                     site={{ id: s.id, slug: s.slug, businessName: s.businessName, status: s.status }}
                     canDelete={claims ? canManageWorkspace(claims, s.workspaceId) : false}
                     unread={unreadBySite[s.id] ?? 0}
+                    templateKey={s.templateKey}
                   />
                 </div>
               </div>
