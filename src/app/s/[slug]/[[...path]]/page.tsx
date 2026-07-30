@@ -122,6 +122,13 @@ export default async function PublicSitePage({ params }: { params: Params }) {
       ? (await listPublishedListings(site.id)).map(toMarketplaceListing)
       : undefined;
 
+  // End-user auth is a LIVE setting (owner toggles it) — read it directly, not
+  // from the frozen snapshot, so turning it on/off takes effect immediately.
+  const authSettings = await getPrisma().siteSettings.findUnique({
+    where: { siteId: site.id },
+    select: { authEnabled: true, roleLabels: true },
+  });
+
   return (
     <>
       <TemplateHost
@@ -131,6 +138,8 @@ export default async function PublicSitePage({ params }: { params: Params }) {
         currency={published.currency}
         listings={listings}
         slug={slug}
+        authEnabled={authSettings?.authEnabled ?? false}
+        roleLabels={(authSettings?.roleLabels as Record<string, string> | null) ?? undefined}
       />
       {/* Lead capture — visitors reach the owner without leaving the page. Only
           on served sites (this branch); never in the dashboard preview. */}

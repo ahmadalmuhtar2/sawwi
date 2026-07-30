@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { siteUrl } from "@/lib/site-url";
@@ -104,6 +104,9 @@ export function SiteActionsMenu({
               <Tag className="size-4 text-muted" /> الإعلانات
             </Link>
           )}
+          <Link href={`/dashboard/sites/${site.id}/users`} onClick={() => setOpen(false)} className={itemCls}>
+            <Users className="size-4 text-muted" /> المستخدمون
+          </Link>
           <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
             <MessageSquare className="size-4 text-muted" />
             <span className="flex-1">الرسائل</span>

@@ -104,6 +104,16 @@ enum ListingVertical {
   home
 }
 
+/// End-user role on a PUBLISHED site (distinct from the platform's PlatformRole).
+/// manager = delegated site admin · contributor = manages their own content (e.g.
+/// posts ads) · member = registered visitor. New signups default to `member`;
+/// display labels are owner-customizable per site (SiteSettings.roleLabels).
+enum SiteUserRole {
+  manager
+  contributor
+  member
+}
+
 // ============================================================================
 // Identity
 // NOTE: provisional. Better Auth will own the auth tables (Session/Account/
@@ -277,9 +287,50 @@ model Site {
   messages     SiteMessage[]
   notifications Notification[]
   listings     Listing[]
+  siteUsers    SiteUser[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// An END-USER account on a published site (a customer/seller of the tenant's
+/// website) — completely separate from the platform `User` (dashboard identity).
+/// Scoped per site; email is unique within a site. Password is a scrypt hash
+/// (salt:hash). Sessions are opaque tokens in `SiteUserSession`.
+model SiteUser {
+  id           String       @id @default(cuid())
+  siteId       String
+  email        String
+  name         String?
+  passwordHash String
+  role         SiteUserRole @default(member)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  sessions SiteUserSession[]
+
+  @@unique([siteId, email])
+  @@index([siteId])
+  @@map("site_users")
+}
+
+/// A site-user session — the cookie holds only `token`; everything else is
+/// server-side. `siteId` is denormalized so a session is validated against the
+/// site it was minted for (defense-in-depth on top of host-only cookie scoping).
+model SiteUserSession {
+  id         String   @id @default(cuid())
+  siteUserId String
+  siteId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  siteUser SiteUser @relation(fields: [siteUserId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([siteUserId])
+  @@map("site_user_sessions")
 }
 
 /// A marketplace listing (a car or a home) the site OWNER publishes. Unlike
@@ -397,6 +448,12 @@ model SiteSettings {
   currency       String  @default("SYP") // site-wide price currency, see src/shared/currency.ts
   logoMediaId    String?
   loadingIconId  String?
+  /// End-user auth: when true the published site shows sign-in/up and accepts
+  /// SiteUser accounts. Off by default so existing sites are unchanged.
+  authEnabled    Boolean @default(false)
+  /// Owner's custom display labels for the 3 SiteUserRole values, e.g.
+  /// { "manager": "مدير", "contributor": "بائع", "member": "زبون" }.
+  roleLabels     Json    @default("{}")
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 

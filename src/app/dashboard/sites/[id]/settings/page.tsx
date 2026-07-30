@@ -57,6 +57,8 @@ export default async function SiteSettingsPage({
         currency: settings?.currency ?? "SYP",
         logoMediaId: settings?.logoMediaId ?? null,
         loadingIconId: settings?.loadingIconId ?? null,
+        authEnabled: settings?.authEnabled ?? false,
+        roleLabels: (settings?.roleLabels as Record<string, string>) ?? {},
       }}
       initialSeo={asSiteSeo(siteRow?.seo)}
     />

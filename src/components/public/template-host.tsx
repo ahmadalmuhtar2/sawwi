@@ -10,6 +10,7 @@ import { deepMerge } from "@/templates/content";
 import { getFont } from "@/lib/palette";
 import type { TemplateTheme } from "@/server/sites/template-data";
 import { EditProvider } from "@/components/templates/inline-edit";
+import { SiteAuthProvider, SiteAuthWidget, type RoleLabels } from "@/components/public/site-auth";
 
 type TokenColors = Record<string, string | null>;
 
@@ -21,6 +22,8 @@ export function TemplateHost({
   edit,
   listings,
   slug,
+  authEnabled,
+  roleLabels,
 }: {
   templateKey: string | null;
   content: Record<string, unknown>;
@@ -34,6 +37,10 @@ export function TemplateHost({
   listings?: unknown[];
   /** The public slug — forwarded so a template's enquiry form can reach the API. */
   slug?: string;
+  /** End-user auth: when enabled, every template gets the auth context + widget.
+   *  Off in the gallery/builder (→ inert). */
+  authEnabled?: boolean;
+  roleLabels?: Partial<RoleLabels>;
 }) {
   const tpl = getTemplate(templateKey);
   if (!tpl) {
@@ -74,13 +81,19 @@ export function TemplateHost({
     // z-indexes (sticky header, bottom nav, sheet) stay contained and never
     // overlay the dashboard chrome (e.g. the profile dropdown) in the builder.
     <div data-theme="light" data-tpl={templateKey ?? undefined} className="sw-tpl-scope isolate" style={style}>
-      {edit ? (
-        <EditProvider content={content} onChange={edit.onChange}>
-          {rendered}
-        </EditProvider>
-      ) : (
-        rendered
-      )}
+      {/* Site-user auth wraps every template so any of them can useSiteAuth();
+          the floating widget + modal render here too (only when enabled & not in
+          the builder). */}
+      <SiteAuthProvider enabled={!edit && !!authEnabled} labels={roleLabels}>
+        {edit ? (
+          <EditProvider content={content} onChange={edit.onChange}>
+            {rendered}
+          </EditProvider>
+        ) : (
+          rendered
+        )}
+        {!edit && authEnabled ? <SiteAuthWidget /> : null}
+      </SiteAuthProvider>
     </div>
   );
 }

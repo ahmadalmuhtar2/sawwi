@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRef } from "react";
-import { ArrowRight, ImageUp, Loader2, Search, Building2, QrCode, Trash2 } from "lucide-react";
+import { ArrowRight, ImageUp, Loader2, Search, Building2, QrCode, Trash2, Users, ExternalLink } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { siteHost } from "@/lib/site-url";
-import { Field, Select } from "@/components/ui/field";
+import { Field, Input, Select } from "@/components/ui/field";
 import { uploadStaging } from "@/components/templates/fields";
 import { CURRENCIES } from "@/shared/currency";
 import { SiteSeoEditor } from "@/components/dashboard/site-seo-editor";
@@ -33,10 +33,13 @@ interface FullSettings {
   openingHours?: Record<string, unknown>;
   logoMediaId?: string | null;
   loadingIconId?: string | null;
+  authEnabled?: boolean;
+  roleLabels?: Record<string, string>;
 }
 
 const TABS = [
   { id: "basics", label: "الأساسيات", icon: Building2 },
+  { id: "accounts", label: "حسابات الزوّار", icon: Users },
   { id: "share", label: "المشاركة والطباعة", icon: QrCode },
   { id: "seo", label: "محركات البحث", icon: Search },
 ] as const;
@@ -84,6 +87,8 @@ export function SettingsTabs({
       currency: next.currency ?? "SYP",
       logoMediaId: next.logoMediaId ?? null,
       loadingIconId: next.loadingIconId ?? null,
+      authEnabled: next.authEnabled ?? false,
+      roleLabels: next.roleLabels ?? {},
     });
     toast("تم الحفظ ✓");
   }
@@ -150,6 +155,18 @@ export function SettingsTabs({
           </Panel>
         )}
 
+        {tab === "accounts" && (
+          <Panel title="حسابات الزوّار" desc="فعّل تسجيل الدخول لزوّار موقعك (تسجيل حساب ودخول)، وخصّص مسميات الأدوار الثلاثة. إدارة الحسابات نفسها من صفحة «المستخدمون».">
+            <AccountsPanel
+              siteId={siteId}
+              enabled={settings.authEnabled ?? false}
+              labels={settings.roleLabels ?? {}}
+              onToggle={(v) => saveSettings({ authEnabled: v })}
+              onLabels={(labels) => saveSettings({ roleLabels: labels })}
+            />
+          </Panel>
+        )}
+
         {tab === "share" && (
           <Panel title="المشاركة والطباعة" desc="رمز QR وبطاقة عمل جاهزة للطباعة ببيانات المحل.">
             <SharePrint
@@ -171,6 +188,76 @@ export function SettingsTabs({
       <p className="mt-8 text-center font-label text-xs text-faint">
         {siteHost(slug)}
       </p>
+    </div>
+  );
+}
+
+/** Enable end-user auth for a site + customize the 3 role labels. */
+function AccountsPanel({
+  siteId,
+  enabled,
+  labels,
+  onToggle,
+  onLabels,
+}: {
+  siteId: string;
+  enabled: boolean;
+  labels: Record<string, string>;
+  onToggle: (v: boolean) => void;
+  onLabels: (labels: Record<string, string>) => void;
+}) {
+  const DEFAULTS: Record<string, string> = { manager: "مدير", contributor: "مساهم", member: "عضو" };
+  const [local, setLocal] = useState({
+    manager: labels.manager ?? "",
+    contributor: labels.contributor ?? "",
+    member: labels.member ?? "",
+  });
+  const ROLES = [
+    { k: "manager" as const, hint: "صلاحية كاملة: يدير كل المحتوى والمستخدمين." },
+    { k: "contributor" as const, hint: "ينشئ ويدير محتواه فقط (مثل نشر الإعلانات)." },
+    { k: "member" as const, hint: "زائر مسجّل: يتفاعل فقط، بلا نشر محتوى." },
+  ];
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
+        <div>
+          <p className="text-sm font-medium text-ink">تفعيل حسابات الزوّار</p>
+          <p className="mt-0.5 text-xs text-muted">يظهر زر «تسجيل الدخول» على موقعك المنشور، ويمكن للزوّار إنشاء حساب.</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          onClick={() => onToggle(!enabled)}
+          className={cn("relative h-6 w-11 shrink-0 rounded-full transition", enabled ? "bg-accent" : "bg-black/15 dark:bg-white/20")}
+        >
+          <span className={cn("absolute top-0.5 size-5 rounded-full bg-white shadow transition-all", enabled ? "start-[22px]" : "start-0.5")} />
+        </button>
+      </div>
+
+      {enabled && (
+        <>
+          <div className="flex flex-col gap-4">
+            <p className="text-sm font-medium text-ink">مسميات الأدوار</p>
+            {ROLES.map((r) => (
+              <Field key={r.k} label={DEFAULTS[r.k]} hint={r.hint} className="max-w-sm">
+                <Input
+                  value={local[r.k]}
+                  placeholder={DEFAULTS[r.k]}
+                  onChange={(e) => setLocal((s) => ({ ...s, [r.k]: e.target.value }))}
+                  onBlur={() => onLabels({ ...labels, [r.k]: local[r.k].trim() })}
+                />
+              </Field>
+            ))}
+          </div>
+          <Link
+            href={`/dashboard/sites/${siteId}/users`}
+            className="inline-flex items-center gap-2 self-start rounded-md border border-line px-3.5 py-2 text-sm font-medium text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
+          >
+            <Users className="size-4 text-muted" /> إدارة المستخدمين <ExternalLink className="size-3.5 text-faint" />
+          </Link>
+        </>
+      )}
     </div>
   );
 }

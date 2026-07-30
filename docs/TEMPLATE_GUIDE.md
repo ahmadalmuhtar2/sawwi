@@ -716,3 +716,73 @@ Then: register in `registry.ts`, add a wizard + `WIZARDS` entry, add the `--colo
 `src/templates/types.ts` · `src/templates/content.ts` · `src/components/public/template-host.tsx` ·
 `src/components/templates/inline-edit.tsx` · `src/components/templates/fields.tsx` ·
 `src/components/templates/content-editor.tsx` · `src/components/ui/dropdown.tsx` · `src/lib/palette.ts`.
+
+---
+
+## 14. End-user authentication (site users) — available to EVERY template
+
+Published sites can have their **own** end-user auth — accounts for the *visitors/
+customers of the tenant's website* (a marketplace's buyers & sellers, a booking
+site's customers). This is **completely separate** from the platform/dashboard auth
+(resellers/owners/collaborators). It is **off by default** and **reusable by every
+template with zero per-template code**.
+
+### The model
+
+- **Accounts:** `SiteUser` rows, scoped per site (`@@unique([siteId, email])`),
+  password hashed with `better-auth/crypto` (scrypt). Sessions are opaque tokens
+  (`SiteUserSession`) in a **host-only** cookie (`sawwi_site_session`) — since sites
+  are served on subdomains (`slug.sawwi.online`), the cookie is **isolated per site**;
+  sessions are also bound to `siteId` server-side (defense-in-depth).
+- **3 roles** (`SiteUserRole`): **`manager`** (delegated site admin — manages all
+  content + other users) · **`contributor`** (creates/manages *their own* content,
+  e.g. posts ads) · **`member`** (registered visitor — interacts, no content
+  creation). New signups always start as `member`. Display **labels are
+  owner-customizable** per site.
+- **Owner controls:** a toggle + role-label editors under **Settings → «حسابات
+  الزوّار»** (`SiteSettings.authEnabled` + `roleLabels`), and a **«المستخدمون»**
+  dashboard page to list users, change roles, and remove them.
+
+### How a template uses it (nothing required)
+
+`TemplateHost` already wraps every template in `<SiteAuthProvider>` and renders the
+floating **sign-in/up widget + account chip** when the owner enables auth — so a
+brand-new template gets a working auth affordance **for free**. To read the current
+user or trigger the modal, call the context:
+
+```tsx
+import { useSiteAuth } from "@/components/public/site-auth";
+
+function PostAdButton() {
+  const { enabled, user, open } = useSiteAuth();
+  if (!enabled) return null;
+  const canPost = user && (user.role === "manager" || user.role === "contributor");
+  return canPost
+    ? <button onClick={/* open the authoring flow */}>أضف إعلان</button>
+    : <button onClick={() => open("signup")}>سجّل لتنشر إعلانك</button>;
+}
+```
+
+`useSiteAuth()` returns `{ enabled, user, role, labels, loading, open(mode?), signOut,
+refresh }` and is a **safe no-op** when called outside a provider (gallery/preview).
+
+### Security notes (don't weaken these)
+
+- Public endpoints (`/api/public/site-auth/*`) resolve the site from the **Host
+  header** (`siteSlugFromHost`), never client input; they **404 uniformly** on
+  unknown/unserved/auth-off slugs (no existence leak), rate-limit per IP, and drop a
+  **honeypot** field on signup. The session cookie is `HttpOnly`, `SameSite=Lax`,
+  `Secure` in prod, and **never** carries a `Domain` (that would break per-site
+  isolation).
+- Owner endpoints (`/api/sites/[id]/users*`) require platform session + `canEditSettings`
+  and are strictly site-scoped.
+
+### Files (reference)
+
+`prisma/schema.prisma` (`SiteUser`, `SiteUserSession`, `SiteUserRole`,
+`SiteSettings.authEnabled/roleLabels`) · `src/server/site-auth/*` ·
+`src/app/api/public/site-auth/*` · `src/app/api/sites/[id]/users/*` ·
+`src/components/public/site-auth.tsx` (provider + `useSiteAuth` + widget) ·
+`src/lib/site-host.ts` · dashboard: `src/app/dashboard/sites/[id]/users/page.tsx` +
+`src/components/dashboard/site-users-manager.tsx` + the «حسابات الزوّار» tab in
+`settings-tabs.tsx`.
