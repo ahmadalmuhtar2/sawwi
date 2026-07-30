@@ -3,7 +3,7 @@
 // a NEW snapshot copying an old payload.
 
 import type { SessionClaims } from "@/server/access/access.rules";
-import { requireSitePublish } from "@/server/sites/sites.service";
+import { requireSitePublish, getSite } from "@/server/sites/sites.service";
 import { computeSubscriptionStatus } from "@/server/billing/billing.rules";
 import { canPublish, nextSnapshotVersion } from "./publishing.rules";
 import { errors } from "@/shared/errors";
@@ -48,8 +48,17 @@ export async function publishSite(claims: SessionClaims, siteId: string) {
   return { version: snapshot.version, snapshotId: snapshot.id };
 }
 
-export async function listSnapshots(claims: SessionClaims, siteId: string) {
+/** Publish history is VIEW-gated (read-only) — an invited business owner can see
+ *  it. Rollback stays publish-gated (see `rollback`), so viewing ≠ acting. */
+/** Take the site offline (published → draft). Publish permission required; the
+ *  public domain then shows the "coming soon" holding page. Snapshots are kept. */
+export async function unpublishSite(claims: SessionClaims, siteId: string) {
   await requireSitePublish(claims, siteId);
+  return publishingRepository.markUnpublished(siteId);
+}
+
+export async function listSnapshots(claims: SessionClaims, siteId: string) {
+  await getSite(claims, siteId); // view gate (throws if not viewable)
   return publishingRepository.listSnapshots(siteId);
 }
 

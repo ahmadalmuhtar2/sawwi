@@ -4,9 +4,11 @@
 
 export type PlatformRole = "user" | "admin";
 export type MemberRole = "owner" | "member";
+export type WorkspaceKind = "reseller" | "direct";
 export type AccessLevel = "editor" | "viewer";
 export type SiteStatus = "draft" | "published" | "suspended";
 export type SubscriptionStatus = "active" | "grace" | "suspended";
+export type PaymentStatus = "pending" | "paid" | "checked" | "stopped" | "refunded";
 export type ColorScheme =
   | "primary"
   | "bold"
@@ -16,7 +18,8 @@ export type ColorScheme =
   | "accent"
   | "soft";
 export type PageType = "landing" | "about" | "contact" | "services" | "custom";
-export type Currency = "SYP" | "USD" | "EUR";
+// Mirrors src/shared/currency.ts (the single source) + Prisma `Currency`.
+export type Currency = "SYP" | "SYP_NEW" | "USD" | "EUR" | "TRY";
 
 export type Result<T = void> =
   | ({ ok: true } & (T extends void ? object : { value: T }))

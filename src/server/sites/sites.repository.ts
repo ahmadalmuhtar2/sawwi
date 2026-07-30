@@ -37,6 +37,18 @@ export const sitesRepository = {
     return getPrisma().site.create({ data });
   },
 
+  countByWorkspace(workspaceId: string): Promise<number> {
+    return getPrisma().site.count({ where: { workspaceId } });
+  },
+
+  setMaintenance(id: string, on: boolean) {
+    return getPrisma().site.update({
+      where: { id },
+      data: { maintenanceMode: on },
+      select: { id: true, maintenanceMode: true },
+    });
+  },
+
   updateContent(siteId: string, content: Prisma.InputJsonValue) {
     return getPrisma().site.update({ where: { id: siteId }, data: { content } });
   },
@@ -54,6 +66,28 @@ export const sitesRepository = {
     return getPrisma().site.findMany({
       where: { workspaceId },
       orderBy: { createdAt: "desc" },
+    });
+  },
+
+  /** Server-side site search within a workspace (for the members combobox).
+   *  Case-insensitive match on business name or slug, capped at `limit`. */
+  searchByWorkspace(workspaceId: string, q: string, limit: number) {
+    const term = q.trim();
+    return getPrisma().site.findMany({
+      where: {
+        workspaceId,
+        ...(term
+          ? {
+              OR: [
+                { businessName: { contains: term, mode: "insensitive" } },
+                { slug: { contains: term, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      select: { id: true, businessName: true },
     });
   },
 

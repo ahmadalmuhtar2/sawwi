@@ -4,16 +4,18 @@ import { useRef, useState } from "react";
 import { ImageIcon, Upload } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { Spinner } from "@/components/ui/feedback";
+import { MAX_IMAGE_BYTES, MAX_FAVICON_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 // Accepted client-side types per asset. The server re-validates.
 const ACCEPT: Record<"og" | "favicon", string> = {
   og: "image/png,image/jpeg",
   favicon: "image/png,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,image/webp",
 };
+const MAX_BY_KEY: Record<"og" | "favicon", number> = { og: MAX_IMAGE_BYTES, favicon: MAX_FAVICON_BYTES };
 const HINT: Record<"og" | "favicon", string> = {
   // OG is JPG/PNG only — WhatsApp doesn't render WebP link-preview images.
-  og: "JPG أو PNG — ١٠ ميغابايت كحد أقصى (لا تدعم واتساب صور WEBP)",
-  favicon: "PNG أو SVG أو ICO — ١ ميغابايت كحد أقصى",
+  og: `JPG أو PNG — ${maxSizeLabel(MAX_IMAGE_BYTES)} كحد أقصى (لا تدعم واتساب صور WEBP)`,
+  favicon: `PNG أو SVG أو ICO — ${maxSizeLabel(MAX_FAVICON_BYTES)} كحد أقصى`,
 };
 
 /**
@@ -41,6 +43,10 @@ export function SeoImageUploader({
     e.target.value = "";
     if (!file) return;
     setError(null);
+    if (file.size > MAX_BY_KEY[assetKey]) {
+      setError(`أقصى حجم للصورة ${maxSizeLabel(MAX_BY_KEY[assetKey])}`);
+      return;
+    }
     setBusy(true);
     try {
       const fd = new FormData();

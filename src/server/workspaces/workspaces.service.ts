@@ -4,11 +4,17 @@ import { errors } from "@/shared/errors";
 import type { CreateWorkspaceInput, UpdateWorkspaceInput } from "./workspaces.schema";
 import { workspacesRepository } from "./workspaces.repository";
 
-/** Create a new workspace; the caller becomes its owner. Unlimited per user. */
+/** Create a new workspace; the caller becomes its owner. ADMIN ONLY — in the
+ *  business model, resellers & direct owners are admin-provisioned, so nobody
+ *  self-creates a workspace (see docs/BUSINESS_MODEL.md). Admin provisioning of
+ *  OTHER users' workspaces goes through the admin service (provisionAccount). */
 export async function createWorkspace(
   claims: SessionClaims,
   input: CreateWorkspaceInput,
 ) {
+  if (claims.platformRole !== "admin") {
+    throw errors.forbidden("إنشاء مساحات العمل متاح للمشرف فقط");
+  }
   return workspacesRepository.createWithOwner(claims.userId, input);
 }
 

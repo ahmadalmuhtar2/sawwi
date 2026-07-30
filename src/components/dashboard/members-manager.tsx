@@ -8,27 +8,24 @@ import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { SiteCombobox, type SiteOption } from "@/components/dashboard/site-combobox";
 import { cn } from "@/lib/cn";
 
-interface Site {
-  id: string;
-  businessName: string;
-}
 interface Grant {
   id: string;
   siteId: string;
   invitedEmail: string;
+  businessName: string;
   builderAccess: boolean;
   accepted: boolean;
 }
 
-export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant[] }) {
+export function MembersManager({ hasSites, grants }: { hasSites: boolean; grants: Grant[] }) {
   const router = useRouter();
   const toast = useToast();
-  const siteName = (id: string) => sites.find((s) => s.id === id)?.businessName ?? id;
 
   const [email, setEmail] = useState("");
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<SiteOption[]>([]);
   const [builder, setBuilder] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,10 +38,6 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
     byEmail.set(g.invitedEmail, arr);
   }
 
-  function toggleSite(id: string) {
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
-  }
-
   async function invite(e: React.FormEvent) {
     e.preventDefault();
     setErrors({});
@@ -54,7 +47,11 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
     }
     setInviting(true);
     try {
-      await api.post("/api/members", { email, siteIds: picked, builderAccess: builder });
+      await api.post("/api/members", {
+        email,
+        siteIds: picked.map((p) => p.id),
+        builderAccess: builder,
+      });
       toast("تم إرسال الدعوة ✓");
       setEmail("");
       setPicked([]);
@@ -94,7 +91,7 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
         <h2 className="flex items-center gap-2 font-bold text-ink">
           <UserPlus className="size-4 text-accent" /> دعوة متعاون
         </h2>
-        {sites.length === 0 ? (
+        {!hasSites ? (
           <p className="mt-3 text-sm text-faint">أنشئ موقعًا أولًا لتتمكن من دعوة متعاونين.</p>
         ) : (
           <form onSubmit={invite} className="mt-4 space-y-4">
@@ -111,23 +108,7 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
 
             <div>
               <p className="mb-1.5 text-sm font-medium text-ink">المواقع</p>
-              <div className="flex flex-wrap gap-2">
-                {sites.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleSite(s.id)}
-                    className={cn(
-                      "rounded-md border px-3 py-1.5 text-sm transition cursor-pointer",
-                      picked.includes(s.id)
-                        ? "border-accent bg-accent-50 text-accent-900 font-medium"
-                        : "border-line text-muted hover:border-accent-200",
-                    )}
-                  >
-                    {s.businessName}
-                  </button>
-                ))}
-              </div>
+              <SiteCombobox value={picked} onChange={setPicked} />
               {errors.siteIds && <p className="mt-1 text-xs text-danger">{errors.siteIds}</p>}
             </div>
 
@@ -138,7 +119,7 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
                 onChange={(e) => setBuilder(e.target.checked)}
                 className="size-4 accent-accent"
               />
-              منح صلاحية المُنشئ (تعديل الصفحات والأقسام والنشر)
+              منح صلاحية المُنشئ (تعديل المظهر والنشر) — بدونها يعدّل المحتوى فقط
             </label>
 
             <Button type="submit" loading={inviting} className="gap-2">
@@ -177,7 +158,7 @@ export function MembersManager({ sites, grants }: { sites: Site[]; grants: Grant
                 <ul className="mt-3 divide-y divide-line border-t border-line">
                   {gs.map((g) => (
                     <li key={g.id} className="flex items-center justify-between py-2.5">
-                      <span className="text-sm text-ink">{siteName(g.siteId)}</span>
+                      <span className="text-sm text-ink">{g.businessName}</span>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => toggleBuilder(g)}

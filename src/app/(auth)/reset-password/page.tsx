@@ -17,10 +17,21 @@ const schema = z.object({
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [token, setToken] = useState("");
+  // The email is resolved from the token server-side and shown DISABLED — the
+  // person can see which account they're activating but can't change it (the
+  // account binding is always the token, never this field).
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("token") ?? "";
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read URL param client-side once
-    setToken(new URLSearchParams(window.location.search).get("token") ?? "");
+    setToken(t);
+    if (t) {
+      api
+        .get<{ email: string }>(`/api/auth/reset-and-login?token=${encodeURIComponent(t)}`)
+        .then(({ email }) => setEmail(email))
+        .catch(() => setEmail(null));
+    }
   }, []);
 
   const { register, errors, formError, submitting, handleSubmit } = useForm({
@@ -47,6 +58,11 @@ export default function ResetPasswordPage() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
+          {email && (
+            <Field label="البريد الإلكتروني" htmlFor="email">
+              <Input id="email" type="email" dir="ltr" value={email} disabled readOnly />
+            </Field>
+          )}
           <Field
             label="كلمة المرور الجديدة"
             htmlFor="password"

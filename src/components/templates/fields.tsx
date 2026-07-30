@@ -13,6 +13,7 @@ import { MenuSelect } from "@/components/ui/dropdown";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { api, ApiClientError } from "@/lib/api-client";
+import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 type Content = Record<string, unknown>;
 type Upload = (file: File) => Promise<string>;
@@ -76,6 +77,9 @@ function selectOptions(root: Content, field: FieldDef): { value: string; label: 
 
 /** Upload an image to the pre-site staging folder; returns its URL. */
 export async function uploadStaging(file: File): Promise<string> {
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error(`حجم الصورة كبير — أقصى حجم ${maxSizeLabel(MAX_IMAGE_BYTES)}`);
+  }
   const fd = new FormData();
   fd.append("file", file);
   const { url } = await api.post<{ url: string }>("/api/uploads/staging", fd);
@@ -524,7 +528,9 @@ function ImageInput({
     try {
       onChange(await upload(file));
     } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "تعذّر رفع الصورة");
+      setError(
+        err instanceof ApiClientError || err instanceof Error ? err.message : "تعذّر رفع الصورة",
+      );
     } finally {
       setBusy(false);
     }

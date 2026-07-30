@@ -6,6 +6,7 @@
 import type { SessionClaims } from "@/server/access/access.rules";
 import { resolveSiteAccess } from "@/server/access/access.rules";
 import { getPrisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
 import { sitesRepository } from "@/server/sites/sites.repository";
 import { sendMail } from "@/lib/mailer";
 import { buildEmail } from "@/constants/emails";
@@ -23,18 +24,17 @@ async function requireManageAccess(claims: SessionClaims, siteId: string) {
   return site;
 }
 
-/** Collaborators + sites for the caller's ACTIVE workspace. */
+/** Collaborators for the caller's ACTIVE workspace. Site names are joined into
+ *  each grant, so the manager never loads every workspace site — the invite
+ *  picker searches sites on the server instead (see searchSites). */
 export async function listCollaborators(claims: SessionClaims) {
   if (!claims.workspace) throw errors.forbidden("لا توجد مساحة عمل نشطة");
-  const sites = await sitesRepository.listByWorkspace(claims.workspace.id);
-  const siteIds = sites.map((s) => s.id);
-  const grants = siteIds.length
-    ? await membersRepository.listGrantsForSites(siteIds)
-    : [];
-  return {
-    sites: sites.map((s) => ({ id: s.id, businessName: s.businessName })),
-    grants,
-  };
+  const workspaceId = claims.workspace.id;
+  const [siteCount, grants] = await Promise.all([
+    sitesRepository.countByWorkspace(workspaceId),
+    membersRepository.listGrantsForWorkspace(workspaceId),
+  ]);
+  return { hasSites: siteCount > 0, grants };
 }
 
 export async function inviteCollaborator(
@@ -74,18 +74,40 @@ export async function inviteCollaborator(
     }
   }
 
-  // One invite email listing the businesses.
+  // Email the invitee. Public self-serve signup is disabled, so a NEW person
+  // can't "create an account" on their own — instead we create their account
+  // (no password, no workspace) and email a set-password link. On setting their
+  // password they sign in and the pending SiteAccess grant auto-accepts
+  // (src/server/auth/claims.ts). An EXISTING user just gets a login link.
   const businesses = sites.map((s) => s.businessName).join("، ");
-  const base =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
-  await sendMail({
-    to: input.email,
-    ...buildEmail("collaboratorInvite", {
-      inviter: me?.name || me?.email || "أحد مستخدمي سوّي",
-      businesses,
-      url: `${base}/login`,
-    }),
+  const base = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const inviter = me?.name || me?.email || "أحد مستخدمي سوّي";
+
+  const existingUser = await getPrisma().user.findUnique({
+    where: { email: input.email },
+    select: { id: true, accounts: { where: { password: { not: null } }, select: { id: true }, take: 1 } },
   });
+
+  if (existingUser && existingUser.accounts.length > 0) {
+    // Registered WITH a password → just a login link; the grant auto-accepts.
+    await sendMail({
+      to: input.email,
+      ...buildEmail("collaboratorInvite", { inviter, businesses, url: `${base}/login` }),
+    });
+  } else {
+    // Brand-new person, or invited before but never set a password → create the
+    // account if needed (emailVerified: true — they prove control via this link)
+    // and email a set-password link. sendResetPassword detects "no password yet"
+    // and sends the welcome/set-password email, not a reset email.
+    if (!existingUser) {
+      await getPrisma().user.create({
+        data: { email: input.email, emailVerified: true, platformRole: "user" },
+      });
+    }
+    await auth.api.requestPasswordReset({
+      body: { email: input.email, redirectTo: "/reset-password" },
+    });
+  }
 
   return { invited: input.email, sites: input.siteIds.length };
 }

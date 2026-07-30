@@ -4,6 +4,7 @@ import { requireSiteSettingsEdit } from "@/server/sites/sites.service";
 import { putObject, isStorageConfigured } from "@/lib/storage";
 import { siteAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
+import { MAX_IMAGE_BYTES, MAX_FAVICON_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 // POST /api/sites/:id/seo/image — multipart { file, key } → uploads an SEO asset
 // (the Open Graph share image or the site favicon) and returns its URL. The
@@ -13,8 +14,8 @@ import { errors } from "@/shared/errors";
 // does not render WebP link-preview images, so we never store the share image as
 // WebP. Favicons may still be WebP (they're not used for social previews).
 const KEYS = {
-  og: { max: 10 * 1024 * 1024, exts: { "image/jpeg": "jpg", "image/png": "png" } as Record<string, string> },
-  favicon: { max: 1 * 1024 * 1024, exts: { "image/png": "png", "image/svg+xml": "svg", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico", "image/webp": "webp" } as Record<string, string> },
+  og: { max: MAX_IMAGE_BYTES, exts: { "image/jpeg": "jpg", "image/png": "png" } as Record<string, string> },
+  favicon: { max: MAX_FAVICON_BYTES, exts: { "image/png": "png", "image/svg+xml": "svg", "image/x-icon": "ico", "image/vnd.microsoft.icon": "ico", "image/webp": "webp" } as Record<string, string> },
 } as const;
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -48,8 +49,7 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
     });
   }
   if (file.size > spec.max) {
-    const mb = Math.round(spec.max / (1024 * 1024));
-    throw errors.validation("حجم الصورة كبير", { file: `أقصى حجم للصورة ${mb} ميغابايت` });
+    throw errors.validation("حجم الصورة كبير", { file: `أقصى حجم للصورة ${maxSizeLabel(spec.max)}` });
   }
 
   // Per-website folder, stable key per asset → a same-type re-upload overwrites

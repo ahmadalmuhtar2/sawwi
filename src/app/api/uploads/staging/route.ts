@@ -4,13 +4,13 @@ import { requireSessionClaims } from "@/lib/auth";
 import { putObject, isStorageConfigured } from "@/lib/storage";
 import { stagingAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
+import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 // POST /api/uploads/staging
 // multipart { file } → uploads an image to the caller's per-user STAGING folder
 // and returns its URL. Used during onboarding, before the site exists: the URL
 // is kept in the wizard's localStorage draft and persisted into the new site's
 // content on finish. Auth-gated (any signed-in user); bounded to image types.
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 const EXT_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -34,8 +34,8 @@ export const POST = withRoute(async (req) => {
       file: "الصيغ المدعومة: JPG أو PNG أو WEBP",
     });
   }
-  if (file.size > MAX_BYTES) {
-    throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ١٠ ميغابايت" });
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw errors.validation("حجم الصورة كبير", { file: `أقصى حجم للصورة ${maxSizeLabel(MAX_IMAGE_BYTES)}` });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());

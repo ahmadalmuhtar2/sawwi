@@ -24,7 +24,14 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: true,
     sendResetPassword: async ({ user, url }) => {
-      await sendMail({ to: user.email, ...buildEmail("resetPassword", { url }) });
+      // Provisioned accounts (reseller/direct/invited owner) have no password yet
+      // — for them this is a FIRST-TIME "set your password" welcome, not a reset.
+      const hasPassword = await getPrisma().account.findFirst({
+        where: { userId: user.id, password: { not: null } },
+        select: { id: true },
+      });
+      const key = hasPassword ? "resetPassword" : "setPassword";
+      await sendMail({ to: user.email, ...buildEmail(key, { url }) });
     },
   },
   emailVerification: {

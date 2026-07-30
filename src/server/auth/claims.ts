@@ -19,7 +19,9 @@ export async function deriveClaims(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      memberships: { orderBy: { joinedAt: "asc" } }, // all workspaces
+      // include the workspace so claims carry its kind (reseller|direct) — drives
+      // caps + nav gating without an extra query.
+      memberships: { orderBy: { joinedAt: "asc" }, include: { workspace: { select: { kind: true } } } },
       siteAccess: { where: { revokedAt: null, acceptedAt: { not: null } } },
     },
   });
@@ -42,6 +44,7 @@ export async function deriveClaims(
   const workspaces = user.memberships.map((m) => ({
     id: m.workspaceId,
     role: m.role,
+    kind: m.workspace.kind,
   }));
   const active =
     workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0];

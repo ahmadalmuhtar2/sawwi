@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Globe, CheckCircle2, PlusCircle, ArrowLeft } from "lucide-react";
 import { getSessionClaims } from "@/lib/auth";
 import { listSites } from "@/server/sites/sites.service";
@@ -11,6 +12,20 @@ import { siteHost } from "@/lib/site-url";
 export default async function DashboardHome() {
   const claims = await getSessionClaims();
   const sites = claims ? await listSites(claims) : [];
+
+  // Persona routing: only resellers & admins get the portfolio landing. A
+  // business owner (site-scoped) or a direct owner is dropped straight into
+  // their single site — they never see a portfolio.
+  if (claims && claims.platformRole !== "admin") {
+    const isReseller = claims.workspace?.kind === "reseller";
+    if (!isReseller) {
+      if (sites.length === 1) redirect(`/dashboard/sites/${sites[0].id}`);
+      if (sites.length === 0 && claims.workspace?.kind === "direct") {
+        redirect("/dashboard/sites/new"); // direct owner builds their one site
+      }
+    }
+  }
+
   const published = sites.filter((s) => s.status === "published").length;
 
   return (
@@ -20,11 +35,13 @@ export default async function DashboardHome() {
           <h1 className="text-2xl font-extrabold text-ink">لوحة التحكم</h1>
           <p className="mt-1 text-sm text-muted">نظرة عامة على مواقعك.</p>
         </div>
-        <Link href="/dashboard/sites/new">
-          <Button className="gap-2">
-            <PlusCircle className="size-4" /> موقع جديد
-          </Button>
-        </Link>
+        {(claims?.workspace?.kind === "reseller" || claims?.platformRole === "admin") && (
+          <Link href="/dashboard/sites/new">
+            <Button className="gap-2">
+              <PlusCircle className="size-4" /> موقع جديد
+            </Button>
+          </Link>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">

@@ -4,6 +4,7 @@
 // Site-scoped collaborators never reach these (canManageBilling is false).
 
 import type { SessionClaims } from "@/server/access/access.rules";
+import { resolveSiteAccess } from "@/server/access/access.rules";
 import { requireSiteBilling, getSite } from "@/server/sites/sites.service";
 import { sitesRepository } from "@/server/sites/sites.repository";
 import { errors } from "@/shared/errors";
@@ -95,6 +96,37 @@ export async function getSiteBilling(claims: SessionClaims, siteId: string) {
       note: p.note,
       createdAt: p.createdAt,
     })),
+  };
+}
+
+/**
+ * READ-ONLY expiry view for the invited business owner (canViewBilling): the
+ * paid-through date, display status, days left, and the reseller's contact so
+ * the owner can reach out to renew. Never exposes payment history or controls.
+ */
+export async function getSiteExpiryView(claims: SessionClaims, siteId: string) {
+  const site = await getSite(claims, siteId); // view gate
+  if (!resolveSiteAccess(claims, site).canViewBilling) {
+    throw errors.forbidden("لا تملك صلاحية عرض الاشتراك");
+  }
+  const [subscription, workspace] = await Promise.all([
+    billingRepository.getSubscription(siteId),
+    billingRepository.getWorkspace(site.workspaceId),
+  ]);
+  const now = new Date();
+  return {
+    businessName: site.businessName,
+    subscription: subscription
+      ? {
+          expiry: subscription.expiry,
+          status: displayStatus(subscription.expiry, now),
+          daysLeft: daysUntil(subscription.expiry, now),
+        }
+      : null,
+    provider: {
+      name: workspace?.contactName ?? null,
+      whatsapp: workspace?.contactWhatsapp ?? null,
+    },
   };
 }
 

@@ -13,6 +13,11 @@ import { siteHost, siteUrl } from "@/lib/site-url";
 export default async function SitesPage() {
   const claims = await getSessionClaims();
   const sites = claims ? await listSites(claims) : [];
+  // Resellers create freely; a direct owner may create only their first site;
+  // business owners (no workspace) never create.
+  const canCreate =
+    claims?.workspace?.kind === "reseller" ||
+    (claims?.workspace?.kind === "direct" && sites.length === 0);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -21,7 +26,7 @@ export default async function SitesPage() {
           <h1 className="text-2xl font-extrabold text-ink">المواقع</h1>
           <p className="mt-1 text-sm text-muted">أنشئ وأدر مواقع عملائك.</p>
         </div>
-        {claims?.workspace && <CreateSiteButton />}
+        {canCreate && <CreateSiteButton />}
       </div>
 
       {sites.length === 0 ? (
@@ -30,7 +35,7 @@ export default async function SitesPage() {
             icon={<Globe className="size-6" />}
             title="لا مواقع بعد"
             body="ابدأ بإنشاء موقع من قالب جاهز لمجالك."
-            action={claims?.workspace ? <CreateSiteButton /> : undefined}
+            action={canCreate ? <CreateSiteButton /> : undefined}
           />
         </Card>
       ) : (
