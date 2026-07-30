@@ -7,11 +7,12 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Eye, Loader2, Monitor, Smartphone, Rocket, SlidersHorizontal, Undo2, Redo2, X } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, Monitor, Smartphone, Rocket, SlidersHorizontal, Pause, Play, Undo2, Redo2, X } from "lucide-react";
 import { getTemplate } from "@/templates/registry";
 import { deepMerge } from "@/templates/content";
 import { FieldForm, uploadStaging } from "./fields";
 import { AppearancePanel } from "./editor-shared";
+import { ExpiryBanner } from "@/components/dashboard/expiry-banner";
 import { TemplateHost } from "@/components/public/template-host";
 import type { TemplateTheme } from "@/server/sites/template-data";
 import { api, ApiClientError } from "@/lib/api-client";
@@ -24,15 +25,30 @@ const clone = (v: unknown): Content => JSON.parse(JSON.stringify(v ?? {}));
 export function ContentEditor({
   siteId,
   templateKey,
+  status,
+  currency = "ل.س",
   initialContent,
   initialTheme,
+  canManageBilling = false,
+  canEditBuilder = true,
+  canPublish = true,
+  initialMaintenance = false,
 }: {
   siteId: string;
   templateKey: string;
   slug: string;
   status: string;
+  /** Site's currency SYMBOL (shared source) — appended to preview prices. */
+  currency?: string;
   initialContent: Content;
   initialTheme: TemplateTheme;
+  /** Admin/reseller can pause public serving (hidden from business owners). */
+  canManageBilling?: boolean;
+  /** Builder grant: edit appearance (المظهر). Content-only editors lack it. */
+  canEditBuilder?: boolean;
+  /** Publish/unpublish permission (builder grant for site-scoped collaborators). */
+  canPublish?: boolean;
+  initialMaintenance?: boolean;
 }) {
   const tpl = getTemplate(templateKey);
   const toast = useToast();
@@ -44,12 +60,30 @@ export function ContentEditor({
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(true);
   const [publishing, setPublishing] = React.useState(false);
+  const [published, setPublished] = React.useState(status === "published");
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
   // Mobile only (< lg): the settings sidebar collapses into a drawer toggled by
   // a small floating button. Purely CSS-gated so it never depends on JS width
   // detection (which proved unreliable across mobile emulators).
   const [panelOpen, setPanelOpen] = React.useState(false);
+  // Admin/reseller "pause": serve the branded holding page instead of the site.
+  const [maintenance, setMaintenance] = React.useState(initialMaintenance);
+  const [pausing, setPausing] = React.useState(false);
   const firstRun = React.useRef(true);
+
+  async function toggleMaintenance() {
+    const next = !maintenance;
+    setPausing(true);
+    try {
+      await api.patch(`/api/sites/${siteId}/maintenance`, { on: next });
+      setMaintenance(next);
+      toast(next ? "تم إيقاف الموقع مؤقتًا — يظهر للزوّار أنه قيد الصيانة" : "تمّت إعادة تشغيل الموقع");
+    } catch (e) {
+      toast(e instanceof ApiClientError ? e.message : "تعذّر تغيير حالة الموقع", "error");
+    } finally {
+      setPausing(false);
+    }
+  }
 
   // In-session undo/redo. History holds content snapshots; every edit (inline or
   // side-panel) goes through applyContent so it can be undone. The callbacks
@@ -139,9 +173,23 @@ export function ContentEditor({
     setPublishing(true);
     try {
       await api.post(`/api/sites/${siteId}/publish`);
+      setPublished(true);
       toast("تم نشر الموقع بنجاح", "success");
     } catch (e) {
       toast(e instanceof ApiClientError ? e.message : "تعذّر النشر", "error");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function unpublish() {
+    setPublishing(true);
+    try {
+      await api.post(`/api/sites/${siteId}/unpublish`);
+      setPublished(false);
+      toast("تم إلغاء نشر الموقع — أصبح خارج الخدمة");
+    } catch (e) {
+      toast(e instanceof ApiClientError ? e.message : "تعذّر إلغاء النشر", "error");
     } finally {
       setPublishing(false);
     }
@@ -151,8 +199,9 @@ export function ContentEditor({
     return <p className="p-6 text-center text-muted">قالب غير معروف لهذا الموقع.</p>;
   }
 
-  const tabs = [...tpl.steps.map((s) => s.title), "المظهر"];
-  const isAppearance = tab === tpl.steps.length;
+  // Appearance (المظهر) is a builder-grant feature — content-only editors don't see it.
+  const tabs = [...tpl.steps.map((s) => s.title), ...(canEditBuilder ? ["المظهر"] : [])];
+  const isAppearance = canEditBuilder && tab === tpl.steps.length;
   const canUndo = past.length > 0;
   const canRedo = future.length > 0;
 
@@ -191,6 +240,8 @@ export function ContentEditor({
 
   return (
     <div className="-m-6 flex h-[calc(100dvh-4rem)] flex-col">
+      {/* Owner-facing expiry warning (renders only when expiring/expired). */}
+      <ExpiryBanner siteId={siteId} />
       {/* top bar */}
       <div className="flex h-14 items-center justify-between gap-3 border-b border-line bg-surface px-4">
         <div className="flex items-center gap-3">
@@ -225,6 +276,28 @@ export function ContentEditor({
               <Redo2 className="size-4" />
             </button>
           </div>
+          {canManageBilling && (
+            <button
+              onClick={toggleMaintenance}
+              disabled={pausing}
+              title={maintenance ? "إعادة تشغيل الموقع" : "إيقاف الموقع مؤقتًا (صيانة)"}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition cursor-pointer disabled:opacity-50",
+                maintenance
+                  ? "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  : "border-line text-muted hover:text-ink",
+              )}
+            >
+              {pausing ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : maintenance ? (
+                <Play className="size-4" />
+              ) : (
+                <Pause className="size-4" />
+              )}
+              {maintenance ? "تشغيل" : "إيقاف مؤقت"}
+            </button>
+          )}
           <Link
             href={`/preview/${siteId}`}
             target="_blank"
@@ -232,14 +305,26 @@ export function ContentEditor({
           >
             <Eye className="size-4" /> معاينة
           </Link>
-          <button
-            onClick={publish}
-            disabled={publishing}
-            className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-700 disabled:opacity-50 cursor-pointer"
-          >
-            {publishing ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
-            نشر
-          </button>
+          {canPublish && published && (
+            <button
+              onClick={unpublish}
+              disabled={publishing}
+              title="إلغاء النشر — إعادة الموقع إلى وضع الإنشاء"
+              className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition hover:border-danger/40 hover:text-danger disabled:opacity-50 cursor-pointer"
+            >
+              <EyeOff className="size-4" /> إلغاء النشر
+            </button>
+          )}
+          {canPublish && (
+            <button
+              onClick={publish}
+              disabled={publishing}
+              className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-accent-700 disabled:opacity-50 cursor-pointer"
+            >
+              {publishing ? <Loader2 className="size-4 animate-spin" /> : <Rocket className="size-4" />}
+              {published ? "إعادة النشر" : "نشر"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -275,7 +360,7 @@ export function ContentEditor({
                 templateKey={templateKey}
                 content={content}
                 theme={theme}
-                currency="ل.س"
+                currency={currency}
                 edit={{ onChange: applyContent }}
               />
             </div>
@@ -291,7 +376,7 @@ export function ContentEditor({
                     templateKey={templateKey}
                     content={content}
                     theme={theme}
-                    currency="ل.س"
+                    currency={currency}
                     edit={{ onChange: applyContent }}
                   />
                 </IframeCanvas>

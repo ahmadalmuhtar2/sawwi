@@ -6,8 +6,11 @@ import { BillingView } from "@/components/dashboard/billing-view";
 export default async function BillingPage() {
   const claims = await getSessionClaims();
   if (!claims) redirect("/login");
-  // Billing belongs to the reseller (workspace). Pure collaborators have none.
-  if (!claims.workspace) redirect("/dashboard");
+  // Billing belongs to RESELLERS. Direct owners (free) and site-scoped business
+  // owners never manage billing. Requires an active reseller workspace.
+  if (!claims.workspace || claims.workspace.kind !== "reseller") {
+    redirect("/dashboard");
+  }
 
   const data = await getWorkspaceBilling(claims);
 

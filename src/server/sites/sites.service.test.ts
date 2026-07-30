@@ -8,6 +8,7 @@ vi.mock("./sites.repository", () => ({
     slugExists: vi.fn(),
     create: vi.fn(),
     findById: vi.fn(),
+    countByWorkspace: vi.fn(),
   },
 }));
 
@@ -19,8 +20,8 @@ type CreatedSite = Awaited<ReturnType<typeof sitesRepository.create>>;
 const workspaceUser: SessionClaims = {
   userId: "u1",
   platformRole: "user",
-  workspace: { id: "ws_1", role: "member" },
-  workspaces: [{ id: "ws_1", role: "member" }],
+  workspace: { id: "ws_1", role: "member", kind: "reseller" },
+  workspaces: [{ id: "ws_1", role: "member", kind: "reseller" }],
   siteAccess: [],
 };
 
@@ -44,6 +45,21 @@ describe("createSite", () => {
       siteAccess: [{ siteId: "s9", level: "editor", builderAccess: false }],
     };
     await expect(createSite(noWorkspace, input)).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(sitesRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("caps a DIRECT workspace at one site (second create is FORBIDDEN)", async () => {
+    const directOwner: SessionClaims = {
+      userId: "u3",
+      platformRole: "user",
+      workspace: { id: "ws_d", role: "owner", kind: "direct" },
+      workspaces: [{ id: "ws_d", role: "owner", kind: "direct" }],
+      siteAccess: [],
+    };
+    vi.mocked(sitesRepository.countByWorkspace).mockResolvedValue(1);
+    await expect(createSite(directOwner, input)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(sitesRepository.create).not.toHaveBeenCalled();

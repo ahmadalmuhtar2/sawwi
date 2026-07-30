@@ -4,9 +4,9 @@ import { useRef, useState } from "react";
 import { Camera, ImageIcon } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { Spinner } from "@/components/ui/feedback";
+import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
-const MAX = 2 * 1024 * 1024; // 2 MB
 
 /**
  * Square logo picker for a site. Uploads to /api/sites/:id/logo (which sets
@@ -37,8 +37,8 @@ export function LogoUploader({
       setError("الصيغ المدعومة: JPG أو PNG أو WEBP أو SVG");
       return;
     }
-    if (file.size > MAX) {
-      setError("أقصى حجم للصورة ٢ ميغابايت");
+    if (file.size > MAX_IMAGE_BYTES) {
+      setError(`أقصى حجم للصورة ${maxSizeLabel(MAX_IMAGE_BYTES)}`);
       return;
     }
     setError(null);

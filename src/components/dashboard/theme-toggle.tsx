@@ -9,6 +9,8 @@ const useIsoInsertionEffect = typeof window === "undefined" ? useEffect : useIns
 
 // The dashboard shell wrapper (see dashboard/layout.tsx) carries data-theme.
 const ROOT_ID = "sw-app";
+// Persisted in a COOKIE (not localStorage) so the server can read it and apply
+// data-theme during SSR — the choice survives reloads with no flash.
 export const THEME_KEY = "sawwi_theme";
 
 type Theme = "light" | "dark";
@@ -18,6 +20,17 @@ function currentTheme(): Theme {
   return document.getElementById(ROOT_ID)?.getAttribute("data-theme") === "dark"
     ? "dark"
     : "light";
+}
+
+function readThemeCookie(): Theme | null {
+  if (typeof document === "undefined") return null;
+  const m = document.cookie.match(/(?:^|;\s*)sawwi_theme=(dark|light)/);
+  return m ? (m[1] as Theme) : null;
+}
+
+function writeThemeCookie(t: Theme) {
+  // 1-year, root path, lax — readable by the server on the next request.
+  document.cookie = `${THEME_KEY}=${t}; path=/; max-age=31536000; samesite=lax`;
 }
 
 /**
@@ -38,11 +51,7 @@ export function useTheme() {
     const next: Theme = theme === "dark" ? "light" : "dark";
     setTheme(next);
     document.getElementById(ROOT_ID)?.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem(THEME_KEY, next);
-    } catch {
-      // private mode / storage disabled — the toggle still works for the session
-    }
+    writeThemeCookie(next); // server reads this on the next render → persists
   }
 
   return { theme, toggle, isDark: theme === "dark" };
@@ -75,17 +84,19 @@ export function ThemeMenuItem() {
  */
 export function ThemeInit() {
   useIsoInsertionEffect(() => {
-    try {
-      const el = document.getElementById(ROOT_ID);
-      if (!el) return;
-      let t = localStorage.getItem(THEME_KEY);
-      if (t !== "dark" && t !== "light") {
-        t = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-      }
-      el.setAttribute("data-theme", t);
-    } catch {
-      // storage disabled — stays light
+    const el = document.getElementById(ROOT_ID);
+    if (!el) return;
+    // The server already applied the cookie theme (see dashboard/layout.tsx). If
+    // there's no cookie yet (first visit), fall back to the OS preference and
+    // persist it as a cookie so every later render is server-applied + flash-free.
+    const saved = readThemeCookie();
+    if (saved) {
+      el.setAttribute("data-theme", saved);
+      return;
     }
+    const os = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    el.setAttribute("data-theme", os);
+    writeThemeCookie(os);
   }, []);
   return null;
 }

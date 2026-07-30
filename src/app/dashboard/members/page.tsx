@@ -8,7 +8,7 @@ export default async function MembersPage() {
   if (!claims) redirect("/login");
   if (!claims.workspace) redirect("/dashboard");
 
-  const { sites, grants } = await listCollaborators(claims);
+  const { hasSites, grants } = await listCollaborators(claims);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -19,11 +19,12 @@ export default async function MembersPage() {
       </p>
 
       <MembersManager
-        sites={sites}
+        hasSites={hasSites}
         grants={grants.map((g) => ({
           id: g.id,
           siteId: g.siteId,
           invitedEmail: g.invitedEmail,
+          businessName: g.site.businessName,
           builderAccess: g.builderAccess,
           accepted: Boolean(g.acceptedAt),
         }))}

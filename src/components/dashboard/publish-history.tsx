@@ -25,9 +25,12 @@ const dateFmt = new Intl.DateTimeFormat("ar-SY", {
 export function PublishHistory({
   siteId,
   items,
+  canRollback = true,
 }: {
   siteId: string;
   items: Snapshot[];
+  /** Read-only view (e.g. business owner) hides rollback. */
+  canRollback?: boolean;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -59,7 +62,9 @@ export function PublishHistory({
 
       <h1 className="text-2xl font-extrabold text-ink">سجل النشر</h1>
       <p className="mt-1 text-sm text-muted">
-        كل عملية نشر تُنشئ نسخة محفوظة. يمكنك إعادة النشر من أي نسخة سابقة.
+        {canRollback
+          ? "كل عملية نشر تُنشئ نسخة محفوظة. يمكنك إعادة النشر من أي نسخة سابقة."
+          : "كل عملية نشر تُنشئ نسخة محفوظة. هذا السجل للعرض فقط."}
       </p>
 
       <Card className="mt-6 p-2">
@@ -85,7 +90,7 @@ export function PublishHistory({
                       {dateFmt.format(new Date(s.createdAt))} · {s.author}
                     </p>
                   </div>
-                  {!isCurrent && (
+                  {canRollback && !isCurrent && (
                     <Button
                       variant="ghost"
                       className="shrink-0 gap-1.5"

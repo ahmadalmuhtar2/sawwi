@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
+import { CURRENCIES, symbolOf } from "@/shared/currency";
 import { cn } from "@/lib/cn";
 
 type Status = "active" | "expiring" | "expired";
@@ -37,11 +38,10 @@ interface Summary {
   expired: number;
 }
 
-const CUR: Record<string, string> = { SYP: "ل.س", USD: "$", EUR: "€" };
 const dateFmt = new Intl.DateTimeFormat("ar-SY", { dateStyle: "medium" });
 const fmtDate = (iso: string) => dateFmt.format(new Date(iso));
 const fmtMoney = (n: number, c: string) =>
-  `${n.toLocaleString("ar-SY")} ${CUR[c] ?? c}`;
+  `${n.toLocaleString("ar-SY")} ${symbolOf(c)}`;
 const toInput = (iso: string) => iso.slice(0, 10);
 
 /** Default new paid-through date: one year from the later of expiry/today. */
@@ -217,7 +217,7 @@ function PaymentModal({ row, onClose, onDone, toast }: { row: Row; onClose: () =
           </Field>
           <Field label="العملة">
             <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              <option value="SYP">ل.س</option><option value="USD">USD</option><option value="EUR">EUR</option>
+              {CURRENCIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
             </Select>
           </Field>
         </div>

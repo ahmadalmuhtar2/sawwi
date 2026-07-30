@@ -28,6 +28,23 @@ enum MemberRole {
   member
 }
 
+/// A workspace is either a reseller's book of client sites, or a single
+/// admin-provisioned free "direct" business. Drives caps, nav, and expiry source.
+enum WorkspaceKind {
+  reseller
+  direct
+}
+
+/// Admin-controlled lifecycle of a recorded (offline) payment. Independent of
+/// the platform commission owed on it (see CommissionStatus).
+enum PaymentStatus {
+  pending
+  paid
+  checked
+  stopped
+  refunded
+}
+
 enum AccessLevel {
   editor
   viewer
@@ -59,10 +76,13 @@ enum PaymentMethod {
   other
 }
 
+/// Keep in sync with src/shared/currency.ts CURRENCIES (the single source).
 enum Currency {
   SYP
+  SYP_NEW
   USD
   EUR
+  TRY
 }
 
 enum CommissionStatus {
@@ -84,6 +104,10 @@ model User {
   emailVerified Boolean      @default(false)
   image         String?
   platformRole  PlatformRole @default(user)
+  /// Direct-tier hard expiry: an admin-provisioned free owner's site is served
+  /// while `now < endDate` (null = never expires). Ignored for reseller sites,
+  /// whose expiry lives on the Subscription.
+  endDate       DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -151,12 +175,17 @@ model Verification {
 // ============================================================================
 
 model Workspace {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   name          String
-  commissionPct Float    @default(0)
-  status        String   @default("active")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  kind          WorkspaceKind @default(reseller)
+  commissionPct Float         @default(0)
+  status        String        @default("active")
+  /// Shown to site-scoped business owners as the "contact your provider" target
+  /// on the expiry banner/tab (the reseller who sold them the site).
+  contactName     String?
+  contactWhatsapp String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   members     WorkspaceMember[]
   invites     WorkspaceInvite[]
@@ -210,6 +239,10 @@ model Site {
   templateKey  String?
   language     SiteLanguage @default(ar)
   status       SiteStatus   @default(draft)
+  /// Admin/reseller "pause": when true the public domain serves the branded
+  /// holding page instead of the site, even if published. Drafts show the same
+  /// page automatically (served from minute 0 until first publish).
+  maintenanceMode Boolean   @default(false)
   logoUrl      String? // uploaded logo/avatar — shown in the dashboard list and the site header
   seo          Json         @default("{}") // site-wide SEO defaults, see src/shared/seo.ts
   content      Json         @default("{}") // editable template data (see src/templates); merged over the template defaults at render
@@ -239,6 +272,7 @@ model SiteAccess {
   invitedEmail String
   level        AccessLevel @default(editor)
   builderAccess Boolean    @default(false) // editors edit settings; builder (pages/sections) + publish require this
+  token        String?     @unique // invite-accept link; consumed on accept (mirrors WorkspaceInvite)
   invitedBy    String
   acceptedAt   DateTime?
   revokedAt    DateTime?
@@ -400,6 +434,7 @@ model PaymentRecord {
   amount         Float
   currency       Currency      @default(SYP)
   method         PaymentMethod @default(cash)
+  status         PaymentStatus @default(pending) // admin-controlled lifecycle (paid/checked/stopped…)
   payerName      String? // who paid (the client/restaurant), free text
   collectedBy    String? // userId of the reseller who recorded it
   note           String?

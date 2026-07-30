@@ -5,10 +5,10 @@ import { getPrisma } from "@/lib/db";
 import { putObject, isStorageConfigured, keyFromUrl, deleteByUrl } from "@/lib/storage";
 import { siteAssetKey } from "@/lib/storage-keys";
 import { errors } from "@/shared/errors";
+import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 
 // POST /api/sites/:id/logo — multipart { file } → uploads the site logo and sets
 // Site.logoUrl. Small images, uploaded through the server (no browser↔storage CORS).
-const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 const EXT_BY_TYPE: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -39,8 +39,8 @@ export const POST = withRoute(async (req, { params }: Ctx) => {
       file: "الصيغ المدعومة: JPG أو PNG أو WEBP أو SVG",
     });
   }
-  if (file.size > MAX_BYTES) {
-    throw errors.validation("حجم الصورة كبير", { file: "أقصى حجم للصورة ٢ ميغابايت" });
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw errors.validation("حجم الصورة كبير", { file: `أقصى حجم للصورة ${maxSizeLabel(MAX_IMAGE_BYTES)}` });
   }
 
   // Per-website folder, stable key → same-type re-upload overwrites.

@@ -13,6 +13,28 @@ export const membersRepository = {
         level: true,
         builderAccess: true,
         acceptedAt: true,
+        // join the business name so the collaborators list resolves names
+        // WITHOUT loading every workspace site into the client.
+        site: { select: { businessName: true } },
+      },
+    });
+  },
+
+  /** Active grants across ALL sites in a workspace (with each site's name).
+   *  Only invited collaborators produce rows, so this stays small regardless of
+   *  how many sites the workspace owns. */
+  listGrantsForWorkspace(workspaceId: string) {
+    return getPrisma().siteAccess.findMany({
+      where: { revokedAt: null, site: { workspaceId } },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        siteId: true,
+        invitedEmail: true,
+        level: true,
+        builderAccess: true,
+        acceptedAt: true,
+        site: { select: { businessName: true } },
       },
     });
   },

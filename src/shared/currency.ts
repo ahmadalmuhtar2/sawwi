@@ -24,6 +24,10 @@ export const CURRENCIES: CurrencyDef[] = [
 
 export const DEFAULT_CURRENCY: SiteCurrency = "SYP";
 
+/** The currency keys as a tuple — the single source for enums/validation
+ *  (Prisma `Currency`, Zod schemas, pickers). Keep in sync with CURRENCIES. */
+export const CURRENCY_KEYS = CURRENCIES.map((c) => c.key) as [SiteCurrency, ...SiteCurrency[]];
+
 export function getCurrency(key?: string | null): CurrencyDef {
   return CURRENCIES.find((c) => c.key === key) ?? CURRENCIES[0];
 }

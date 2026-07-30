@@ -33,13 +33,14 @@ describe("resolveSiteAccess — platform admin", () => {
       canManageAccess: true,
       canDelete: true,
       canManageBilling: true,
+      canViewBilling: true,
     });
   });
 });
 
 describe("resolveSiteAccess — workspace user", () => {
-  const owner = claims({ workspace: { id: "ws_1", role: "owner" } });
-  const member = claims({ workspace: { id: "ws_1", role: "member" } });
+  const owner = claims({ workspace: { id: "ws_1", role: "owner", kind: "reseller" } });
+  const member = claims({ workspace: { id: "ws_1", role: "member", kind: "reseller" } });
 
   it("owner/member can edit, publish, manage access, delete within their workspace", () => {
     for (const c of [owner, member]) {
@@ -72,6 +73,7 @@ describe("resolveSiteAccess — workspace user", () => {
       canManageAccess: false,
       canDelete: false,
       canManageBilling: false,
+      canViewBilling: false,
     });
   });
 });
@@ -128,7 +130,7 @@ describe("resolveSiteAccess — site-scoped grants", () => {
 
 describe("workspace-level checks", () => {
   it("canAccessWorkspace: member yes, outsider no, admin always", () => {
-    const member = claims({ workspace: { id: "ws_1", role: "member" } });
+    const member = claims({ workspace: { id: "ws_1", role: "member", kind: "reseller" } });
     expect(canAccessWorkspace(member, "ws_1")).toBe(true);
     expect(canAccessWorkspace(member, "ws_2")).toBe(false);
     expect(canAccessWorkspace(claims({ platformRole: "admin" }), "ws_9")).toBe(
@@ -137,8 +139,8 @@ describe("workspace-level checks", () => {
   });
 
   it("canManageWorkspace: only owner or admin", () => {
-    const owner = claims({ workspace: { id: "ws_1", role: "owner" } });
-    const member = claims({ workspace: { id: "ws_1", role: "member" } });
+    const owner = claims({ workspace: { id: "ws_1", role: "owner", kind: "reseller" } });
+    const member = claims({ workspace: { id: "ws_1", role: "member", kind: "reseller" } });
     expect(canManageWorkspace(owner, "ws_1")).toBe(true);
     expect(canManageWorkspace(member, "ws_1")).toBe(false);
     expect(canManageWorkspace(claims({ platformRole: "admin" }), "ws_1")).toBe(
@@ -150,10 +152,10 @@ describe("workspace-level checks", () => {
 describe("multi-workspace — permissions span ALL memberships, not just active", () => {
   // Active workspace is ws_1, but the user also owns/belongs to ws_2.
   const multi = claims({
-    workspace: { id: "ws_1", role: "owner" },
+    workspace: { id: "ws_1", role: "owner", kind: "reseller" },
     workspaces: [
-      { id: "ws_1", role: "owner" },
-      { id: "ws_2", role: "member" },
+      { id: "ws_1", role: "owner", kind: "reseller" },
+      { id: "ws_2", role: "member", kind: "reseller" },
     ],
   });
 

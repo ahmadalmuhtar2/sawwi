@@ -70,4 +70,14 @@ export const publishingRepository = {
       data: { status: "published" },
     });
   },
+
+  /** Take a site offline → back to draft. Snapshots are kept, so re-publishing
+   *  (or rolling back) still works. */
+  markUnpublished(siteId: string) {
+    return getPrisma().site.update({
+      where: { id: siteId },
+      data: { status: "draft" },
+      select: { id: true, status: true },
+    });
+  },
 };

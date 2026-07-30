@@ -21,10 +21,18 @@ export function useToast() {
   return ctx.toast;
 }
 
+// Icons inherit the toast's text color (white) via currentColor.
 const ICONS = {
-  success: <CheckCircle2 className="size-5 text-accent" />,
-  info: <Info className="size-5 text-ink" />,
-  error: <AlertTriangle className="size-5 text-danger" />,
+  success: <CheckCircle2 className="size-5" />,
+  info: <Info className="size-5" />,
+  error: <AlertTriangle className="size-5" />,
+};
+
+// The whole toast is colored by type — solid fill + white text.
+const STYLES: Record<ToastType, string> = {
+  success: "bg-green-600 border-green-700 text-white",
+  info: "bg-neutral-800 border-neutral-900 text-white dark:bg-neutral-700 dark:border-neutral-600",
+  error: "bg-red-600 border-red-700 text-white",
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -46,14 +54,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={cn(
-              "flex items-start gap-3 bg-surface border border-line rounded-lg shadow-md px-4 py-3 animate-in",
+              "flex items-start gap-3 rounded-lg border shadow-md px-4 py-3 animate-in",
+              STYLES[t.type],
             )}
           >
             {ICONS[t.type]}
-            <p className="flex-1 text-sm text-ink leading-relaxed">{t.message}</p>
+            <p className="flex-1 text-sm leading-relaxed">{t.message}</p>
             <button
               onClick={() => dismiss(t.id)}
-              className="text-faint hover:text-ink cursor-pointer"
+              className="text-white/70 hover:text-white cursor-pointer"
               aria-label="إغلاق"
             >
               <X className="size-4" />

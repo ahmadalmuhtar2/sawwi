@@ -26,6 +26,10 @@ export async function createSite(claims: SessionClaims, input: CreateSiteInput) 
   if (!workspace) {
     throw errors.forbidden("فقط أعضاء مساحة العمل يمكنهم إنشاء المواقع");
   }
+  // Direct (admin-provisioned free) accounts are capped at a single site.
+  if (workspace.kind === "direct" && (await sitesRepository.countByWorkspace(workspace.id)) >= 1) {
+    throw errors.forbidden("الحساب المباشر يسمح بموقع واحد فقط");
+  }
   assertSlugValid(input.slug); // defense in depth (schema already checked format)
   if (await sitesRepository.slugExists(input.slug)) {
     throw errors.conflict("هذا الرابط مستخدم بالفعل، اختر رابطًا آخر");
@@ -42,6 +46,16 @@ export async function createSite(claims: SessionClaims, input: CreateSiteInput) 
     content: (input.content ?? {}) as Prisma.InputJsonValue,
   });
   return site;
+}
+
+/** Search sites within the caller's active workspace (members combobox).
+ *  Scoped server-side to the trusted workspace; never trusts a client id. */
+export async function searchSites(claims: SessionClaims, q: string, limit = 10) {
+  if (!claims.workspace) {
+    throw errors.forbidden("لا توجد مساحة عمل نشطة");
+  }
+  const capped = Math.min(Math.max(limit, 1), 25);
+  return sitesRepository.searchByWorkspace(claims.workspace.id, q, capped);
 }
 
 /** Sites the caller can see: their workspace's sites, or their invited sites. */
@@ -94,6 +108,17 @@ export async function requireSitePublish(claims: SessionClaims, siteId: string) 
   const { site, permissions } = await loadViewable(claims, siteId);
   if (!permissions.canPublish) throw errors.forbidden("لا تملك صلاحية النشر");
   return site;
+}
+
+/** Pause / resume public serving (admin/reseller only — same gate as billing).
+ *  A paused site serves the branded holding page instead of its content. */
+export async function setMaintenance(
+  claims: SessionClaims,
+  siteId: string,
+  on: boolean,
+) {
+  await requireSiteBilling(claims, siteId); // canManageBilling → reseller/admin
+  return sitesRepository.setMaintenance(siteId, on);
 }
 
 /** Guard: caller may manage billing for this site (reseller/workspace or admin). */
@@ -170,7 +195,9 @@ export async function updateTheme(
   input: UpdateThemeInput,
 ) {
   const { permissions } = await loadViewable(claims, siteId);
-  if (!permissions.canEditSettings) throw errors.forbidden("لا تملك صلاحية التعديل");
+  // Appearance (theme/palette) is part of the "builder" grant — a content-only
+  // collaborator (no builderAccess) edits fields but not the design.
+  if (!permissions.canEditBuilder) throw errors.forbidden("لا تملك صلاحية تعديل المظهر");
   return sitesRepository.upsertTheme(siteId, input);
 }
 

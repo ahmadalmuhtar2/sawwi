@@ -39,6 +39,7 @@ export function DashboardShell({
   activeWorkspaceId,
   isOwner,
   isAdmin,
+  isReseller,
   children,
 }: {
   user: ShellUser;
@@ -46,6 +47,8 @@ export function DashboardShell({
   activeWorkspaceId: string | null;
   isOwner: boolean;
   isAdmin: boolean;
+  /** Reseller workspace owner — gets billing/members/switcher/create-site. */
+  isReseller?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -72,11 +75,20 @@ export function DashboardShell({
     });
   }
 
-  const nav: NavItem[] = [
-    { href: "/dashboard", label: "الرئيسية", icon: <LayoutDashboard className="size-[18px]" /> },
-    { href: "/dashboard/sites", label: "المواقع", icon: <Globe className="size-[18px]" /> },
-  ];
-  if (isOwner) {
+  // Billing/members are reseller-only. Direct owners (isOwner but kind=direct)
+  // and business owners never see them. Fall back to isOwner if the flag wasn't
+  // supplied (defensive for any caller not yet passing it).
+  const showResellerNav = isReseller ?? isOwner;
+
+  const nav: NavItem[] = [];
+  // The portfolio home (الرئيسية) is only meaningful for resellers/admins — for a
+  // business owner or direct owner it just redirects to their one site, so hide
+  // it and leave only المواقع.
+  if (showResellerNav || isAdmin) {
+    nav.push({ href: "/dashboard", label: "الرئيسية", icon: <LayoutDashboard className="size-[18px]" /> });
+  }
+  nav.push({ href: "/dashboard/sites", label: "المواقع", icon: <Globe className="size-[18px]" /> });
+  if (showResellerNav) {
     nav.push({ href: "/dashboard/billing", label: "الفوترة", icon: <Wallet className="size-[18px]" /> });
     nav.push({ href: "/dashboard/members", label: "الأعضاء", icon: <Users className="size-[18px]" /> });
   }
@@ -91,7 +103,9 @@ export function DashboardShell({
 
   return (
     <ToastProvider>
-      <div className="flex min-h-dvh bg-bg">
+      {/* Fixed viewport height so the sidebar + header stay put and only <main>
+          scrolls (h-dvh + overflow-hidden makes main the scroll container). */}
+      <div className="flex h-dvh overflow-hidden bg-bg">
         {/* Sidebar */}
         <aside
           className={cn(
@@ -238,14 +252,19 @@ export function DashboardShell({
               >
                 <Menu className="size-5" />
               </button>
-              {workspaces.length > 0 && activeWorkspaceId ? (
-                <WorkspaceMenu
-                  workspaces={workspaces}
-                  activeId={activeWorkspaceId}
-                  isOwner={isOwner}
-                />
+              {(isReseller ?? isOwner) || isAdmin ? (
+                workspaces.length > 0 && activeWorkspaceId ? (
+                  <WorkspaceMenu
+                    workspaces={workspaces}
+                    activeId={activeWorkspaceId}
+                    isOwner={isOwner}
+                  />
+                ) : (
+                  <span className="text-sm text-muted">مواقعي</span>
+                )
               ) : (
-                <span className="text-sm text-muted">مواقعي</span>
+                // Direct owners & business owners: no switcher — just a label.
+                <span className="text-sm font-semibold text-ink">موقعي</span>
               )}
             </div>
             <UserMenu user={user} />

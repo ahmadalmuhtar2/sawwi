@@ -5,30 +5,77 @@ import { getPrisma } from "@/lib/db";
 import { getPublishedTemplateData } from "@/server/sites/template-data";
 import { buildSiteMetadata } from "@/server/seo/metadata";
 import { isServable } from "@/server/billing/billing.rules";
+import { getTemplate } from "@/templates/registry";
+import { getPath } from "@/templates/content";
 import { TemplateHost } from "@/components/public/template-host";
+import { HoldingPage, type HoldingVariant } from "@/components/public/holding-page";
 
 type Params = Promise<{ slug: string; path?: string[] }>;
 
-// Cached slug → {id,status,subscription} lookup (shared by metadata + the page).
-const loadSite = cache(async (slug: string) =>
+type LoadedSite = {
+  id: string;
+  status: string;
+  businessName: string;
+  templateKey: string | null;
+  content: unknown;
+  logoUrl: string | null;
+  maintenanceMode: boolean;
+  subscription: { expiry: Date } | null;
+};
+
+// Cached slug lookup (shared by metadata + the page).
+const loadSite = cache(async (slug: string): Promise<LoadedSite | null> =>
   getPrisma().site.findUnique({
     where: { slug },
-    select: { id: true, status: true, subscription: { select: { expiry: true } } },
+    select: {
+      id: true,
+      status: true,
+      businessName: true,
+      templateKey: true,
+      content: true,
+      logoUrl: true,
+      maintenanceMode: true,
+      subscription: { select: { expiry: true } },
+    },
   }),
 );
 
-// Product decision: a published site stops being served once its paid-through
-// date passes. Sites without a subscription row are unaffected (legacy/pre-billing).
-function isSiteServed(site: { status: string; subscription: { expiry: Date } | null }): boolean {
+// The DISPLAY business name = the brand the owner configured in the template
+// content (via the template's nameKey, e.g. "shop.name"), NOT the internal
+// Site.businessName entered at creation. Falls back to it when unset.
+function displayName(site: LoadedSite): string | null {
+  const tpl = site.templateKey ? getTemplate(site.templateKey) : null;
+  if (tpl?.nameKey) {
+    const fromContent = getPath(site.content, tpl.nameKey);
+    if (typeof fromContent === "string" && fromContent.trim()) return fromContent.trim();
+    const fromDefaults = getPath(tpl.defaults, tpl.nameKey);
+    if (typeof fromDefaults === "string" && fromDefaults.trim()) return fromDefaults.trim();
+  }
+  return site.businessName || null;
+}
+
+// A site serves its real content only when published, not paused, and paid-through.
+function isSiteServed(site: LoadedSite): boolean {
   if (site.status !== "published") return false;
+  if (site.maintenanceMode) return false;
   if (site.subscription && !isServable(site.subscription.expiry, new Date())) return false;
   return true;
+}
+
+// Which branded holding page to show when a site isn't serving its content.
+function holdingVariant(site: LoadedSite): HoldingVariant {
+  if (site.maintenanceMode) return "maintenance";
+  if (site.status !== "published") return "coming-soon"; // draft — served from minute 0
+  return "expired"; // published but lapsed
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
   const site = await loadSite(slug);
-  if (!site || !isSiteServed(site)) return { title: "سوّي" };
+  // Not serving? Show the business name (or سوّي) — nicer than a bare fallback,
+  // and avoids exposing draft SEO before publish.
+  if (!site) return { title: "سوّي" };
+  if (!isSiteServed(site)) return { title: displayName(site) || "سوّي" };
 
   const published = await getPublishedTemplateData(site.id);
   if (!published) return { title: "سوّي" };
@@ -50,16 +97,14 @@ export default async function PublicSitePage({ params }: { params: Params }) {
   const site = await loadSite(slug);
   if (!site) notFound();
 
-  // Only published, paid-through sites are served (drafts + expired stay private).
+  // Not serving its content (draft / paused / expired) → branded holding page.
   if (!isSiteServed(site)) {
-    const expired = site.status === "published";
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center bg-bg px-6 text-center">
-        <h1 className="text-2xl font-extrabold text-ink">الموقع غير متاح حاليًا</h1>
-        <p className="mt-2 text-muted">
-          {expired ? "انتهت مدة اشتراك هذا الموقع." : "هذا الموقع غير منشور بعد."}
-        </p>
-      </main>
+      <HoldingPage
+        variant={holdingVariant(site)}
+        businessName={displayName(site)}
+        logoUrl={site.logoUrl}
+      />
     );
   }
 

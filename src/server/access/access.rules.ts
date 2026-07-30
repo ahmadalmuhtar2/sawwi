@@ -2,7 +2,7 @@
 // Access is ALWAYS derived from server-side session claims, never from a
 // client-supplied workspace/site id. These are pure functions over claims.
 
-import type { AccessLevel, MemberRole, PlatformRole } from "@/shared/domain";
+import type { AccessLevel, MemberRole, PlatformRole, WorkspaceKind } from "@/shared/domain";
 
 /** The trusted, server-derived identity for a request. */
 export interface SessionClaims {
@@ -13,9 +13,9 @@ export interface SessionClaims {
    * which workspace new sites/members belong to and which sites are listed.
    * Undefined for users who own no workspace (pure collaborators).
    */
-  workspace?: { id: string; role: MemberRole };
+  workspace?: { id: string; role: MemberRole; kind: WorkspaceKind };
   /** ALL workspaces the user is a member of. Permission checks span these. */
-  workspaces: ReadonlyArray<{ id: string; role: MemberRole }>;
+  workspaces: ReadonlyArray<{ id: string; role: MemberRole; kind: WorkspaceKind }>;
   /** Site-scoped grants for invited collaborators/viewers. */
   siteAccess: ReadonlyArray<{
     siteId: string;
@@ -42,6 +42,9 @@ export interface SitePermissions {
   canDelete: boolean;
   /** Billing beyond expiry status is workspace/admin only (PRD §4.4, §8). */
   canManageBilling: boolean;
+  /** Read-only view of the site's expiry/subscription — includes the invited
+   *  business owner (banner + الاشتراك tab). Never implies canManageBilling. */
+  canViewBilling: boolean;
 }
 
 const NONE: SitePermissions = {
@@ -52,6 +55,7 @@ const NONE: SitePermissions = {
   canManageAccess: false,
   canDelete: false,
   canManageBilling: false,
+  canViewBilling: false,
 };
 
 function isAdmin(claims: SessionClaims): boolean {
@@ -94,6 +98,7 @@ export function resolveSiteAccess(
       canManageAccess: true,
       canDelete: true,
       canManageBilling: true,
+      canViewBilling: true,
     };
   }
 
@@ -107,8 +112,9 @@ export function resolveSiteAccess(
       canManageAccess: true,
       canDelete: true,
       // The reseller (workspace) owns billing: set/extend expiry, record
-      // payments. Site-scoped collaborators never see billing.
+      // payments.
       canManageBilling: true,
+      canViewBilling: true,
     };
   }
 
@@ -125,10 +131,13 @@ export function resolveSiteAccess(
         canEditSettings: true,
         canEditBuilder: grant.builderAccess,
         canPublish: grant.builderAccess, // subscription gating applied separately
+        // The invited business owner sees a READ-ONLY expiry (banner + tab), but
+        // never manages billing — that stays with the reseller.
+        canViewBilling: true,
       };
     }
     // viewer
-    return { ...NONE, canView: true };
+    return { ...NONE, canView: true, canViewBilling: true };
   }
 
   return NONE;
