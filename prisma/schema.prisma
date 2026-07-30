@@ -98,6 +98,12 @@ enum SiteMessageStatus {
   archived
 }
 
+/// The two verticals of the marketplace template. A single site can list both.
+enum ListingVertical {
+  car
+  home
+}
+
 // ============================================================================
 // Identity
 // NOTE: provisional. Better Auth will own the auth tables (Session/Account/
@@ -270,9 +276,42 @@ model Site {
   snapshots    PublishSnapshot[]
   messages     SiteMessage[]
   notifications Notification[]
+  listings     Listing[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// A marketplace listing (a car or a home) the site OWNER publishes. Unlike
+/// ordinary template content (frozen in a PublishSnapshot), listings are served
+/// LIVE from this table — a dealer/agency adds and removes them daily, so there
+/// is no "publish the whole site" step gating them.
+///
+/// The physical shape is fixed (human-controlled + CI-migrated); the per-vertical
+/// FIELD set is defined in the template module and stored in `specs` (JSON), so
+/// the marketplace can grow new fields without a migration (see the generative-
+/// architecture direction). Hot filter/sort keys are promoted to columns.
+model Listing {
+  id          String          @id @default(cuid())
+  siteId      String
+  vertical    ListingVertical
+  title       String
+  price       Float? // integer amount; render applies currency + separators. null = "on request"
+  offer       String? // homes: "rent" | "buy" (a filter); null for cars
+  place       String? // city / area — a filter + shown on the card
+  description String?
+  images      Json            @default("[]") // string[] of storage URLs; first = cover
+  features    Json            @default("[]") // string[] extras (the `multi` filter)
+  specs       Json            @default("{}") // all other vertical fields, keyed by field key
+  published   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, vertical, published])
+  @@index([siteId, createdAt])
+  @@map("listings")
 }
 
 /// A lead captured from a published site's public contact form. Append-only
