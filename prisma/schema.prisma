@@ -119,10 +119,11 @@ model User {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  memberships WorkspaceMember[]
-  siteAccess  SiteAccess[]
-  sessions    Session[]
-  accounts    Account[]
+  memberships   WorkspaceMember[]
+  siteAccess    SiteAccess[]
+  sessions      Session[]
+  accounts      Account[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -268,6 +269,7 @@ model Site {
   faq          FaqItem[]
   snapshots    PublishSnapshot[]
   messages     SiteMessage[]
+  notifications Notification[]
 
   @@index([workspaceId])
   @@map("sites")
@@ -292,6 +294,29 @@ model SiteMessage {
   @@index([siteId, status])
   @@index([siteId, createdAt])
   @@map("site_messages")
+}
+
+/// A per-user in-app notification (dashboard bell). Created as a best-effort
+/// side effect of an event — e.g. a visitor sends a message → every user who can
+/// see that site (workspace members + accepted collaborators) gets one. Read /
+/// cleared from the bell. Cascades away with the user or the related site.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // event kind, e.g. "site_message"
+  title     String
+  body      String?
+  siteId    String? // context for grouping / navigation
+  link      String? // dashboard path opened on click
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 /// Site-scoped invite: how a business owner edits ONLY their one site.

@@ -8,6 +8,7 @@
 import type { SessionClaims } from "@/server/access/access.rules";
 import { resolveSiteAccess } from "@/server/access/access.rules";
 import { sitesRepository } from "@/server/sites/sites.repository";
+import { notifySiteMessage } from "@/server/notifications/notifications.service";
 import { isServable } from "@/server/billing/billing.rules";
 import { errors } from "@/shared/errors";
 import type { SiteMessageStatus } from "@/generated/prisma/enums";
@@ -61,6 +62,9 @@ export async function submitMessage(input: SubmitMessageInput, ip: string | null
     body: input.body,
     ipHash,
   });
+  // Notify the owner + collaborators (best-effort — never fail the visitor's
+  // submit because a notification couldn't be written).
+  void notifySiteMessage(site.id, { name: input.name, body: input.body }).catch(() => {});
   return { ok: true as const };
 }
 

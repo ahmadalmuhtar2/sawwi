@@ -18,6 +18,7 @@ import { signOut } from "@/lib/auth-client";
 import { Logo } from "@/components/logo";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { WorkspaceMenu } from "@/components/dashboard/workspace-menu";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { ToastProvider } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 
@@ -267,7 +268,10 @@ export function DashboardShell({
                 <span className="text-sm font-semibold text-ink">موقعي</span>
               )}
             </div>
-            <UserMenu user={user} />
+            <div className="flex items-center gap-1 md:gap-2">
+              <NotificationBell />
+              <UserMenu user={user} />
+            </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
