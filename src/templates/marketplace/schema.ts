@@ -7,8 +7,27 @@
 // numbers render as Arabic-Indic in the UI layer).
 
 export type Vertical = "car" | "home";
-export type FieldType = "text" | "chips" | "multi" | "area" | "photos";
+// text: free text · number: numeric input (+ unit/currency) · select: dropdown
+// enum (long option lists) · chips: button enum (short lists) · multi: many-select
+// · phone: our phone input · area: textarea · photos: image uploader.
+export type FieldType = "text" | "number" | "select" | "chips" | "multi" | "area" | "photos" | "phone";
 export type FilterKind = "range" | "chips" | "multi";
+
+const arDigits = (v: string | number) => String(v).replace(/[0-9]/g, (d) => "٠١٢٣٤٥٦٧٨٩"[+d]);
+
+/** Model-year options (newest first) — a select enum, regenerated each year. */
+export const YEARS: string[] = (() => {
+  const start = new Date().getFullYear() + 1;
+  const out: string[] = [];
+  for (let y = start; y >= 1990; y--) out.push(arDigits(y));
+  return out;
+})();
+
+/** Syrian governorates — the city select enum. */
+export const CITIES = [
+  "دمشق", "ريف دمشق", "حلب", "حمص", "حماة", "اللاذقية", "طرطوس",
+  "إدلب", "درعا", "السويداء", "القنيطرة", "دير الزور", "الرقة", "الحسكة", "أخرى",
+];
 
 export interface FieldDef {
   k: string;
@@ -118,7 +137,7 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       fields: [
         { k: "make", label: "الشركة الصانعة", type: "chips", req: true, filter: true, opts: ["تويوتا", "هيونداي", "كيا", "مرسيدس", "BMW", "فولكس واغن", "شفروليه", "نيسان", "أخرى"], hint: "المشترون يبحثون بالشركة أكثر من أي شيء." },
         { k: "model", label: "الطراز", type: "text", req: true, filter: true, placeholder: "كامري LE", hint: "اكتبه كما في أوراق السيارة." },
-        { k: "year", label: "سنة الصنع", type: "text", req: true, filter: true, placeholder: "٢٠٢١", hint: "السنة فقط." },
+        { k: "year", label: "سنة الصنع", type: "select", req: true, filter: true, opts: YEARS, placeholder: "اختر السنة" },
         { k: "body", label: "نوع الهيكل", type: "chips", req: true, filter: true, opts: ["هاتشباك", "سيدان", "ستيشن", "دفع رباعي", "فان"] },
       ],
     },
@@ -126,10 +145,10 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       id: "price", label: "السعر والمسافة", title: "السعر وعدد الكيلومترات",
       hint: "كلاهما فلتر نطاقي، فالرقم الواقعي يُبقيك ضمن عمليات البحث الفعلية.",
       fields: [
-        { k: "price", label: "السعر المطلوب", type: "text", req: true, filter: true, unit: "", placeholder: "١٨٥٠٠", hint: "أرقام فقط." },
-        { k: "km", label: "عدد الكيلومترات", type: "text", req: true, filter: true, unit: "كم", placeholder: "٦٢٠٠٠" },
+        { k: "price", label: "السعر المطلوب", type: "number", req: true, filter: true, unit: "", placeholder: "18500" },
+        { k: "km", label: "عدد الكيلومترات", type: "number", req: true, filter: true, unit: "كم", placeholder: "62000" },
         { k: "cond", label: "الحالة", type: "chips", req: true, filter: true, opts: ["جديدة", "مستعملة", "تحتاج صيانة"] },
-        { k: "owners", label: "عدد المالكين السابقين", type: "text", req: false, filter: true, placeholder: "١", hint: "اختياري، لكن المشترين ينتبهون له." },
+        { k: "owners", label: "عدد المالكين السابقين", type: "chips", req: false, filter: true, opts: ["١", "٢", "٣", "٤", "٥+"], hint: "اختياري، لكن المشترين ينتبهون له." },
       ],
     },
     {
@@ -138,7 +157,7 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       fields: [
         { k: "fuel", label: "الوقود", type: "chips", req: true, filter: true, opts: ["بنزين", "ديزل", "هجين", "كهرباء"] },
         { k: "trans", label: "ناقل الحركة", type: "chips", req: true, filter: true, opts: ["يدوي", "أوتوماتيك"] },
-        { k: "hp", label: "القوة", type: "text", req: false, filter: true, unit: "حصان", placeholder: "٢٠٣" },
+        { k: "hp", label: "القوة", type: "number", req: false, filter: true, unit: "حصان", placeholder: "203" },
         { k: "drive", label: "نظام الدفع", type: "chips", req: false, filter: true, opts: ["أمامي", "خلفي", "رباعي"] },
       ],
     },
@@ -156,8 +175,8 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       hint: "المدينة فلتر أيضًا — أغلب المشترين يبدؤون بمنطقتهم.",
       fields: [
         { k: "seller", label: "اسمك", type: "text", req: true, filter: false, placeholder: "م. خالد" },
-        { k: "place", label: "المدينة", type: "text", req: true, filter: true, placeholder: "دمشق" },
-        { k: "phone", label: "رقم الهاتف", type: "text", req: true, filter: false, placeholder: "+٩٦٣ ٩٩٩ ٠٠٠ ٠٠٠", hint: "يظهر فقط بعد أن يضغط المشتري لإظهاره." },
+        { k: "place", label: "المدينة", type: "select", req: true, filter: true, opts: CITIES, placeholder: "اختر المدينة" },
+        { k: "phone", label: "رقم الهاتف", type: "phone", req: true, filter: false, hint: "يظهر فقط بعد أن يضغط المشتري لإظهاره." },
         { k: "sellerKind", label: "الصفة", type: "chips", req: false, filter: true, opts: ["بائع خاص", "معرض"] },
       ],
     },
@@ -169,7 +188,7 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       fields: [
         { k: "offer", label: "العرض", type: "chips", req: true, filter: true, opts: [OFFER_RENT, OFFER_BUY] },
         { k: "type", label: "نوع العقار", type: "chips", req: true, filter: true, opts: ["شقة", "منزل", "استوديو", "دوبلكس"] },
-        { k: "place", label: "المدينة", type: "text", req: true, filter: true, placeholder: "دمشق" },
+        { k: "place", label: "المدينة", type: "select", req: true, filter: true, opts: CITIES, placeholder: "اختر المدينة" },
         { k: "district", label: "المنطقة", type: "text", req: false, filter: true, placeholder: "المزة", hint: "اختياري، وكثير البحث." },
       ],
     },
@@ -177,18 +196,18 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       id: "facts", label: "المعلومات الأساسية", title: "السعر والمساحة والغرف",
       hint: "هذه الثلاثة تحمل أغلب عمليات البحث. الغرف والمساحة فلاتر نطاقية.",
       fields: [
-        { k: "price", label: "السعر", type: "text", req: true, filter: true, unit: "", placeholder: "٩٥٠٠٠", hint: "الإيجار الشهري أو سعر البيع." },
-        { k: "size", label: "المساحة", type: "text", req: true, filter: true, unit: "م²", placeholder: "١٤٥" },
-        { k: "rooms", label: "عدد الغرف", type: "text", req: true, filter: true, placeholder: "٣" },
-        { k: "baths", label: "عدد الحمامات", type: "text", req: false, filter: true, placeholder: "٢" },
+        { k: "price", label: "السعر", type: "number", req: true, filter: true, unit: "", placeholder: "95000", hint: "الإيجار الشهري أو سعر البيع." },
+        { k: "size", label: "المساحة", type: "number", req: true, filter: true, unit: "م²", placeholder: "145" },
+        { k: "rooms", label: "عدد الغرف", type: "chips", req: true, filter: true, opts: ["١", "٢", "٣", "٤", "٥", "٦", "٧", "٨+"] },
+        { k: "baths", label: "عدد الحمامات", type: "chips", req: false, filter: true, opts: ["١", "٢", "٣", "٤+"] },
       ],
     },
     {
       id: "building", label: "المبنى", title: "المبنى نفسه",
       hint: "التدفئة وسنة البناء يهمّان كل من يفكّر في تكاليف التشغيل.",
       fields: [
-        { k: "floor", label: "الطابق", type: "text", req: true, filter: true, placeholder: "٤", hint: "٠ للطابق الأرضي." },
-        { k: "built", label: "سنة البناء", type: "text", req: true, filter: true, placeholder: "٢٠١٥" },
+        { k: "floor", label: "الطابق", type: "number", req: true, filter: true, placeholder: "4", hint: "٠ للطابق الأرضي." },
+        { k: "built", label: "سنة البناء", type: "select", req: true, filter: true, opts: YEARS, placeholder: "اختر السنة" },
         { k: "heat", label: "التدفئة", type: "chips", req: true, filter: true, opts: ["مركزية", "غاز", "كهرباء", "مكيّف"] },
         { k: "cond", label: "الحالة", type: "chips", req: false, filter: true, opts: ["جديد", "مجدّد", "جيد", "يحتاج صيانة"] },
       ],
@@ -207,7 +226,7 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       hint: "طلبات المعاينة تصل مباشرة إلى جهة الاتصال هذه.",
       fields: [
         { k: "seller", label: "اسمك", type: "text", req: true, filter: false, placeholder: "أ. سمير" },
-        { k: "phone", label: "رقم الهاتف", type: "text", req: true, filter: false, placeholder: "+٩٦٣ ٩٩٩ ٠٠٠ ٠٠٠", hint: "يظهر فقط بعد أن يضغط الزائر لإظهاره." },
+        { k: "phone", label: "رقم الهاتف", type: "phone", req: true, filter: false, hint: "يظهر فقط بعد أن يضغط الزائر لإظهاره." },
         { k: "sellerKind", label: "الصفة", type: "chips", req: false, filter: true, opts: ["مالك", "مكتب عقاري"] },
         { k: "available", label: "متاح اعتبارًا من", type: "text", req: false, filter: true, placeholder: "١ أيلول" },
       ],
@@ -224,7 +243,7 @@ export const BOOST: Record<Vertical, FieldDef[]> = {
     { k: "doors", label: "عدد الأبواب", type: "chips", req: false, filter: true, opts: ["٣", "٤", "٥"] },
     { k: "service", label: "سجل الصيانة", type: "chips", req: false, filter: true, opts: ["كامل", "جزئي", "لا يوجد"], hint: "أكبر إشارة ثقة في سيارة مستعملة." },
     { k: "warranty", label: "الكفالة حتى", type: "text", req: false, filter: false, placeholder: "٠٣/٢٠٢٧", hint: "تظهر كشارة على بطاقتك." },
-    { k: "consumption", label: "استهلاك الوقود", type: "text", req: false, filter: false, unit: "ل/١٠٠كم", placeholder: "٧٫٥" },
+    { k: "consumption", label: "استهلاك الوقود", type: "number", req: false, filter: false, unit: "ل/١٠٠كم", placeholder: "7.5" },
     { k: "features", label: "الإضافات", type: "multi", req: false, filter: true, full: true, opts: CAR_EXTRAS, hint: "كل إضافة تختارها فلتر إضافي تظهر فيه." },
   ],
   home: [
@@ -233,7 +252,7 @@ export const BOOST: Record<Vertical, FieldDef[]> = {
     { k: "deposit", label: "التأمين", type: "text", req: false, filter: false, unit: "", placeholder: "٣ أشهر", hint: "المستأجرون يفلترونه مبكرًا." },
     { k: "orientation", label: "الاتجاه", type: "chips", req: false, filter: true, opts: ["شمال", "شرق", "جنوب", "غرب"] },
     { k: "pets", label: "الحيوانات الأليفة", type: "chips", req: false, filter: true, opts: ["مسموح", "حسب الطلب", "غير مسموح"] },
-    { k: "plot", label: "مساحة الأرض", type: "text", req: false, filter: false, unit: "م²", placeholder: "٤٢٠", hint: "للمنازل فقط." },
+    { k: "plot", label: "مساحة الأرض", type: "number", req: false, filter: false, unit: "م²", placeholder: "420", hint: "للمنازل فقط." },
     { k: "commission", label: "العمولة", type: "chips", req: false, filter: true, opts: ["لا يوجد", "على المشتري", "مناصفة"] },
     { k: "features", label: "الإضافات", type: "multi", req: false, filter: true, full: true, opts: HOME_EXTRAS, hint: "كل إضافة تختارها فلتر إضافي تظهر فيه." },
   ],
@@ -290,9 +309,11 @@ export const DETAIL_SPECS: Record<Vertical, { k: string; label: string; unit?: s
 export function cardSpecLine(l: MarketplaceListing): string {
   const s = l.specs;
   if (l.vertical === "car") {
-    return [s.year, s.km != null ? `${s.km} كم` : null, s.fuel, s.trans].filter(Boolean).join(" · ");
+    return [s.year ? arDigits(s.year) : null, s.km != null ? `${arDigits(s.km)} كم` : null, s.fuel, s.trans]
+      .filter(Boolean)
+      .join(" · ");
   }
-  return [s.type, s.size != null ? `${s.size} م²` : null, s.rooms != null ? `${s.rooms} غرف` : null, l.place]
+  return [s.type, s.size != null ? `${arDigits(s.size)} م²` : null, s.rooms != null ? `${arDigits(s.rooms)} غرف` : null, l.place]
     .filter(Boolean)
     .join(" · ");
 }

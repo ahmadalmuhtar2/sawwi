@@ -11,6 +11,8 @@ import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/field";
+import { MenuSelect } from "@/components/ui/dropdown";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { uploadStaging } from "@/components/templates/fields";
 import {
   STEPS, BOOST, cardSpecLine, formToListing,
@@ -302,11 +304,30 @@ function FieldControl({ fd, form, set, toggleMulti, touched, currency }: {
         )}
       </span>
 
-      {fd.type === "text" && (
+      {(fd.type === "text" || fd.type === "number") && (
         <span className="flex items-center gap-2">
-          <Input value={(v as string) ?? ""} onChange={(e) => set(fd.k, e.target.value)} placeholder={fd.placeholder} className={invalid ? "border-danger" : ""} />
-          {unit && <span className="whitespace-nowrap text-xs text-faint">{unit}</span>}
+          <Input
+            type={fd.type === "number" ? "number" : "text"}
+            inputMode={fd.type === "number" ? "decimal" : undefined}
+            value={(v as string) ?? ""}
+            onChange={(e) => set(fd.k, e.target.value)}
+            placeholder={fd.placeholder}
+            className={invalid ? "border-danger" : ""}
+          />
+          {unit && <span className="whitespace-nowrap text-xs font-medium text-faint">{unit}</span>}
         </span>
+      )}
+      {fd.type === "select" && (
+        <MenuSelect
+          value={(v as string) ?? ""}
+          options={(fd.opts ?? []).map((o) => ({ value: o, label: o }))}
+          onChange={(val) => set(fd.k, val)}
+          placeholder={fd.placeholder ?? "اختر"}
+          ariaLabel={fd.label}
+        />
+      )}
+      {fd.type === "phone" && (
+        <PhoneInput value={(v as string) ?? ""} onChange={(val) => set(fd.k, val || null)} placeholder={fd.placeholder} />
       )}
       {fd.type === "area" && (
         <Textarea value={(v as string) ?? ""} onChange={(e) => set(fd.k, e.target.value)} placeholder={fd.placeholder} rows={3} className={invalid ? "border-danger" : ""} />
