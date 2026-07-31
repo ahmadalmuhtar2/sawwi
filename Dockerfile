@@ -34,8 +34,14 @@ COPY . .
 # --build-arg). They default to localhost so a bare `docker build` still works.
 ARG NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ARG NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
+# The VAPID public key is inlined into the client so the browser can subscribe to
+# Web Push. Empty by default (push simply disabled); Railway passes the real value
+# as a build arg. Without this, `next build` bakes `undefined` and the client
+# reports "notifications not configured" no matter the runtime env.
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_ROOT_DOMAIN=$NEXT_PUBLIC_ROOT_DOMAIN
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 # Server-only placeholder env: `prisma generate` needs DATABASE_URL to load
 # prisma.config.ts, and `next build` constructs the Better Auth instance +
 # collects route data (which can touch the Prisma client). None of these connect
