@@ -408,8 +408,10 @@ export function TemplatesGallery({
         </p>
       </div>
 
-      {/* filter zone (sticky) */}
-      <div className="sticky top-0 z-20 -mx-4 mt-5 border-y border-line bg-bg/90 px-4 py-3 backdrop-blur sm:top-2 sm:mx-0 sm:rounded-xl sm:border sm:px-4">
+      {/* filter zone (sticky). The `before` cap fills the gap above the floating
+          bar (the sm:top-2 offset + main's top padding) with solid page bg so
+          scrolling cards don't leak through above it. */}
+      <div className="sticky top-0 z-20 -mx-4 mt-5 border-y border-line bg-bg/90 px-4 py-3 backdrop-blur before:absolute before:inset-x-0 before:bottom-full before:h-8 before:bg-bg before:content-[''] sm:top-2 sm:mx-0 sm:rounded-xl sm:border sm:px-4">
         <div className="flex flex-col gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute inset-y-0 start-3.5 my-auto size-4 text-faint" />
