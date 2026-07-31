@@ -29,7 +29,7 @@ const JSON_LD = {
       name: "سوّي",
       alternateName: "Sawwi",
       url: PLATFORM_URL,
-      logo: `${PLATFORM_URL}/icon.svg`,
+      logo: `${PLATFORM_URL}/icon.png`,
       description:
         "منصّة عربية لبناء مواقع الأعمال المحلية بقوالب جاهزة، بدون برمجة.",
     },

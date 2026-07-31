@@ -7,6 +7,7 @@ export interface CreateSiteUserData {
   siteId: string;
   email: string;
   name: string | null;
+  phone?: string | null;
   passwordHash: string;
   role: SiteUserRole;
 }
@@ -26,6 +27,7 @@ export const siteAuthRepository = {
       select: {
         id: true,
         status: true,
+        templateKey: true,
         maintenanceMode: true,
         subscription: { select: { expiry: true } },
         settings: { select: { authEnabled: true, roleLabels: true } },
@@ -63,6 +65,20 @@ export const siteAuthRepository = {
 
   updateRole(id: string, role: SiteUserRole) {
     return getPrisma().siteUser.update({ where: { id }, data: { role }, select: { id: true, role: true } });
+  },
+
+  updatePassword(id: string, passwordHash: string) {
+    return getPrisma().siteUser.update({ where: { id }, data: { passwordHash }, select: { id: true } });
+  },
+
+  /** A user updates their own profile (name/phone/password); returns the full row. */
+  updateProfile(id: string, data: { name?: string | null; phone?: string | null; passwordHash?: string }) {
+    return getPrisma().siteUser.update({ where: { id }, data });
+  },
+
+  /** Revoke every active session for a user (used after an owner password reset). */
+  deleteSessionsForUser(siteUserId: string) {
+    return getPrisma().siteUserSession.deleteMany({ where: { siteUserId } });
   },
 
   deleteUser(id: string) {

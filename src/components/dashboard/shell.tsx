@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Globe,
-  Users,
   Wallet,
   CreditCard,
   LogOut,
@@ -18,6 +17,7 @@ import { signOut } from "@/lib/auth-client";
 import { Logo } from "@/components/logo";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { WorkspaceMenu } from "@/components/dashboard/workspace-menu";
+import { PwaControls } from "@/components/dashboard/pwa-controls";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { ToastProvider } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
@@ -91,7 +91,6 @@ export function DashboardShell({
   nav.push({ href: "/dashboard/sites", label: "المواقع", icon: <Globe className="size-[18px]" /> });
   if (showResellerNav) {
     nav.push({ href: "/dashboard/billing", label: "الفوترة", icon: <Wallet className="size-[18px]" /> });
-    nav.push({ href: "/dashboard/members", label: "الأعضاء", icon: <Users className="size-[18px]" /> });
   }
   if (isAdmin)
     nav.push({ href: "/dashboard/admin", label: "الإدارة", icon: <CreditCard className="size-[18px]" /> });
@@ -165,7 +164,8 @@ export function DashboardShell({
               );
             })}
           </nav>
-          <div className="border-t border-line p-3">
+          <div className="space-y-1 border-t border-line p-3">
+            <PwaControls collapsed={collapsed} />
             <button
               onClick={logout}
               title={collapsed ? "تسجيل الخروج" : undefined}
@@ -228,7 +228,8 @@ export function DashboardShell({
                   );
                 })}
               </nav>
-              <div className="border-t border-line p-3">
+              <div className="space-y-1 border-t border-line p-3">
+                <PwaControls />
                 <button
                   onClick={logout}
                   className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted transition hover:bg-black/[0.03] hover:text-danger cursor-pointer dark:hover:bg-white/5"

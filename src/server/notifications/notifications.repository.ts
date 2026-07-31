@@ -13,22 +13,31 @@ export interface NewNotification {
 
 export const notificationsRepository = {
   /**
-   * Every user who can SEE a site: its workspace's members + accepted
-   * (non-revoked) site-scoped collaborators. Deduped. This is the recipient set
-   * for site-scoped events like a new visitor message.
+   * Who gets NOTIFIED about a site event (e.g. a new visitor message) — the
+   * people who actually operate the site day-to-day, NOT everyone who can see it:
+   *   · always: the site's accepted (non-revoked) site-scoped collaborators.
+   *   · a DIRECT (single-business) workspace's members — the owner runs their own
+   *     one site, so they should be notified.
+   *   · a RESELLER workspace's members are DELIBERATELY excluded: a reseller with
+   *     many client sites shouldn't get a bell notification from each. They can
+   *     still read the messages (access is unchanged) — this only trims the fan-out.
+   * Deduped.
    */
   async recipientsForSite(siteId: string): Promise<string[]> {
     const prisma = getPrisma();
     const site = await prisma.site.findUnique({
       where: { id: siteId },
-      select: { workspaceId: true },
+      select: { workspaceId: true, workspace: { select: { kind: true } } },
     });
     if (!site) return [];
+    const notifyMembers = site.workspace.kind === "direct";
     const [members, grants] = await Promise.all([
-      prisma.workspaceMember.findMany({
-        where: { workspaceId: site.workspaceId },
-        select: { userId: true },
-      }),
+      notifyMembers
+        ? prisma.workspaceMember.findMany({
+            where: { workspaceId: site.workspaceId },
+            select: { userId: true },
+          })
+        : Promise.resolve([]),
       prisma.siteAccess.findMany({
         where: { siteId, revokedAt: null, userId: { not: null } },
         select: { userId: true },

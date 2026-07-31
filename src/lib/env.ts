@@ -55,6 +55,15 @@ const EnvSchema = z.object({
   R2_BUCKET: z.string().optional(),
   R2_ENDPOINT: z.string().optional(),
   R2_PUBLIC_URL: z.string().optional(),
+
+  // Web Push (PWA notifications) — optional; push is disabled until all three are
+  // set. Generate a keypair with `npx web-push generate-vapid-keys`. The PUBLIC
+  // key is also exposed to the client as NEXT_PUBLIC_VAPID_PUBLIC_KEY (same value).
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  // The VAPID "subject": a mailto: or https: URL identifying the sender.
+  VAPID_SUBJECT: z.string().optional(),
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

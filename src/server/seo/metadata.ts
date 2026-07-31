@@ -15,6 +15,10 @@ export interface MetadataInput {
   pageTitle?: string;
   siteSeo: SiteSeo;
   pageSeo: PageSeo;
+  /** The site's uploaded logo (absolute R2 URL). Used as the DEFAULT favicon +
+   *  OG image when the owner hasn't set explicit SEO images, so every site has
+   *  its own branding in tabs and link previews. */
+  logoUrl?: string | null;
 }
 
 /** The public origin for a site's slug, e.g. https://diwan.sawwi.online. */
@@ -51,8 +55,18 @@ export function buildSiteMetadata(i: MetadataInput): Metadata {
       : `${pageTitle} — ${baseTitle}`;
 
   const description = firstNonEmpty(i.pageSeo.description, i.siteSeo.description);
-  const ogImage = firstNonEmpty(i.pageSeo.ogImageUrl, i.siteSeo.ogImageUrl);
-  const favicon = firstNonEmpty(i.siteSeo.faviconUrl);
+
+  // Favicon + OG image ALWAYS resolve to an absolute URL, so tenant subdomains
+  // never depend on the platform's root icon/OG files (which don't apply to the
+  // /s/[slug] route). Precedence: owner-set SEO image → the site's own logo →
+  // the platform's static brand asset. Absolute URLs are required by crawlers.
+  const platformBase = getEnv().NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  const logo = i.logoUrl?.trim() || undefined;
+  const ogImage =
+    firstNonEmpty(i.pageSeo.ogImageUrl, i.siteSeo.ogImageUrl, logo) ??
+    `${platformBase}/brand/og-image.png`;
+  const favicon =
+    firstNonEmpty(i.siteSeo.faviconUrl, logo) ?? `${platformBase}/brand/logo.png`;
 
   const origin = publicOrigin(i.slug);
   const url = isLanding ? origin : `${origin}${i.pagePath}`;
@@ -70,7 +84,7 @@ export function buildSiteMetadata(i: MetadataInput): Metadata {
     metadataBase,
     alternates: { canonical: url },
     robots: i.pageSeo.noindex ? { index: false, follow: false } : undefined,
-    icons: favicon ? { icon: favicon } : undefined,
+    icons: { icon: favicon, shortcut: favicon, apple: favicon },
     openGraph: {
       title,
       description,
@@ -78,13 +92,13 @@ export function buildSiteMetadata(i: MetadataInput): Metadata {
       siteName: baseTitle,
       type: "website",
       locale: i.language === "ar" ? "ar_AR" : "en_US",
-      images: ogImage ? [{ url: ogImage }] : undefined,
+      images: [{ url: ogImage }],
     },
     twitter: {
-      card: ogImage ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: ogImage ? [ogImage] : undefined,
+      images: [ogImage],
     },
   };
 }

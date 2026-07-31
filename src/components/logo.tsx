@@ -2,11 +2,13 @@ import { cn } from "@/lib/cn";
 
 type Variant = "full" | "mark" | "mono-ink" | "mono-white";
 
+// One new brand mark (transparent PNG) for every variant. The mark is full-color
+// and reads on both light and dark surfaces, so the old mono lockups were dropped.
 const SRC: Record<Variant, string> = {
-  full: "/brand/logo.svg",
-  mark: "/brand/favicon.svg",
-  "mono-ink": "/brand/logo-mono-ink.svg",
-  "mono-white": "/brand/logo-mono-white.svg",
+  full: "/brand/logo.png",
+  mark: "/brand/logo.png",
+  "mono-ink": "/brand/logo.png",
+  "mono-white": "/brand/logo.png",
 };
 
 export function Logo({

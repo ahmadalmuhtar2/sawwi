@@ -42,27 +42,23 @@ async function ownedListing(siteId: string, listingId: string) {
   return listing;
 }
 
-export async function listMyListings(claims: SessionClaims, siteId: string) {
-  await loadForRead(claims, siteId);
-  return listingsRepository.listBySite(siteId);
-}
+/* ── site-scoped cores (authorization-free) ──────────────────────────────
+   The actual create/update/delete logic, decoupled from WHO is allowed to
+   call it. The dashboard-owner functions below authorize via platform claims;
+   the on-site manager admin (src/server/site-auth/site-admin.service.ts)
+   authorizes via the site session — both then delegate here. */
 
-export async function getMyListing(claims: SessionClaims, siteId: string, listingId: string) {
-  await loadForRead(claims, siteId);
-  return ownedListing(siteId, listingId);
-}
-
-export async function createListing(
-  claims: SessionClaims,
+export async function createListingForSite(
   siteId: string,
   input: CreateListingInput,
+  authorSiteUserId: string | null = null,
 ) {
-  await loadForEdit(claims, siteId);
   if ((await listingsRepository.countBySite(siteId)) >= MAX_LISTINGS) {
     throw errors.forbidden(`بلغت الحد الأقصى لعدد الإعلانات (${MAX_LISTINGS})`);
   }
   return listingsRepository.create({
     siteId,
+    authorSiteUserId,
     vertical: input.vertical,
     title: input.title,
     price: input.price ?? null,
@@ -78,13 +74,11 @@ export async function createListing(
   });
 }
 
-export async function updateListing(
-  claims: SessionClaims,
+export async function updateListingForSite(
   siteId: string,
   listingId: string,
   input: UpdateListingInput,
 ) {
-  await loadForEdit(claims, siteId);
   const existing = await ownedListing(siteId, listingId);
 
   const data: Prisma.ListingUncheckedUpdateInput = {};
@@ -108,6 +102,45 @@ export async function updateListing(
   return updated;
 }
 
+export async function deleteListingForSite(siteId: string, listingId: string) {
+  const existing = await ownedListing(siteId, listingId);
+  await listingsRepository.delete(listingId);
+  // Free the listing's stored images (best-effort, non-blocking).
+  void deleteRemovedObjects({ images: existing.images }, {}).catch(() => {});
+  return { id: listingId, deleted: true };
+}
+
+/* ── owner (dashboard) — platform-claims authorized ──────────────────────── */
+
+export async function listMyListings(claims: SessionClaims, siteId: string) {
+  await loadForRead(claims, siteId);
+  return listingsRepository.listBySite(siteId);
+}
+
+export async function getMyListing(claims: SessionClaims, siteId: string, listingId: string) {
+  await loadForRead(claims, siteId);
+  return ownedListing(siteId, listingId);
+}
+
+export async function createListing(
+  claims: SessionClaims,
+  siteId: string,
+  input: CreateListingInput,
+) {
+  await loadForEdit(claims, siteId);
+  return createListingForSite(siteId, input);
+}
+
+export async function updateListing(
+  claims: SessionClaims,
+  siteId: string,
+  listingId: string,
+  input: UpdateListingInput,
+) {
+  await loadForEdit(claims, siteId);
+  return updateListingForSite(siteId, listingId, input);
+}
+
 export async function setListingPublished(
   claims: SessionClaims,
   siteId: string,
@@ -121,11 +154,7 @@ export async function setListingPublished(
 
 export async function deleteListing(claims: SessionClaims, siteId: string, listingId: string) {
   await loadForEdit(claims, siteId);
-  const existing = await ownedListing(siteId, listingId);
-  await listingsRepository.delete(listingId);
-  // Free the listing's stored images (best-effort, non-blocking).
-  void deleteRemovedObjects({ images: existing.images }, {}).catch(() => {});
-  return { id: listingId, deleted: true };
+  return deleteListingForSite(siteId, listingId);
 }
 
 /* ─────────────────────────────── public ─────────────────────────────── */

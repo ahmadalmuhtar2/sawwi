@@ -32,6 +32,15 @@ export const listingsRepository = {
     });
   },
 
+  /** A seller's OWN listings (any status), featured (مميّز) first then newest —
+   *  consistent with the owner/admin + public views. */
+  listBySiteAndAuthor(siteId: string, authorSiteUserId: string) {
+    return getPrisma().listing.findMany({
+      where: { siteId, authorSiteUserId },
+      orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    });
+  },
+
   /** Public view: only published listings — served LIVE to the marketplace.
    *  Featured (merchandised/boosted) listings surface first. */
   listPublished(siteId: string) {

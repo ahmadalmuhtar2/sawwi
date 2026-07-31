@@ -17,14 +17,19 @@ type State = "idle" | "sending" | "sent";
 export function ContactWidget({
   slug,
   businessName,
+  defaultName,
+  defaultContact,
 }: {
   slug: string;
   businessName?: string | null;
+  /** Prefilled from the signed-in site-user (when the site has accounts). */
+  defaultName?: string | null;
+  defaultContact?: string | null;
 }) {
   const [open, setOpen] = React.useState(false);
   const [state, setState] = React.useState<State>("idle");
   const [error, setError] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState({ name: "", contact: "", body: "", company: "" });
+  const [form, setForm] = React.useState({ name: defaultName ?? "", contact: defaultContact ?? "", body: "", company: "" });
 
   React.useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -45,6 +50,10 @@ export function ContactWidget({
       setError("الرجاء إدخال الاسم والرسالة");
       return;
     }
+    if (!form.contact.trim()) {
+      setError("الرجاء إدخال رقم الهاتف أو واتساب");
+      return;
+    }
     setState("sending");
     try {
       const res = await fetch("/api/public/messages", {
@@ -58,7 +67,7 @@ export function ContactWidget({
         | null;
       if (res.ok && json?.ok) {
         setState("sent");
-        setForm({ name: "", contact: "", body: "", company: "" });
+        setForm({ name: defaultName ?? "", contact: defaultContact ?? "", body: "", company: "" });
         return;
       }
       setError(json && !json.ok ? json.error?.message ?? "تعذّر الإرسال" : "تعذّر الإرسال");
@@ -120,7 +129,7 @@ export function ContactWidget({
               <input
                 value={form.contact}
                 onChange={set("contact")}
-                placeholder="رقم الهاتف أو واتساب (اختياري)"
+                placeholder="رقم الهاتف أو واتساب *"
                 inputMode="tel"
                 maxLength={60}
                 className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-1 focus:ring-slate-900"

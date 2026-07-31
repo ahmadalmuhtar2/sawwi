@@ -4,6 +4,7 @@ import { getSite } from "@/server/sites/sites.service";
 import { getPrisma } from "@/lib/db";
 import { asSiteSeo } from "@/shared/seo";
 import { publicOrigin } from "@/server/seo/metadata";
+import { authOnByDefault } from "@/templates/auth-defaults";
 import { SettingsTabs } from "@/components/dashboard/settings-tabs";
 
 export default async function SiteSettingsPage({
@@ -61,6 +62,7 @@ export default async function SiteSettingsPage({
         roleLabels: (settings?.roleLabels as Record<string, string>) ?? {},
       }}
       initialSeo={asSiteSeo(siteRow?.seo)}
+      authByDefault={authOnByDefault(site.templateKey)}
     />
   );
 }

@@ -140,8 +140,27 @@ model User {
   sessions      Session[]
   accounts      Account[]
   notifications Notification[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
+}
+
+/// A browser Web Push subscription for a platform User (PWA notifications). One
+/// row per browser/device endpoint; `endpoint` is globally unique. Created when
+/// the user enables notifications, deleted on unsubscribe or when a send returns
+/// 404/410 (expired). Cascades away with the user.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String // client public key (from the browser subscription)
+  auth      String // client auth secret
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 // ---- Better Auth tables (managed by Better Auth via src/lib/auth.ts) --------
@@ -302,6 +321,9 @@ model SiteUser {
   siteId       String
   email        String
   name         String?
+  /// Optional contact phone/WhatsApp the user manages in their account settings;
+  /// prefills the enquiry + contact forms. Nullable → existing rows unaffected.
+  phone        String?
   passwordHash String
   role         SiteUserRole @default(member)
   createdAt    DateTime     @default(now())
@@ -309,6 +331,7 @@ model SiteUser {
 
   site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
   sessions SiteUserSession[]
+  listings Listing[]
 
   @@unique([siteId, email])
   @@index([siteId])
@@ -360,13 +383,19 @@ model Listing {
   featured    Boolean         @default(false)
   /// available | reserved | sold — keeps the showroom credible + creates urgency.
   status      String          @default("available")
+  /// The site-user (seller/contributor) who authored this listing, when posted
+  /// on-site. null = owner-authored from the dashboard. onDelete SetNull so
+  /// removing a seller account never deletes their listings.
+  authorSiteUserId String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site   Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  author SiteUser? @relation(fields: [authorSiteUserId], references: [id], onDelete: SetNull)
 
   @@index([siteId, vertical, published])
   @@index([siteId, createdAt])
+  @@index([siteId, authorSiteUserId])
   @@map("listings")
 }
 

@@ -18,6 +18,7 @@ export interface SiteUser {
   id: string;
   email: string;
   name: string | null;
+  phone: string | null;
   role: SiteRole;
 }
 export type RoleLabels = Record<SiteRole, string>;
@@ -55,15 +56,20 @@ export function useSiteAuth(): AuthApi {
 export function SiteAuthProvider({
   enabled = false,
   labels,
+  initialUser = null,
   children,
 }: {
   enabled?: boolean;
   labels?: Partial<RoleLabels>;
+  /** Server-resolved current user — seeds state so an auth-first template can
+   *  render its gate/content on first paint without a /me round-trip flash. */
+  initialUser?: SiteUser | null;
   children: React.ReactNode;
 }) {
   const resolved: RoleLabels = { ...DEFAULT_LABELS, ...labels };
-  const [user, setUser] = React.useState<SiteUser | null>(null);
-  const [loading, setLoading] = React.useState(enabled);
+  const [user, setUser] = React.useState<SiteUser | null>(initialUser);
+  // If the server already resolved the user, we're not in a loading state.
+  const [loading, setLoading] = React.useState(enabled && initialUser === null);
   const [modal, setModal] = React.useState<null | "signin" | "signup">(null);
 
   const refresh = React.useCallback(async () => {
@@ -200,6 +206,10 @@ function AuthModal({
     e.preventDefault();
     if (busy) return;
     setError(null);
+    if (mode === "signup" && !form.name.trim()) {
+      setError("أدخل الاسم");
+      return;
+    }
     if (!form.email.trim() || !form.password) {
       setError("أدخل البريد وكلمة المرور");
       return;
@@ -243,7 +253,7 @@ function AuthModal({
 
         <form onSubmit={submit} className="flex flex-col gap-2.5 px-5 py-4">
           {mode === "signup" && (
-            <input value={form.name} onChange={set("name")} placeholder="الاسم (اختياري)" autoComplete="name" maxLength={80} className={inputCls} />
+            <input value={form.name} onChange={set("name")} placeholder="الاسم" autoComplete="name" maxLength={80} className={inputCls} />
           )}
           <input value={form.email} onChange={set("email")} placeholder="البريد الإلكتروني" type="email" autoComplete="email" dir="ltr" maxLength={120} className={inputCls} />
           <input value={form.password} onChange={set("password")} placeholder="كلمة المرور" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} maxLength={200} className={inputCls} />

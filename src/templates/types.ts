@@ -134,4 +134,8 @@ export interface TemplateModule {
   /** Whitelist of font keys (from lib/palette FONTS) offered for this template.
    *  Omit to offer all. The template's own font is always the default option. */
   fontKeys?: string[];
+  /** The template renders its OWN end-user auth UI (a mandatory in-page gate),
+   *  so the host must NOT also render the floating SiteAuthWidget. Auth-first
+   *  templates (marketplace) set this. */
+  ownsAuthUI?: boolean;
 }

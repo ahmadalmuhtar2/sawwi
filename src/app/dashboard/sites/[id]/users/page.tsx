@@ -3,6 +3,7 @@ import { getSessionClaims } from "@/lib/auth";
 import { getSite } from "@/server/sites/sites.service";
 import { listSiteUsers } from "@/server/site-auth/site-auth.service";
 import { roleLabelsOf } from "@/server/site-auth/site-auth.rules";
+import { authOnByDefault } from "@/templates/auth-defaults";
 import { getPrisma } from "@/lib/db";
 import { SiteUsersManager, type SiteUserRow } from "@/components/dashboard/site-users-manager";
 
@@ -42,7 +43,7 @@ export default async function SiteUsersPage({
     <SiteUsersManager
       siteId={id}
       businessName={site.businessName}
-      authEnabled={settings?.authEnabled ?? false}
+      authEnabled={(settings?.authEnabled ?? false) || authOnByDefault(site.templateKey)}
       labels={roleLabelsOf(settings?.roleLabels)}
       initial={initial}
     />

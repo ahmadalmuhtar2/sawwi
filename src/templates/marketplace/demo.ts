@@ -10,9 +10,9 @@ import type { MarketplaceListing } from "./schema";
 export const DEMO_LISTINGS: MarketplaceListing[] = [
   {
     id: "demo-car-1", vertical: "car", title: "تويوتا كامري LE ٢٠٢١، مالك واحد",
-    price: 18500, place: "دمشق", featured: true, status: "available",
+    price: 18500, place: "دمشق", featured: true, status: "available", authorId: "demo-seller-1",
     images: [], features: ["ملاحة", "كاميرا خلفية", "مقاعد مدفأة", "حساسات ركن"],
-    specs: { make: "تويوتا", model: "كامري LE", year: 2021, km: 62000, fuel: "بنزين", trans: "أوتوماتيك", hp: 203, body: "سيدان", cond: "مستعملة", owners: 1, colour: "أبيض", seats: 5, doors: 4, drive: "أمامي", service: "كامل" },
+    specs: { make: "تويوتا", model: "كامري", year: 2021, km: 62000, fuel: "بنزين", trans: "أوتوماتيك", hp: 203, body: "سيدان", cond: "مستعملة", owners: 1, colour: "أبيض", seats: 5, doors: 4, drive: "أمامي", service: "كامل", seller: "معرض أبو أحمد", sellerKind: "معرض" },
     description: "مالك واحد، صيانة دورية في الوكالة. إطارات جديدة ومكيّف ممتاز.",
   },
   {
@@ -24,9 +24,9 @@ export const DEMO_LISTINGS: MarketplaceListing[] = [
   },
   {
     id: "demo-car-3", vertical: "car", title: "هيونداي إلنترا ٢٠٢٠",
-    price: 15900, place: "حلب", status: "available",
+    price: 15900, place: "حلب", status: "available", authorId: "demo-seller-1",
     images: [], features: ["حساسات ركن", "مثبت سرعة"],
-    specs: { make: "هيونداي", model: "إلنترا", year: 2020, km: 48000, fuel: "بنزين", trans: "أوتوماتيك", body: "سيدان", cond: "مستعملة", colour: "فضي", seats: 5, doors: 4 },
+    specs: { make: "هيونداي", model: "إلنترا", year: 2020, km: 48000, fuel: "بنزين", trans: "أوتوماتيك", body: "سيدان", cond: "مستعملة", colour: "فضي", seats: 5, doors: 4, seller: "معرض أبو أحمد", sellerKind: "معرض" },
     description: "اقتصادية بالوقود، غير مصدومة، أوراق جاهزة للنقل.",
   },
   {
@@ -38,9 +38,9 @@ export const DEMO_LISTINGS: MarketplaceListing[] = [
   },
   {
     id: "demo-car-5", vertical: "car", title: "فولكس واغن غولف ٢٠١٨",
-    price: 12500, place: "حمص", status: "available",
+    price: 12500, place: "حمص", status: "available", authorId: "demo-seller-1",
     images: [], features: ["مثبت سرعة"],
-    specs: { make: "فولكس واغن", model: "غولف", year: 2018, km: 96000, fuel: "بنزين", trans: "يدوي", body: "هاتشباك", cond: "مستعملة", colour: "أحمر", seats: 5, doors: 5 },
+    specs: { make: "فولكس واغن", model: "غولف", year: 2018, km: 96000, fuel: "بنزين", trans: "يدوي", body: "هاتشباك", cond: "مستعملة", colour: "أحمر", seats: 5, doors: 5, seller: "معرض أبو أحمد", sellerKind: "معرض" },
     description: "عملية واقتصادية، مناسبة للمدينة. سعر قابل للتفاوض.",
   },
   {

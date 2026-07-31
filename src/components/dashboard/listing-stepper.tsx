@@ -18,6 +18,7 @@ import {
   STEPS, BOOST, cardSpecLine, formToListing,
   type Vertical, type FieldDef, type MarketplaceListing,
 } from "@/templates/marketplace/schema";
+import { modelsForMake } from "@/templates/marketplace/car-data";
 
 type FormVal = string | string[];
 type Form = Record<string, FormVal>;
@@ -317,7 +318,16 @@ function FieldControl({ fd, form, set, toggleMulti, touched, currency }: {
           {unit && <span className="whitespace-nowrap text-xs font-medium text-faint">{unit}</span>}
         </span>
       )}
-      {fd.type === "select" && (
+      {fd.type === "select" && fd.depends && (
+        <DepModelSelect
+          fd={fd}
+          value={(v as string) ?? ""}
+          dep={(form[fd.depends] as string) ?? ""}
+          onChange={(val) => set(fd.k, val)}
+          invalid={invalid}
+        />
+      )}
+      {fd.type === "select" && !fd.depends && (
         <MenuSelect
           value={(v as string) ?? ""}
           options={(fd.opts ?? []).map((o) => ({ value: o, label: o }))}
@@ -361,6 +371,53 @@ function FieldControl({ fd, form, set, toggleMulti, touched, currency }: {
       )}
 
       {fd.hint && <span className={"text-xs " + (invalid ? "text-danger" : "text-faint")}>{invalid ? "هذا الحقل مطلوب للنشر" : fd.hint}</span>}
+    </div>
+  );
+}
+
+// The dependent model dropdown (model ← make): options come from the chosen make.
+// A trailing "طراز آخر…" reveals a free-text input so an unlisted model still works;
+// when the make has no known model list (e.g. أخرى), it degrades to a text input.
+function DepModelSelect({ fd, value, dep, onChange, invalid }: {
+  fd: FieldDef;
+  value: string;
+  dep: string;
+  onChange: (v: string | null) => void;
+  invalid?: boolean;
+}) {
+  const opts = modelsForMake(dep);
+  const OTHER = "__other__";
+  const [other, setOther] = React.useState(() => !!value && !opts.includes(value));
+
+  React.useEffect(() => {
+    // Reset the manual "other" toggle whenever the parent (make) changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting on a dependency change
+    setOther(false);
+  }, [dep]);
+
+  if (!dep) {
+    return <MenuSelect value="" options={[]} onChange={() => {}} disabled placeholder="اختر الشركة أولاً" ariaLabel={fd.label} />;
+  }
+  if (opts.length === 0) {
+    return <Input value={value} onChange={(e) => onChange(e.target.value || null)} placeholder={fd.placeholder} className={invalid ? "border-danger" : ""} />;
+  }
+
+  const usingOther = other || (!!value && !opts.includes(value));
+  return (
+    <div className="flex flex-col gap-2">
+      <MenuSelect
+        value={usingOther ? OTHER : value}
+        options={[...opts.map((o) => ({ value: o, label: o })), { value: OTHER, label: "طراز آخر…" }]}
+        onChange={(val) => {
+          if (val === OTHER) { setOther(true); onChange(null); }
+          else { setOther(false); onChange(val || null); }
+        }}
+        placeholder={fd.placeholder ?? "اختر"}
+        ariaLabel={fd.label}
+      />
+      {usingOther && (
+        <Input value={value} onChange={(e) => onChange(e.target.value || null)} placeholder="اكتب الطراز" className={invalid ? "border-danger" : ""} />
+      )}
     </div>
   );
 }

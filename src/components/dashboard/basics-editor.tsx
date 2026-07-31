@@ -6,7 +6,7 @@ import { Lock } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
 import { ROOT_DOMAIN } from "@/lib/site-url";
 
 export function BasicsEditor({
@@ -19,7 +19,8 @@ export function BasicsEditor({
   const toast = useToast();
   const router = useRouter();
   const [businessName, setBusinessName] = useState(initial.businessName);
-  const [language, setLanguage] = useState<"ar" | "en">(initial.language);
+  // Language is fixed to the site's current value for now (no multi-language UI yet).
+  const [language] = useState<"ar" | "en">(initial.language);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -57,13 +58,6 @@ export function BasicsEditor({
           <Lock className="size-3.5 shrink-0 text-faint" />
           <span className="font-label" dir="ltr">{initial.slug}.{ROOT_DOMAIN}</span>
         </div>
-      </Field>
-
-      <Field label="لغة الموقع" className="max-w-xs" error={errors.language}>
-        <Select value={language} onChange={(e) => setLanguage(e.target.value as "ar" | "en")}>
-          <option value="ar">العربية</option>
-          <option value="en">الإنجليزية</option>
-        </Select>
       </Field>
 
       <Button type="submit" loading={saving}>حفظ الأساسيات</Button>

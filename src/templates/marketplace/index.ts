@@ -11,6 +11,8 @@ const defaults = {
   shop: {
     name: "سوق الشام",
     tagline: "سيارات وعقارات مفحوصة، فلاتر دقيقة، وتواصل مباشر مع البائع.",
+    carsKicker: "سيارات مستعملة وجديدة",
+    homesKicker: "شقق ومنازل للبيع والإيجار",
     sellerName: "الإدارة",
     sellerKind: "معرض / مكتب عقاري",
     phone: "+963 11 000 0000",
@@ -35,32 +37,35 @@ export const marketplace: TemplateModule = {
       key: "shop",
       title: "معلومات الجهة",
       hint: "الاسم وطرق التواصل التي تظهر للزوّار. الإعلانات تُدار من تبويب «الإعلانات».",
+      // The heading + section kickers are edited INLINE on the page (click the
+      // text in the builder preview), so they are intentionally NOT in this wizard.
       fields: [
-        { key: "shop.tagline", label: "الشعار", type: "text", placeholder: "سيارات وعقارات مفحوصة…" },
-        { key: "shop.sellerName", label: "اسم جهة الاتصال", type: "text", placeholder: "المعرض / المكتب" },
-        { key: "shop.sellerKind", label: "الصفة", type: "text", placeholder: "معرض سيارات / مكتب عقاري" },
-        { key: "shop.phone", label: "رقم الهاتف", type: "phone", help: "يظهر بعد ضغط الزائر على «إظهار الرقم»." },
-        { key: "shop.whatsapp", label: "واتساب", type: "phone", help: "زر «تواصل معنا» في الأعلى." },
+        { key: "shop.sellerName", label: "اسم جهة الاتصال", type: "text", placeholder: "المعرض / المكتب", help: "الاسم الافتراضي على بطاقة البائع في صفحة الإعلان، يُستخدم للإعلانات التي لا تحدّد اسمًا خاصًا بها." },
+        { key: "shop.sellerKind", label: "الصفة", type: "text", placeholder: "معرض سيارات / مكتب عقاري", help: "صفة تظهر أسفل اسم البائع على بطاقة الإعلان (مثل: معرض، مكتب عقاري، مالك)." },
+        { key: "shop.phone", label: "رقم الهاتف", type: "phone", help: "رقم افتراضي يظهر في الإعلانات التي لا رقم لها، بعد ضغط الزائر «إظهار الرقم»." },
+        { key: "shop.whatsapp", label: "واتساب", type: "phone", help: "يشغّل زر «تواصل معنا» في أعلى الموقع وقائمة الجوّال." },
       ],
     },
   ],
 
   tokens: [
-    { key: "accent", label: "لون التمييز", cssVar: "--color-mk-accent", default: "oklch(0.5 0.086 155)" },
-    { key: "ground", label: "الخلفية", cssVar: "--color-mk-bg", default: "oklch(0.968 0.004 95)" },
-    { key: "ink", label: "لون النص", cssVar: "--color-mk-ink", default: "oklch(0.26 0.012 70)" },
+    { key: "accent", label: "لون التمييز", cssVar: "--color-mk-accent", default: "oklch(0.34 0.055 262)" },
+    { key: "ground", label: "الخلفية", cssVar: "--color-mk-bg", default: "oklch(0.966 0.009 88)" },
+    { key: "ink", label: "لون النص", cssVar: "--color-mk-ink", default: "oklch(0.25 0.03 262)" },
   ],
 
-  // A warm-paper editorial design — light-only. Palettes vary the ACCENT (the
-  // spec's curated swatches) while keeping the paper ground + ink constant.
+  // YALLAKEYS identity by default — deep navy on a warm-cream canvas, paired with a
+  // constant brand gold for premium/featured accents. Alternate swatches vary only
+  // the accent while keeping the cream ground + navy ink.
   palettes: [
-    { key: "olive", label: "زيتوني", tone: "light", isDefault: true, mood: "هادئ", colors: { accent: "oklch(0.5 0.086 155)", ground: "oklch(0.968 0.004 95)", ink: "oklch(0.26 0.012 70)" } },
-    { key: "azure", label: "أزرق", tone: "light", mood: "موثوق", colors: { accent: "oklch(0.5 0.11 240)", ground: "oklch(0.968 0.004 95)", ink: "oklch(0.26 0.012 70)" } },
-    { key: "terracotta", label: "طيني", tone: "light", mood: "دافئ", colors: { accent: "oklch(0.55 0.12 45)", ground: "oklch(0.968 0.006 80)", ink: "oklch(0.26 0.012 60)" } },
-    { key: "plum", label: "أرجواني", tone: "light", mood: "أنيق", colors: { accent: "oklch(0.5 0.13 300)", ground: "oklch(0.968 0.004 95)", ink: "oklch(0.26 0.012 70)" } },
-    { key: "ink-slate", label: "رمادي داكن", tone: "light", mood: "رسمي", colors: { accent: "oklch(0.42 0.03 250)", ground: "oklch(0.966 0.003 90)", ink: "oklch(0.24 0.01 60)" } },
+    { key: "navy", label: "كحلي وذهبي", tone: "light", isDefault: true, mood: "احترافي", colors: { accent: "oklch(0.34 0.055 262)", ground: "oklch(0.966 0.009 88)", ink: "oklch(0.25 0.03 262)" } },
+    { key: "emerald", label: "أخضر", tone: "light", mood: "موثوق", colors: { accent: "oklch(0.47 0.105 158)", ground: "oklch(0.966 0.009 88)", ink: "oklch(0.25 0.03 262)" } },
+    { key: "azure", label: "أزرق", tone: "light", mood: "حيوي", colors: { accent: "oklch(0.52 0.13 248)", ground: "oklch(0.966 0.009 88)", ink: "oklch(0.25 0.03 262)" } },
+    { key: "terracotta", label: "طيني", tone: "light", mood: "دافئ", colors: { accent: "oklch(0.56 0.13 42)", ground: "oklch(0.966 0.009 88)", ink: "oklch(0.25 0.03 262)" } },
+    { key: "plum", label: "أرجواني", tone: "light", mood: "أنيق", colors: { accent: "oklch(0.5 0.14 300)", ground: "oklch(0.966 0.009 88)", ink: "oklch(0.25 0.03 262)" } },
   ],
 
   defaultCurrency: "USD", // cars/property are commonly quoted in USD
   themeFont: false,
+  ownsAuthUI: true, // mandatory in-page auth gate (buyer/seller) — no floating widget
 };

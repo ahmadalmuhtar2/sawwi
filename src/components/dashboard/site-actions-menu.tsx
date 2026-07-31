@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users, UserCog,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
+import { authOnByDefault } from "@/templates/auth-defaults";
 import { siteUrl } from "@/lib/site-url";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
@@ -104,8 +105,15 @@ export function SiteActionsMenu({
               <Tag className="size-4 text-muted" /> الإعلانات
             </Link>
           )}
-          <Link href={`/dashboard/sites/${site.id}/users`} onClick={() => setOpen(false)} className={itemCls}>
-            <Users className="size-4 text-muted" /> المستخدمون
+          {/* Site end-users (SiteUser) only exist for templates that use visitor
+              accounts (auth on by default). Hide the link elsewhere. */}
+          {authOnByDefault(templateKey) && (
+            <Link href={`/dashboard/sites/${site.id}/users`} onClick={() => setOpen(false)} className={itemCls}>
+              <Users className="size-4 text-muted" /> المستخدمون
+            </Link>
+          )}
+          <Link href={`/dashboard/sites/${site.id}/collaborators`} onClick={() => setOpen(false)} className={itemCls}>
+            <UserCog className="size-4 text-muted" /> المتعاونون
           </Link>
           <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
             <MessageSquare className="size-4 text-muted" />

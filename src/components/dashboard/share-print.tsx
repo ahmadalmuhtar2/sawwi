@@ -53,9 +53,11 @@ interface CardOpts {
   showQr: boolean;
 }
 
-function logoBox(url: string | null, mm: number, bg: string) {
+// No background plate — the logo renders transparent so a bg-removed logo shows
+// as-is against the card. object-fit:contain keeps its full shape (no cropping).
+function logoBox(url: string | null, mm: number) {
   if (!url) return "";
-  return `<div style="width:${mm}mm;height:${mm}mm;border-radius:1.6mm;background:${bg};padding:0.6mm;flex:none;box-shadow:0 0.2mm 0.6mm rgba(0,0,0,.12)"><img src="${esc(url)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:1mm"/></div>`;
+  return `<div style="width:${mm}mm;height:${mm}mm;flex:none;display:flex;align-items:center;justify-content:center"><img src="${esc(url)}" alt="" style="max-width:100%;max-height:100%;object-fit:contain"/></div>`;
 }
 
 function qrBox(qr: string | null, show: boolean, mm: number, onDark: boolean) {
@@ -98,7 +100,7 @@ function cardHtml(o: CardOpts): string {
     case "band":
       return `<div style="${CARD_BASE};background:#fff;border:0.2mm solid #ececec;display:flex;flex-direction:column">
         <div style="height:15mm;background:${accent};display:flex;align-items:center;gap:2.6mm;padding:0 4.5mm">
-          ${logoBox(o.logoUrl, 10.5, "#fff")}
+          ${logoBox(o.logoUrl, 10.5)}
           ${nameBlock(o, "#fff", "rgba(255,255,255,.85)", 12.5)}
         </div>
         <div style="flex:1;display:flex;align-items:center;justify-content:space-between;padding:3.5mm 4.5mm;gap:3mm">
@@ -110,7 +112,7 @@ function cardHtml(o: CardOpts): string {
     case "sidebar":
       return `<div style="${CARD_BASE};background:#fff;border:0.2mm solid #ececec;display:flex">
         <div style="width:24mm;background:${accent};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.4mm;padding:3mm;flex:none">
-          ${logoBox(o.logoUrl, 12, "#fff")}
+          ${logoBox(o.logoUrl, 12)}
           ${qrBox(o.qr, o.showQr, 14, true)}
         </div>
         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:2.4mm;padding:4.5mm 4.5mm">
@@ -123,7 +125,7 @@ function cardHtml(o: CardOpts): string {
     case "solid":
       return `<div style="${CARD_BASE};background:${accent};display:flex;flex-direction:column;justify-content:space-between;padding:5mm 5mm">
         <div style="display:flex;align-items:center;gap:2.8mm">
-          ${logoBox(o.logoUrl, 12, "rgba(255,255,255,.95)")}
+          ${logoBox(o.logoUrl, 12)}
           ${nameBlock(o, "#fff", "rgba(255,255,255,.9)", 13.5)}
         </div>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:3mm">
@@ -135,7 +137,7 @@ function cardHtml(o: CardOpts): string {
     case "dark":
       return `<div style="${CARD_BASE};background:#17181b;display:flex;flex-direction:column;justify-content:space-between;padding:5mm">
         <div style="display:flex;align-items:center;gap:2.8mm">
-          ${logoBox(o.logoUrl, 11.5, "#26272b")}
+          ${logoBox(o.logoUrl, 11.5)}
           ${nameBlock(o, "#f5f5f5", accent, 13)}
         </div>
         <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:3mm">
@@ -149,7 +151,7 @@ function cardHtml(o: CardOpts): string {
       return `<div style="${CARD_BASE};background:#fff;border:0.2mm solid #ececec;border-inline-start:1.8mm solid ${accent};display:flex;align-items:center;justify-content:space-between;padding:5mm 5.5mm;gap:3mm">
         <div style="display:flex;flex-direction:column;gap:3mm;min-width:0">
           <div style="display:flex;align-items:center;gap:2.6mm">
-            ${logoBox(o.logoUrl, 11, "#f7f7f7")}
+            ${logoBox(o.logoUrl, 11)}
             ${nameBlock(o, "#1a1a1a", accent, 13)}
           </div>
           ${contacts(o, "#444", accent)}
@@ -262,7 +264,7 @@ export function SharePrint({
         {!logoUrl && (
           <div className="mb-4 flex items-start gap-2 rounded-md border border-warn/40 bg-warn-100/50 p-3 text-sm text-ink">
             <Info className="mt-0.5 size-4 shrink-0 text-warn" />
-            <span>ارفع شعار الموقع من تبويب «معلومات الموقع» ليظهر على البطاقة.</span>
+            <span>ارفع شعار الموقع من تبويب «الأساسيات» ليظهر على البطاقة.</span>
           </div>
         )}
 

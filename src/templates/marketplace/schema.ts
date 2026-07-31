@@ -6,12 +6,15 @@
 // and the dashboard authoring stepper. Arabic-first (labels/opts in Arabic;
 // numbers render as Arabic-Indic in the UI layer).
 
+import { CAR_MAKES } from "./car-data";
+import { formatArabicNumber as arGroup } from "@/shared/currency";
+
 export type Vertical = "car" | "home";
 // text: free text · number: numeric input (+ unit/currency) · select: dropdown
 // enum (long option lists) · chips: button enum (short lists) · multi: many-select
 // · phone: our phone input · area: textarea · photos: image uploader.
 export type FieldType = "text" | "number" | "select" | "chips" | "multi" | "area" | "photos" | "phone";
-export type FilterKind = "range" | "chips" | "multi";
+export type FilterKind = "range" | "chips" | "multi" | "select";
 
 const arDigits = (v: string | number) => String(v).replace(/[0-9]/g, (d) => "٠١٢٣٤٥٦٧٨٩"[+d]);
 
@@ -41,6 +44,10 @@ export interface FieldDef {
   placeholder?: string;
   hint?: string;
   full?: boolean; // span both columns
+  /** This field's options depend on another field's value (e.g. model ← make).
+   *  Resolved at render via a dependent-options lookup; the field degrades to a
+   *  free-text combobox so an unlisted value can still be typed. */
+  depends?: string;
 }
 
 export interface StepDef {
@@ -61,6 +68,9 @@ export interface FilterDef {
   step?: number;
   money?: boolean; // bounds derived from the actual listings; renders with currency
   unit?: string;
+  /** For kind "select": options depend on another active filter's value (model ←
+   *  make). The rail hides this filter until the parent filter is chosen. */
+  depends?: string;
 }
 
 export type ListingStatus = "available" | "reserved" | "sold";
@@ -85,6 +95,9 @@ export interface MarketplaceListing {
   specs: Record<string, string | number>;
   featured?: boolean;
   status?: ListingStatus;
+  /** The site-user who authored this listing (on-site seller), or null when the
+   *  owner posted it from the dashboard. Enables "browse this seller's listings". */
+  authorId?: string | null;
 }
 
 export const VERTICAL_LABEL: Record<Vertical, string> = { car: "سيارات", home: "عقارات" };
@@ -108,6 +121,8 @@ const HOME_EXTRAS = [
 
 export const FILTERS: Record<Vertical, FilterDef[]> = {
   car: [
+    { k: "make", kind: "select", label: "الشركة", opts: [...CAR_MAKES] },
+    { k: "model", kind: "select", label: "الطراز", depends: "make" },
     { k: "price", kind: "range", label: "السعر حتى", money: true },
     { k: "km", kind: "range", label: "المسافة حتى", min: 0, max: 300000, step: 10000, unit: " كم" },
     { k: "fuel", kind: "chips", label: "الوقود", opts: ["بنزين", "ديزل", "هجين", "كهرباء"] },
@@ -135,8 +150,8 @@ export const STEPS: Record<Vertical, StepDef[]> = {
       id: "vehicle", label: "المركبة", title: "ما الذي تبيعه؟",
       hint: "الشركة والطراز وسنة الصنع تحدّد مكان سيارتك في النتائج.",
       fields: [
-        { k: "make", label: "الشركة الصانعة", type: "chips", req: true, filter: true, opts: ["تويوتا", "هيونداي", "كيا", "مرسيدس", "BMW", "فولكس واغن", "شفروليه", "نيسان", "أخرى"], hint: "المشترون يبحثون بالشركة أكثر من أي شيء." },
-        { k: "model", label: "الطراز", type: "text", req: true, filter: true, placeholder: "كامري LE", hint: "اكتبه كما في أوراق السيارة." },
+        { k: "make", label: "الشركة الصانعة", type: "select", req: true, filter: true, opts: [...CAR_MAKES], placeholder: "اختر الشركة", hint: "المشترون يبحثون بالشركة أكثر من أي شيء." },
+        { k: "model", label: "الطراز", type: "select", req: true, filter: true, depends: "make", placeholder: "اختر أو اكتب الطراز", hint: "اختر من القائمة، أو اكتبه إن لم يظهر." },
         { k: "year", label: "سنة الصنع", type: "select", req: true, filter: true, opts: YEARS, placeholder: "اختر السنة" },
         { k: "body", label: "نوع الهيكل", type: "chips", req: true, filter: true, opts: ["هاتشباك", "سيدان", "ستيشن", "دفع رباعي", "فان"] },
       ],
@@ -189,7 +204,7 @@ export const STEPS: Record<Vertical, StepDef[]> = {
         { k: "offer", label: "العرض", type: "chips", req: true, filter: true, opts: [OFFER_RENT, OFFER_BUY] },
         { k: "type", label: "نوع العقار", type: "chips", req: true, filter: true, opts: ["شقة", "منزل", "استوديو", "دوبلكس"] },
         { k: "place", label: "المدينة", type: "select", req: true, filter: true, opts: CITIES, placeholder: "اختر المدينة" },
-        { k: "district", label: "المنطقة", type: "text", req: false, filter: true, placeholder: "المزة", hint: "اختياري، وكثير البحث." },
+        { k: "district", label: "المنطقة", type: "text", req: false, filter: false, placeholder: "المزة", hint: "اختياري، يظهر في التفاصيل." },
       ],
     },
     {
@@ -309,11 +324,11 @@ export const DETAIL_SPECS: Record<Vertical, { k: string; label: string; unit?: s
 export function cardSpecLine(l: MarketplaceListing): string {
   const s = l.specs;
   if (l.vertical === "car") {
-    return [s.year ? arDigits(s.year) : null, s.km != null ? `${arDigits(s.km)} كم` : null, s.fuel, s.trans]
+    return [s.year ? arDigits(s.year) : null, s.km != null ? `${arGroup(s.km)} كم` : null, s.fuel, s.trans]
       .filter(Boolean)
       .join(" · ");
   }
-  return [s.type, s.size != null ? `${arDigits(s.size)} م²` : null, s.rooms != null ? `${arDigits(s.rooms)} غرف` : null, l.place]
+  return [s.type, s.size != null ? `${arGroup(s.size)} م²` : null, s.rooms != null ? `${arGroup(s.rooms)} غرف` : null, l.place]
     .filter(Boolean)
     .join(" · ");
 }
@@ -351,6 +366,36 @@ export interface ListingPayload {
   images: string[];
   features: string[];
   specs: Record<string, string | number>;
+}
+
+/** Reverse of formToListing: seed the flat form map from an existing listing (for
+ *  editing). Columns map back to their field keys (desc ← description); every spec
+ *  becomes its field's value; arrays (photos/features) stay arrays. */
+export function listingToForm(l: {
+  title?: string | null;
+  price?: number | null;
+  offer?: string | null;
+  place?: string | null;
+  description?: string | null;
+  images?: string[];
+  features?: string[];
+  specs?: Record<string, string | number>;
+}): Record<string, string | string[]> {
+  const form: Record<string, string | string[]> = {};
+  if (l.title) form.title = l.title;
+  if (l.price != null) form.price = String(l.price);
+  if (l.offer) form.offer = l.offer;
+  if (l.place) form.place = l.place;
+  if (l.description) form.desc = l.description;
+  if (l.images?.length) form.photos = l.images;
+  if (l.features?.length) form.features = l.features;
+  for (const [k, v] of Object.entries(l.specs ?? {})) form[k] = String(v);
+  return form;
+}
+
+/** All authoring fields for a vertical (steps + optional boost), flattened. */
+export function allFields(vertical: Vertical): FieldDef[] {
+  return [...STEPS[vertical].flatMap((s) => s.fields), ...BOOST[vertical]];
 }
 
 /** Split the stepper's flat form map into the listing's columns + specs JSON. */

@@ -10,7 +10,6 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { siteHost } from "@/lib/site-url";
 import { Field, Input, Select } from "@/components/ui/field";
-import { uploadStaging } from "@/components/templates/fields";
 import { CURRENCIES } from "@/shared/currency";
 import { SiteSeoEditor } from "@/components/dashboard/site-seo-editor";
 import { BasicsEditor } from "@/components/dashboard/basics-editor";
@@ -56,6 +55,7 @@ export function SettingsTabs({
   initialBasics,
   initialSettings,
   initialSeo,
+  authByDefault = false,
 }: {
   siteId: string;
   businessName: string;
@@ -67,6 +67,8 @@ export function SettingsTabs({
   initialBasics: { businessName: string; slug: string; language: "ar" | "en" };
   initialSettings: FullSettings;
   initialSeo: SiteSeo;
+  /** Template requires end-user auth (marketplace) → the toggle is locked ON. */
+  authByDefault?: boolean;
 }) {
   const toast = useToast();
   const [tab, setTab] = useState<TabId>("basics");
@@ -109,7 +111,10 @@ export function SettingsTabs({
 
       {/* Tab bar */}
       <div className="mt-6 flex flex-wrap gap-1.5 border-b border-line pb-3">
-        {TABS.map((t) => {
+        {/* The "accounts" tab only makes sense for templates that use visitor
+            accounts — currently those turn auth ON by default (authByDefault), so
+            there's nothing to toggle. Hide it everywhere else. */}
+        {TABS.filter((t) => t.id !== "accounts" || authByDefault).map((t) => {
           const Icon = t.icon;
           const active = t.id === tab;
           return (
@@ -156,12 +161,10 @@ export function SettingsTabs({
         )}
 
         {tab === "accounts" && (
-          <Panel title="حسابات الزوّار" desc="فعّل تسجيل الدخول لزوّار موقعك (تسجيل حساب ودخول)، وخصّص مسميات الأدوار الثلاثة. إدارة الحسابات نفسها من صفحة «المستخدمون».">
+          <Panel title="حسابات الزوّار" desc="هذا القالب يعتمد على حسابات الزوّار (مفعّلة دائمًا). خصّص مسميات الأدوار الثلاثة هنا، وأدر الحسابات من صفحة «المستخدمون».">
             <AccountsPanel
               siteId={siteId}
-              enabled={settings.authEnabled ?? false}
               labels={settings.roleLabels ?? {}}
-              onToggle={(v) => saveSettings({ authEnabled: v })}
               onLabels={(labels) => saveSettings({ roleLabels: labels })}
             />
           </Panel>
@@ -173,7 +176,7 @@ export function SettingsTabs({
               slug={slug}
               siteUrl={siteUrl}
               businessName={businessName}
-              logoUrl={initialLogoUrl}
+              logoUrl={initialLogo || initialLogoUrl}
               phone={settings.phone ?? ""}
               whatsapp={settings.whatsappNumber ?? ""}
               address={settings.address ?? ""}
@@ -192,18 +195,16 @@ export function SettingsTabs({
   );
 }
 
-/** Enable end-user auth for a site + customize the 3 role labels. */
+/** Customize the 3 role labels for a site's visitor accounts. Only rendered for
+ *  templates that use accounts (auth is on by default for them), so there's no
+ *  enable/disable toggle — just the labels + a link to manage the accounts. */
 function AccountsPanel({
   siteId,
-  enabled,
   labels,
-  onToggle,
   onLabels,
 }: {
   siteId: string;
-  enabled: boolean;
   labels: Record<string, string>;
-  onToggle: (v: boolean) => void;
   onLabels: (labels: Record<string, string>) => void;
 }) {
   const DEFAULTS: Record<string, string> = { manager: "مدير", contributor: "مساهم", member: "عضو" };
@@ -219,53 +220,36 @@ function AccountsPanel({
   ];
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-line p-4">
-        <div>
-          <p className="text-sm font-medium text-ink">تفعيل حسابات الزوّار</p>
-          <p className="mt-0.5 text-xs text-muted">يظهر زر «تسجيل الدخول» على موقعك المنشور، ويمكن للزوّار إنشاء حساب.</p>
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          onClick={() => onToggle(!enabled)}
-          className={cn("relative h-6 w-11 shrink-0 rounded-full transition", enabled ? "bg-accent" : "bg-black/15 dark:bg-white/20")}
-        >
-          <span className={cn("absolute top-0.5 size-5 rounded-full bg-white shadow transition-all", enabled ? "start-[22px]" : "start-0.5")} />
-        </button>
+      <div className="flex flex-col gap-4">
+        <p className="text-sm font-medium text-ink">مسميات الأدوار</p>
+        {ROLES.map((r) => (
+          <Field key={r.k} label={DEFAULTS[r.k]} hint={r.hint} className="max-w-sm">
+            <Input
+              value={local[r.k]}
+              placeholder={DEFAULTS[r.k]}
+              onChange={(e) => setLocal((s) => ({ ...s, [r.k]: e.target.value }))}
+              onBlur={() => onLabels({ ...labels, [r.k]: local[r.k].trim() })}
+            />
+          </Field>
+        ))}
       </div>
-
-      {enabled && (
-        <>
-          <div className="flex flex-col gap-4">
-            <p className="text-sm font-medium text-ink">مسميات الأدوار</p>
-            {ROLES.map((r) => (
-              <Field key={r.k} label={DEFAULTS[r.k]} hint={r.hint} className="max-w-sm">
-                <Input
-                  value={local[r.k]}
-                  placeholder={DEFAULTS[r.k]}
-                  onChange={(e) => setLocal((s) => ({ ...s, [r.k]: e.target.value }))}
-                  onBlur={() => onLabels({ ...labels, [r.k]: local[r.k].trim() })}
-                />
-              </Field>
-            ))}
-          </div>
-          <Link
-            href={`/dashboard/sites/${siteId}/users`}
-            className="inline-flex items-center gap-2 self-start rounded-md border border-line px-3.5 py-2 text-sm font-medium text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
-          >
-            <Users className="size-4 text-muted" /> إدارة المستخدمين <ExternalLink className="size-3.5 text-faint" />
-          </Link>
-        </>
-      )}
+      <Link
+        href={`/dashboard/sites/${siteId}/users`}
+        className="inline-flex items-center gap-2 self-start rounded-md border border-line px-3.5 py-2 text-sm font-medium text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
+      >
+        <Users className="size-4 text-muted" /> إدارة المستخدمين <ExternalLink className="size-3.5 text-faint" />
+      </Link>
     </div>
   );
 }
 
 /**
- * Site-header logo, stored in content.shop.logo. Uploads to staging, then writes
- * the merged content — fetching the LATEST content first so it never clobbers
- * inline edits (updateContent is a full replace that also prunes dropped images).
+ * Site-header logo. Uploads through the dedicated /logo endpoint → PERMANENT
+ * per-site storage + Site.logoUrl (shown on the dashboard sites list). The same
+ * permanent URL is then mirrored into content.shop.logo so it travels with the
+ * content into the preview/builder/served renders. (The old path uploaded to a
+ * per-user STAGING folder — ephemeral, not tied to the site — which showed broken
+ * on the site and never populated the sites-list card.)
  */
 function SiteLogoField({ siteId, initialLogo }: { siteId: string; initialLogo: string }) {
   const toast = useToast();
@@ -273,20 +257,13 @@ function SiteLogoField({ siteId, initialLogo }: { siteId: string; initialLogo: s
   const [logo, setLogo] = useState(initialLogo);
   const [busy, setBusy] = useState(false);
 
-  async function commit(url: string) {
-    setBusy(true);
-    try {
-      const site = await api.get<{ content?: Record<string, unknown> }>(`/api/sites/${siteId}`);
-      const content = site.content ?? {};
-      const shop = (content.shop as Record<string, unknown>) ?? {};
-      await api.put(`/api/sites/${siteId}/content`, { ...content, shop: { ...shop, logo: url } });
-      setLogo(url);
-      toast("تم حفظ الشعار ✓");
-    } catch {
-      toast("تعذّر حفظ الشعار", "error");
-    } finally {
-      setBusy(false);
-    }
+  // Mirror the (permanent) logo URL into content.shop.logo — fetch the LATEST
+  // content first so we never clobber inline edits (content PUT is a full replace).
+  async function mirrorToContent(url: string) {
+    const site = await api.get<{ content?: Record<string, unknown> }>(`/api/sites/${siteId}`);
+    const content = site.content ?? {};
+    const shop = (content.shop as Record<string, unknown>) ?? {};
+    await api.put(`/api/sites/${siteId}/content`, { ...content, shop: { ...shop, logo: url } });
   }
 
   async function pick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -295,9 +272,29 @@ function SiteLogoField({ siteId, initialLogo }: { siteId: string; initialLogo: s
     if (!file) return;
     setBusy(true);
     try {
-      await commit(await uploadStaging(file));
+      const fd = new FormData();
+      fd.append("file", file);
+      const { url } = await api.post<{ url: string }>(`/api/sites/${siteId}/logo`, fd);
+      await mirrorToContent(url);
+      setLogo(url);
+      toast("تم حفظ الشعار ✓");
     } catch {
       toast("تعذّر رفع الشعار", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    setBusy(true);
+    try {
+      await api.del(`/api/sites/${siteId}/logo`);
+      await mirrorToContent("");
+      setLogo("");
+      toast("تمت إزالة الشعار");
+    } catch {
+      toast("تعذّر حذف الشعار", "error");
+    } finally {
       setBusy(false);
     }
   }
@@ -331,7 +328,7 @@ function SiteLogoField({ siteId, initialLogo }: { siteId: string; initialLogo: s
         {logo && !busy && (
           <button
             type="button"
-            onClick={() => commit("")}
+            onClick={remove}
             className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-muted transition hover:text-danger cursor-pointer"
           >
             <Trash2 className="size-4" /> إزالة

@@ -7,6 +7,7 @@
 //     is scoped to claims.userId; a user can only ever touch their own rows.
 
 import type { SessionClaims } from "@/server/access/access.rules";
+import { sendPushToUsers } from "@/server/push/push.service";
 import { notificationsRepository } from "./notifications.repository";
 
 /** Truncate a message body for the notification preview. */
@@ -32,6 +33,9 @@ export async function notifySiteMessage(
   await notificationsRepository.createMany(
     recipients.map((userId) => ({ userId, type: "site_message", title, body, siteId, link })),
   );
+  // Best-effort Web Push to the SAME recipients (so the collaborator-vs-reseller
+  // recipient rule governs push too). No-op when push isn't configured.
+  void sendPushToUsers(recipients, { title, body, url: link, tag: `site-${siteId}` }).catch(() => {});
   return recipients.length;
 }
 

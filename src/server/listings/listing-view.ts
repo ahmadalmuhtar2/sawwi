@@ -19,5 +19,6 @@ export function toMarketplaceListing(row: Listing): MarketplaceListing {
     specs: (row.specs && typeof row.specs === "object" ? row.specs : {}) as Record<string, string | number>,
     featured: row.featured,
     status: row.status as ListingStatus,
+    authorId: row.authorSiteUserId ?? null,
   };
 }

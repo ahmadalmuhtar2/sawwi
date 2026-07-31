@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/cn";
+import { InfoTip } from "./info-tip";
 
 const inputBase =
   "w-full h-10 px-3 rounded-md bg-surface border border-line text-ink placeholder:text-faint focus-ring transition disabled:opacity-60 aria-[invalid=true]:border-danger aria-[invalid=true]:bg-danger-100/30";
@@ -47,6 +48,7 @@ export function Field({
   label,
   error,
   hint,
+  info,
   htmlFor,
   children,
   className,
@@ -54,6 +56,8 @@ export function Field({
   label?: string;
   error?: string;
   hint?: string;
+  /** Short description shown as an "i" tooltip beside the label. */
+  info?: string;
   htmlFor?: string;
   children: React.ReactNode;
   className?: string;
@@ -61,9 +65,12 @@ export function Field({
   return (
     <div className={cn("space-y-1.5", className)}>
       {label && (
-        <label htmlFor={htmlFor} className="block text-sm font-medium text-ink">
-          {label}
-        </label>
+        <div className="flex items-center gap-1.5">
+          <label htmlFor={htmlFor} className="block text-sm font-medium text-ink">
+            {label}
+          </label>
+          {info && <InfoTip text={info} />}
+        </div>
       )}
       {children}
       {error ? (

@@ -5,12 +5,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Users, Trash2, ShieldAlert } from "lucide-react";
+import { ArrowRight, Users, Trash2, ShieldAlert, KeyRound, Copy, Check } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/feedback";
 import { MenuSelect } from "@/components/ui/dropdown";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 type Role = "manager" | "contributor" | "member";
 
@@ -44,6 +46,12 @@ export function SiteUsersManager({
   const toast = useToast();
   const [users, setUsers] = React.useState<SiteUserRow[]>(initial);
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [reset, setReset] = React.useState<{ email: string; password: string } | null>(null);
+  const [copied, setCopied] = React.useState(false);
+  // A single in-app confirmation modal for the destructive actions (no browser confirm()).
+  const [pending, setPending] = React.useState<
+    { kind: "reset" | "delete"; id: string; email: string } | null
+  >(null);
 
   async function reload() {
     try {
@@ -68,8 +76,22 @@ export function SiteUsersManager({
     setBusy(null);
   }
 
-  async function remove(id: string) {
-    if (!confirm("حذف هذا الحساب نهائيًا؟")) return;
+  async function doReset(id: string, email: string) {
+    setBusy(id);
+    try {
+      const { tempPassword } = await api.post<{ id: string; tempPassword: string }>(
+        `/api/sites/${siteId}/users/${id}/reset-password`,
+        {},
+      );
+      setCopied(false);
+      setReset({ email, password: tempPassword });
+    } catch (e) {
+      toast(e instanceof ApiClientError ? e.message : "تعذّر إعادة التعيين", "error");
+    }
+    setBusy(null);
+  }
+
+  async function doRemove(id: string) {
     setBusy(id);
     try {
       await api.del(`/api/sites/${siteId}/users/${id}`);
@@ -79,6 +101,25 @@ export function SiteUsersManager({
       toast(e instanceof ApiClientError ? e.message : "تعذّر الحذف", "error");
     }
     setBusy(null);
+  }
+
+  async function confirmPending() {
+    if (!pending) return;
+    const { kind, id, email } = pending;
+    setPending(null);
+    if (kind === "reset") await doReset(id, email);
+    else await doRemove(id);
+  }
+
+  async function copyPassword() {
+    if (!reset) return;
+    try {
+      await navigator.clipboard.writeText(reset.password);
+      setCopied(true);
+      toast("تم نسخ كلمة المرور ✓");
+    } catch {
+      toast("تعذّر النسخ", "error");
+    }
   }
 
   return (
@@ -132,7 +173,10 @@ export function SiteUsersManager({
                   onChange={(v) => changeRole(u.id, v as Role)}
                   className="w-32 shrink-0"
                 />
-                <button onClick={() => remove(u.id)} disabled={busy === u.id} title="حذف" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
+                <button onClick={() => setPending({ kind: "reset", id: u.id, email: u.email })} disabled={busy === u.id} title="إعادة تعيين كلمة المرور" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-accent-100 hover:text-accent-900 disabled:opacity-40">
+                  <KeyRound className="size-4" />
+                </button>
+                <button onClick={() => setPending({ kind: "delete", id: u.id, email: u.email })} disabled={busy === u.id} title="حذف" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
                   <Trash2 className="size-4" />
                 </button>
               </Card>
@@ -140,6 +184,61 @@ export function SiteUsersManager({
           ))}
         </ul>
       )}
+
+      <Modal
+        open={!!pending}
+        onClose={() => setPending(null)}
+        title={pending?.kind === "reset" ? "إعادة تعيين كلمة المرور" : "حذف الحساب"}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setPending(null)}>إلغاء</Button>
+            <Button variant={pending?.kind === "delete" ? "danger" : "primary"} onClick={confirmPending}>
+              {pending?.kind === "reset" ? "إعادة التعيين" : "حذف نهائي"}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink">
+          {pending?.kind === "reset" ? (
+            <>
+              سيتم إنشاء كلمة مرور مؤقتة جديدة للحساب{" "}
+              <span className="font-semibold" dir="ltr">{pending?.email}</span> و<span className="font-semibold">إنهاء جميع جلساته الحالية</span> — سيحتاج لتسجيل الدخول من جديد بالكلمة الجديدة.
+            </>
+          ) : (
+            <>
+              سيتم حذف الحساب{" "}
+              <span className="font-semibold" dir="ltr">{pending?.email}</span> نهائيًا. لا يمكن التراجع عن هذا الإجراء.
+            </>
+          )}
+        </p>
+      </Modal>
+
+      <Modal
+        open={!!reset}
+        onClose={() => setReset(null)}
+        title="كلمة مرور مؤقتة"
+        size="sm"
+        footer={<Button variant="ghost" onClick={() => setReset(null)}>تم</Button>}
+      >
+        <p className="text-sm text-ink">
+          كلمة مرور مؤقتة جديدة للحساب{" "}
+          <span className="font-semibold" dir="ltr">{reset?.email}</span>. انسخها وأرسلها للمستخدم —
+          <span className="font-semibold"> لن تظهر مرة أخرى</span>، وننصح المستخدم بتغييرها بعد الدخول.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <code className="flex-1 select-all rounded-lg border border-line bg-black/[0.04] px-3 py-2.5 text-center text-lg font-bold tracking-wider text-ink dark:bg-white/6" dir="ltr">
+            {reset?.password}
+          </code>
+          <button
+            onClick={copyPassword}
+            title="نسخ"
+            className="shrink-0 rounded-lg border border-line p-2.5 text-muted transition hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/6"
+          >
+            {copied ? <Check className="size-5 text-emerald-600" /> : <Copy className="size-5" />}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }
