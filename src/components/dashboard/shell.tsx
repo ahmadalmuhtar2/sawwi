@@ -121,10 +121,9 @@ export function DashboardShell({
           >
             {!collapsed && (
               <Link href="/dashboard">
-                {/* Color logo on light, white logo on dark — CSS-toggled so it
-                    follows the theme with no flash. */}
-                <Logo variant="full" className="h-11 w-auto dark:hidden" />
-                <Logo variant="mono-white" className="hidden h-11 w-auto dark:block" />
+                {/* Full-color mark + «سوّي» wordmark; the wordmark text follows the
+                    theme (ink on light, white on dark) on its own. */}
+                <Logo variant="full" className="h-11 w-auto" />
               </Link>
             )}
             <button
@@ -191,8 +190,7 @@ export function DashboardShell({
             <aside className="absolute inset-y-0 start-0 flex w-64 max-w-[82%] flex-col border-e border-line bg-surface shadow-xl">
               <div className="flex h-16 items-center justify-between border-b border-line px-4">
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}>
-                  <Logo variant="full" className="h-11 w-auto dark:hidden" />
-                  <Logo variant="mono-white" className="hidden h-11 w-auto dark:block" />
+                  <Logo variant="full" className="h-11 w-auto" />
                 </Link>
                 <button
                   type="button"

@@ -24,8 +24,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "سوّي";
   const options = {
     body: data.body || "",
-    icon: "/brand/logo.svg",
-    badge: "/brand/favicon.svg",
+    icon: "/brand/icon-192.png",
+    badge: "/brand/icon-192.png",
     tag: data.tag || undefined,
     data: { url: data.url || "/dashboard" },
     dir: "rtl",
