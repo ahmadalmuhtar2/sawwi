@@ -66,6 +66,7 @@ export const sitesRepository = {
     return getPrisma().site.findMany({
       where: { workspaceId },
       orderBy: { createdAt: "desc" },
+      include: { subscription: { select: { expiry: true, status: true } } },
     });
   },
 
@@ -95,6 +96,7 @@ export const sitesRepository = {
     return getPrisma().site.findMany({
       where: { id: { in: ids } },
       orderBy: { createdAt: "desc" },
+      include: { subscription: { select: { expiry: true, status: true } } },
     });
   },
 

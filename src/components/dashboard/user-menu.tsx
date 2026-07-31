@@ -14,7 +14,7 @@ interface MenuUser {
   image?: string | null;
 }
 
-export function UserMenu({ user }: { user: MenuUser }) {
+export function UserMenu({ user, showBilling = true }: { user: MenuUser; showBilling?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -75,13 +75,18 @@ export function UserMenu({ user }: { user: MenuUser }) {
             >
               <User className="size-4 text-muted" /> الملف الشخصي
             </Link>
-            <Link
-              href="/dashboard/billing"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
-            >
-              <CreditCard className="size-4 text-muted" /> الفوترة والاشتراك
-            </Link>
+            {/* Billing is reseller/owner-only. Collaborators (site-access users)
+                don't manage payments — they see each site's expiry on the sites
+                list instead. */}
+            {showBilling && (
+              <Link
+                href="/dashboard/billing"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6"
+              >
+                <CreditCard className="size-4 text-muted" /> الفوترة والاشتراك
+              </Link>
+            )}
             <ThemeMenuItem />
           </div>
           <div className="border-t border-line p-1">

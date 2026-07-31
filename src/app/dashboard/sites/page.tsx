@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Globe, ExternalLink, MessageSquare } from "lucide-react";
+import { Globe, ExternalLink, MessageSquare, CalendarClock } from "lucide-react";
 import { getSessionClaims } from "@/lib/auth";
 import { listSites } from "@/server/sites/sites.service";
+import { displayStatus } from "@/server/billing/billing.rules";
 import { unreadCountsForSites } from "@/server/messages/messages.service";
 import { canManageWorkspace } from "@/server/access/access.rules";
 import { Card } from "@/components/ui/card";
@@ -10,6 +11,25 @@ import { EmptyState } from "@/components/ui/feedback";
 import { CreateSiteButton } from "@/components/dashboard/create-site";
 import { SiteActionsMenu } from "@/components/dashboard/site-actions-menu";
 import { siteHost, siteUrl } from "@/lib/site-url";
+
+// Per-site expiry line on the card. Visible to everyone who can see the site —
+// notably collaborators, who don't have the billing page but still need to know
+// when a site they manage expires. Colored by proximity: expired (red),
+// expiring ≤7d (amber), otherwise muted.
+const fmtDate = (d: Date) =>
+  new Intl.DateTimeFormat("ar-EG-u-nu-arab", { day: "numeric", month: "numeric", year: "numeric" }).format(d);
+
+function ExpiryLine({ expiry }: { expiry: Date }) {
+  const status = displayStatus(expiry, new Date());
+  const cls =
+    status === "expired" ? "text-danger" : status === "expiring" ? "text-amber-600" : "text-faint";
+  return (
+    <p className={`mt-0.5 flex items-center gap-1 font-label text-[11px] ${cls}`}>
+      <CalendarClock className="size-3 shrink-0" />
+      {status === "expired" ? `انتهى في ${fmtDate(expiry)}` : `ينتهي في ${fmtDate(expiry)}`}
+    </p>
+  );
+}
 
 export default async function SitesPage() {
   const claims = await getSessionClaims();
@@ -62,6 +82,7 @@ export default async function SitesPage() {
               <Link href={`/dashboard/sites/${s.id}`} className="min-w-0 flex-1">
                 <h3 className="truncate font-bold text-ink">{s.businessName}</h3>
                 <p className="truncate font-label text-[11px] text-faint">{siteHost(s.slug)}</p>
+                {s.subscription && <ExpiryLine expiry={s.subscription.expiry} />}
               </Link>
 
               <div className="flex shrink-0 items-center gap-2">
