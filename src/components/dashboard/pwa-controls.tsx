@@ -43,9 +43,13 @@ function isStandalone(): boolean {
 const isIOS = () =>
   typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
 
+const isMobile = () =>
+  typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
 export function PwaControls({ collapsed = false }: { collapsed?: boolean }) {
   const toast = useToast();
   const [standalone, setStandalone] = useState(false);
+  const [mobile, setMobile] = useState(false);
   const [installEvt, setInstallEvt] = useState<BeforeInstallPromptEvent | null>(null);
   const [push, setPush] = useState<PushState>("default");
 
@@ -57,6 +61,7 @@ export function PwaControls({ collapsed = false }: { collapsed?: boolean }) {
   /* eslint-disable react-hooks/set-state-in-effect -- browser-only init on mount (see above) */
   useEffect(() => {
     setStandalone(isStandalone());
+    setMobile(isMobile());
     if (!("serviceWorker" in navigator)) {
       setPush("unsupported");
       return;
@@ -97,8 +102,12 @@ export function PwaControls({ collapsed = false }: { collapsed?: boolean }) {
       if (outcome === "accepted") setInstallEvt(null);
       return;
     }
-    // iOS has no install event — guide the user to the Share → Add to Home Screen.
-    if (isIOS()) toast("للتثبيت: زر المشاركة ← «إضافة إلى الشاشة الرئيسية»");
+    // No captured prompt. iOS never fires one; Android Chrome fires it only after
+    // an engagement heuristic and not at all once dismissed/installed — so on
+    // mobile we always show the button and, lacking a prompt, point the user at
+    // the browser's own "add to home screen" entry (a guaranteed install path).
+    if (isIOS()) toast("للتثبيت على أيفون: زر المشاركة ⬆️ ثم «إضافة إلى الشاشة الرئيسية»");
+    else toast("للتثبيت: افتح قائمة المتصفح (⋮) ثم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»");
   }, [installEvt, toast]);
 
   const enableNotifications = useCallback(async () => {
@@ -150,7 +159,10 @@ export function PwaControls({ collapsed = false }: { collapsed?: boolean }) {
     }
   }, [push, toast]);
 
-  const showInstall = !standalone && (installEvt !== null || isIOS());
+  // Desktop: only when a real prompt was captured. Mobile: always (until
+  // installed) — Android may never fire the prompt, and the click falls back to
+  // browser-menu guidance so there's a visible install path either way.
+  const showInstall = !standalone && (installEvt !== null || mobile);
   if (push === "unsupported" && !showInstall) return null;
 
   const itemCls = cn(
