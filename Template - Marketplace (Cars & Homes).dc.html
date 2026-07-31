@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/broadsheet-aac69e4f-afc8-4828-b6b6-0e281f05ecf0/styles.css">
+<script src="_ds/broadsheet-aac69e4f-afc8-4828-b6b6-0e281f05ecf0/_ds_bundle.js"></script>
+<script src="image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Re-skin to the Component Gallery's own language (overrides Broadsheet):
+     Hanken Grotesk body, Newsreader headings, JetBrains Mono labels, warm
+     paper, soft-shadow surfaces. Same override approach as the Dashboard. */
+  *{box-sizing:border-box}
+  body{margin:0;background:oklch(0.955 0.004 90)}
+  a{color:var(--accent);text-decoration:none;transition:color .16s ease}
+  a:hover{color:var(--accent-strong)}
+  button{font-family:inherit}
+  input,textarea{font-family:inherit}
+  input::placeholder,textarea::placeholder{color:oklch(0.66 0.008 80)}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent)}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  ::selection{background:color-mix(in srgb, var(--accent) 20%, transparent)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:oklch(0.88 0.006 85);border-radius:999px;border:3px solid oklch(0.978 0.004 95)}
+  image-slot{--is-placeholder-color:oklch(0.7 0.008 80)}
+  @keyframes mk-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes mk-fade{from{opacity:0}to{opacity:1}}
+  @keyframes mk-pop{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes mk-sheet{from{transform:translateY(100%)}to{transform:none}}
+  @media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+</style>
+</helmet>
+
+<div style="--accent: {{ accent }}; --accent-soft: color-mix(in srgb, var(--accent) 12%, white); --accent-strong: color-mix(in srgb, var(--accent) 82%, black); --radius: 10px; --bg: oklch(0.978 0.004 95); --surface: #ffffff; --ink: oklch(0.26 0.012 70); --muted: oklch(0.52 0.01 75); --faint: oklch(0.64 0.008 80); --line: oklch(0.9 0.006 85); --line-soft: oklch(0.948 0.005 85); --card-shadow: 0 1px 2px rgba(40,35,30,.03), 0 24px 48px -34px rgba(40,35,30,.20); background: oklch(0.955 0.004 90); color: var(--ink); font-family: 'Hanken Grotesk', system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 56px 32px 96px;">
+
+  <!-- ===== template chrome ===== -->
+  <div style="width: 100%; max-width: 1240px; display: flex; align-items: flex-end; justify-content: space-between; gap: 28px; flex-wrap: wrap;">
+    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 62ch;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);">Marketplace template · cars &amp; homes</span>
+      <h1 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 400; font-size: 38px; line-height: 1.1; letter-spacing: -0.02em; text-wrap: balance;">Browse, filter, and publish a listing <em style="font-style: italic;">step by step.</em></h1>
+      <p style="margin: 0; font-size: 15.5px; line-height: 1.6; color: var(--muted); text-wrap: pretty;">Every field the seller fills in becomes a filter for the visitor. Required fields create the listing; the optional ones raise it in search.</p>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <span style="display: inline-flex; padding: 3px; gap: 3px; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: var(--radius);">
+        <sc-for list="{{ verticalOpts }}" as="v" hint-placeholder-count="2">
+          <button onClick="{{ v.onClick }}" style="padding: 7px 15px; border: none; border-radius: calc(var(--radius) - 3px); cursor: pointer; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; white-space: nowrap; background: {{ v.bg }}; color: {{ v.color }}; box-shadow: {{ v.shadow }}; transition: background .16s ease, color .16s ease;">{{ v.label }}</button>
+        </sc-for>
+      </span>
+      <span style="display: inline-flex; padding: 3px; gap: 3px; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: var(--radius);">
+        <sc-for list="{{ deviceOpts }}" as="d" hint-placeholder-count="2">
+          <button onClick="{{ d.onClick }}" style="padding: 7px 15px; border: none; border-radius: calc(var(--radius) - 3px); cursor: pointer; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; white-space: nowrap; background: {{ d.bg }}; color: {{ d.color }}; box-shadow: {{ d.shadow }}; transition: background .16s ease, color .16s ease;">{{ d.label }}</button>
+        </sc-for>
+      </span>
+    </div>
+  </div>
+
+  <!-- ===== device frame ===== -->
+  <div style="position: relative; width: {{ frameW }}; max-width: 100%; height: {{ frameH }}; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); border: 1px solid var(--line-soft); border-radius: {{ frameRadius }}; box-shadow: 0 2px 4px rgba(40,35,30,.04), 0 40px 80px -40px rgba(40,35,30,.34); transition: width .3s ease;">
+
+    <!-- app header -->
+    <div style="flex-shrink: 0; display: flex; align-items: center; gap: 22px; padding: {{ headPad }}; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line-soft);">
+      <button onClick="{{ goBrowse }}" style="display: flex; align-items: baseline; gap: 9px; padding: 0; border: none; background: transparent; cursor: pointer; color: var(--ink);">
+        <span style="font-family: 'Newsreader', serif; font-weight: 500; font-size: 21px; letter-spacing: -0.01em;">Verkauf</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);">{{ verticalWord }}</span>
+      </button>
+      <span style="display: {{ pcOnly }}; gap: 4px; margin-inline-start: auto;">
+        <sc-for list="{{ viewTabs }}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.onClick }}" style="height: 34px; padding: 0 14px; border: none; border-radius: calc(var(--radius) - 2px); background: {{ t.bg }}; color: {{ t.color }}; font: {{ t.weight }} 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, color .16s ease;">{{ t.label }}</button>
+        </sc-for>
+      </span>
+      <button onClick="{{ goCreate }}" style="margin-inline-start: {{ ctaMargin }}; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 18px; border: 1px solid transparent; border-radius: var(--radius); background: var(--accent); color: #fff; font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; box-shadow: 0 1px 1px rgba(40,35,30,.14); transition: background .16s ease, transform .12s ease;" style-hover="background: var(--accent-strong);" style-active="transform: translateY(1px);">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        {{ ctaLabel }}
+      </button>
+    </div>
+
+    <!-- ============================ scrollport ============================ -->
+    <div ref="{{ scrollRef }}" style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;">
+
+      <!-- ================= BROWSE ================= -->
+      <div data-screen-label="Browse" style="display: {{ vBrowse }}; flex-direction: column;">
+
+        <div style="padding: {{ padX }}; padding-block: 26px 18px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);">{{ headLeft }}</span>
+          <div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;">
+            <h2 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 400; font-size: {{ h2Size }}; line-height: 1.1; letter-spacing: -0.02em;">{{ headTitle }}</h2>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); border: 1px solid var(--line); padding: 5px 11px; border-radius: 999px; white-space: nowrap;">{{ resultCount }}</span>
+          </div>
+        </div>
+
+        <!-- search row -->
+        <div style="padding: {{ padX }}; padding-block: 0 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <span style="position: relative; flex: 1; min-width: 200px;">
+            <span style="position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; display: inline-flex;">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M13 13l-2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            </span>
+            <input value="{{ qValue }}" onChange="{{ onQ }}" placeholder="{{ searchPlaceholder }}" style="width: 100%; height: 46px; padding: 0 14px 0 40px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14.5px; transition: border-color .16s ease, box-shadow .16s ease;">
+          </span>
+          <button onClick="{{ openFilters }}" style="display: {{ mobileOnly }}; align-items: center; gap: 8px; height: 46px; padding: 0 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap;">Filters {{ activeCountLabel }}</button>
+          <span style="display: {{ pcOnly }}; align-items: center; gap: 10px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); white-space: nowrap;">Sort</span>
+            <span style="display: inline-flex; padding: 3px; gap: 3px; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: var(--radius);">
+              <sc-for list="{{ sortOpts }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.onClick }}" style="padding: 7px 13px; border: none; border-radius: calc(var(--radius) - 3px); cursor: pointer; font: 500 13px/1 'Hanken Grotesk', sans-serif; white-space: nowrap; background: {{ s.bg }}; color: {{ s.color }}; box-shadow: {{ s.shadow }};">{{ s.label }}</button>
+              </sc-for>
+            </span>
+          </span>
+        </div>
+
+        <!-- active filters -->
+        <div style="padding: {{ padX }}; padding-block: 0 14px; display: {{ activeShow }}; gap: 7px; flex-wrap: wrap; align-items: center;">
+          <sc-for list="{{ activeFilters }}" as="a" hint-placeholder-count="0">
+            <button onClick="{{ a.onClear }}" style="display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--accent) 26%, white); border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font: 500 12.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap;">
+              {{ a.label }}
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+          </sc-for>
+          <button onClick="{{ clearAll }}" style="height: 30px; padding: 0 12px; border: none; border-radius: 999px; background: transparent; color: var(--muted); font: 500 12.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer;" style-hover="background: oklch(0.955 0.004 90);">Clear all</button>
+        </div>
+
+        <!-- rail + results -->
+        <div style="padding: {{ padX }}; padding-block: 0 40px; display: grid; grid-template-columns: {{ browseCols }}; gap: 34px;">
+
+          <div style="display: {{ pcOnlyFlex }}; flex-direction: column; gap: 26px; align-self: start; position: sticky; top: 0;">
+            <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="5">
+              <div style="display: flex; flex-direction: column; gap: 11px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">{{ g.label }}</span>
+
+                <span style="display: {{ g.chipsShow }}; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4">
+                    <button onClick="{{ o.onClick }}" style="height: 32px; padding: 0 13px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease;">{{ o.label }}</button>
+                  </sc-for>
+                </span>
+
+                <span style="display: {{ g.rangeShow }}; flex-direction: column; gap: 8px;">
+                  <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--faint);">{{ g.rangeMinLabel }}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink);">{{ g.rangeValLabel }}</span>
+                  </span>
+                  <input type="range" min="{{ g.min }}" max="{{ g.max }}" step="{{ g.step }}" value="{{ g.value }}" onChange="{{ g.onInput }}" style="width: 100%; accent-color: var(--accent);">
+                </span>
+              </div>
+            </sc-for>
+            <p style="margin: 0; padding: 14px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 2px); font-size: 12.5px; line-height: 1.55; color: var(--faint); text-wrap: pretty;">Every filter here is a field a seller filled in. The optional ones add the extras filter at the bottom.</p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+            <div style="display: grid; grid-template-columns: {{ cardCols }}; gap: 16px;">
+              <sc-for list="{{ results }}" as="r" hint-placeholder-count="4">
+                <button onClick="{{ r.onOpen }}" style="display: flex; flex-direction: column; padding: 0; overflow: hidden; text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow); color: var(--ink); font-family: inherit; animation: {{ r.anim }}; transition: box-shadow .22s ease, transform .22s ease, border-color .22s ease;" style-hover="box-shadow: 0 2px 4px rgba(40,35,30,.05), 0 30px 56px -32px rgba(40,35,30,.30); transform: translateY(-3px); border-color: var(--line);">
+                  <span style="position: relative; display: block; height: {{ cardImgH }}; background: oklch(0.955 0.004 90);">
+                    <image-slot id="{{ r.slotId }}" shape="rect" placeholder="{{ r.title }}" style="position: absolute; inset: 0;"></image-slot>
+                    <span style="position: absolute; inset-inline-start: 12px; top: 12px; display: {{ r.badgeShow }}; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(6px); color: var(--accent-strong); font: 500 12px/1 'Hanken Grotesk', sans-serif; white-space: nowrap;">{{ r.badge }}</span>
+                  </span>
+                  <span style="display: flex; flex-direction: column; gap: 9px; padding: 18px;">
+                    <span style="display: flex; align-items: baseline; gap: 12px;">
+                      <span style="font-size: 16.5px; font-weight: 600; line-height: 1.3; min-width: 0;">{{ r.title }}</span>
+                      <span style="font-family: 'Newsreader', serif; font-size: 20px; line-height: 1; margin-inline-start: auto; white-space: nowrap;">{{ r.price }}</span>
+                    </span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; color: var(--muted);">{{ r.specLine }}</span>
+                    <span style="display: flex; align-items: center; gap: 10px; padding-top: 2px;">
+                      <span style="font-size: 13px; color: var(--faint);">{{ r.place }}</span>
+                      <span style="margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; font: 500 13px/1 'Hanken Grotesk', sans-serif; color: var(--accent);">
+                        View
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              </sc-for>
+            </div>
+
+            <div style="display: {{ emptyShow }}; flex-direction: column; gap: 14px; align-items: flex-start; padding: 48px 24px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px);">
+              <span style="font-family: 'Newsreader', serif; font-size: 24px;">Nothing matches those filters</span>
+              <span style="font-size: 14.5px; line-height: 1.6; color: var(--muted); max-width: 44ch;">Widen the price, or clear a filter or two.</span>
+              <button onClick="{{ clearAll }}" style="height: 42px; padding: 0 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer;" style-hover="background: oklch(0.966 0.004 90);">Clear all filters</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= DETAIL ================= -->
+      <div data-screen-label="Detail" style="display: {{ vDetail }}; flex-direction: column; padding: {{ padX }}; padding-block: 22px 44px; gap: 18px; animation: mk-fade .25s ease;">
+        <button onClick="{{ goBrowse }}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border: none; border-radius: var(--radius); background: transparent; color: var(--muted); font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer;" style-hover="background: oklch(0.955 0.004 90); color: var(--ink);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Back to results
+        </button>
+
+        <div style="display: grid; grid-template-columns: {{ detailCols }}; gap: 34px;">
+          <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+            <span style="position: relative; display: block; height: {{ heroH }}; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); overflow: hidden;">
+              <image-slot id="{{ detailSlot }}" shape="rect" placeholder="{{ detailTitle }}" style="position: absolute; inset: 0;"></image-slot>
+            </span>
+            <span style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+              <sc-for list="{{ detailThumbs }}" as="t" hint-placeholder-count="4">
+                <span style="position: relative; display: block; height: {{ thumbH }}; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) - 2px); overflow: hidden;">
+                  <image-slot id="{{ t.slotId }}" shape="rect" placeholder="{{ t.label }}" style="position: absolute; inset: 0;"></image-slot>
+                </span>
+              </sc-for>
+            </span>
+
+            <div style="display: flex; flex-direction: column; gap: 20px; padding: 22px; margin-top: 10px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow);">
+              <div style="display: flex; flex-direction: column; gap: 9px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">Description</span>
+                <p style="margin: 0; font-size: 15px; line-height: 1.65; color: var(--muted); text-wrap: pretty;">{{ detailDesc }}</p>
+              </div>
+
+              <div style="height: 1px; background: var(--line-soft);"></div>
+
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">All details</span>
+                <div style="display: grid; grid-template-columns: {{ specCols }}; gap: 0 26px;">
+                  <sc-for list="{{ detailSpecs }}" as="s" hint-placeholder-count="8">
+                    <span style="display: flex; align-items: baseline; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line-soft);">
+                      <span style="font-size: 13.5px; color: var(--faint);">{{ s.label }}</span>
+                      <span style="margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink); text-align: end;">{{ s.value }}</span>
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 11px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">Extras</span>
+                <span style="display: flex; gap: 7px; flex-wrap: wrap;">
+                  <sc-for list="{{ detailFeats }}" as="f" hint-placeholder-count="4">
+                    <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 12.5px; white-space: nowrap;">{{ f.label }}</span>
+                  </sc-for>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 18px; align-self: start; position: {{ asidePos }}; top: 0;">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <h2 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 400; font-size: 27px; line-height: 1.2; letter-spacing: -0.01em;">{{ detailTitle }}</h2>
+              <span style="font-size: 14px; color: var(--muted);">{{ detailPlace }}</span>
+              <span style="font-family: 'Newsreader', serif; font-size: 38px; line-height: 1.05; padding-top: 6px;">{{ detailPrice }}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint);">{{ detailPriceNote }}</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <sc-for list="{{ detailKeyFacts }}" as="k" hint-placeholder-count="4">
+                <span style="display: flex; flex-direction: column; gap: 3px; padding: 13px 14px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 2px);">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">{{ k.label }}</span>
+                  <span style="font-size: 16px; font-weight: 600;">{{ k.value }}</span>
+                </span>
+              </sc-for>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; padding: 20px; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow);">
+              <span style="display: flex; align-items: center; gap: 12px;">
+                <span style="width: 40px; height: 40px; flex-shrink: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); display: inline-flex; align-items: center; justify-content: center; font: 600 14px/1 'Hanken Grotesk', sans-serif;">{{ detailInitials }}</span>
+                <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+                  <span style="font-size: 15.5px; font-weight: 600;">{{ detailSeller }}</span>
+                  <span style="font-size: 12.5px; color: var(--faint);">{{ detailSellerKind }}</span>
+                </span>
+              </span>
+              <button style="height: 46px; border: 1px solid transparent; border-radius: var(--radius); background: var(--accent); color: #fff; font: 500 14.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; box-shadow: 0 1px 1px rgba(40,35,30,.14); transition: background .16s ease, transform .12s ease;" style-hover="background: var(--accent-strong);" style-active="transform: translateY(1px);">Send a message</button>
+              <button style="height: 44px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background .16s ease;" style-hover="background: oklch(0.966 0.004 90);">Show phone number</button>
+              <span style="font-size: 12.5px; line-height: 1.55; color: var(--faint);">Enquiries go straight to the seller. No account needed to ask.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= CREATE (stepper) ================= -->
+      <div data-screen-label="Create" style="display: {{ vCreate }}; flex-direction: column; padding: {{ padX }}; padding-block: 26px 44px; gap: 28px; animation: mk-fade .25s ease;">
+
+        <div style="display: flex; flex-direction: column; gap: 11px;">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);">{{ createKicker }}</span>
+          <h2 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 400; font-size: {{ h2Size }}; line-height: 1.1; letter-spacing: -0.02em;">{{ createTitle }}</h2>
+          <p style="margin: 0; font-size: 15px; line-height: 1.6; color: var(--muted); max-width: 62ch; text-wrap: pretty;">{{ createIntro }}</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: {{ stepperCols }}; gap: 34px;">
+
+          <!-- step rail -->
+          <div style="display: flex; flex-direction: {{ railDir }}; gap: {{ railGap }}; align-self: start; overflow-x: auto; min-width: 0; position: {{ railPos }}; top: 0;">
+            <sc-for list="{{ stepRail }}" as="s" hint-placeholder-count="7">
+              <button onClick="{{ s.onClick }}" style="display: flex; align-items: center; gap: 11px; padding: {{ railItemPad }}; border: none; border-bottom: {{ s.underline }}; border-radius: {{ railItemRadius }}; background: {{ s.bg }}; cursor: pointer; text-align: left; flex-shrink: 0; font-family: inherit; transition: background .16s ease;">
+                <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font: 500 12.5px/1 'JetBrains Mono', monospace; background: {{ s.dotBg }}; color: {{ s.dotColor }}; border: 1px solid {{ s.dotBorder }}; transition: background .16s ease;">{{ s.dotLabel }}</span>
+                <span style="display: {{ railTextShow }}; flex-direction: column; gap: 1px; min-width: 0;">
+                  <span style="font: {{ s.weight }} 14.5px/1.3 'Hanken Grotesk', sans-serif; color: {{ s.color }}; white-space: nowrap;">{{ s.label }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; color: {{ s.metaColor }}; white-space: nowrap;">{{ s.meta }}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+
+          <!-- step body -->
+          <div style="display: flex; flex-direction: column; gap: 20px; min-width: 0;">
+
+            <!-- FORM STEPS -->
+            <div style="display: {{ formShow }}; flex-direction: column; gap: 22px; padding: {{ panelPad }}; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow);">
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                  <h3 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 500; font-size: 25px; line-height: 1.2;">{{ stepTitle }}</h3>
+                  <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: {{ stepReqBg }}; color: {{ stepReqColor }}; font: 500 12px/1 'Hanken Grotesk', sans-serif; white-space: nowrap;">{{ stepReqLabel }}</span>
+                  <span style="margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--faint); white-space: nowrap;">{{ stepCounter }}</span>
+                </div>
+                <p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: var(--muted); max-width: 58ch; text-wrap: pretty;">{{ stepHint }}</p>
+              </div>
+
+              <div style="height: 1px; background: var(--line-soft);"></div>
+
+              <div style="display: grid; grid-template-columns: {{ fieldCols }}; gap: 22px;">
+                <sc-for list="{{ stepFields }}" as="f" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; gap: 9px; grid-column: {{ f.span }};">
+                    <span style="display: flex; align-items: baseline; gap: 9px;">
+                      <span style="font-size: 14.5px; font-weight: 600;">{{ f.label }}</span>
+                      <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ f.reqColor }};">{{ f.reqLabel }}</span>
+                      <span style="display: {{ f.filterShow }}; margin-inline-start: auto; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); white-space: nowrap;">
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M4.5 8h7M6.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                        Filterable
+                      </span>
+                    </span>
+
+                    <span style="display: {{ f.textShow }}; align-items: center; gap: 10px;">
+                      <input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.placeholder }}" style="flex: 1; min-width: 0; height: 46px; padding: 0 14px; border-radius: var(--radius); border: 1px solid {{ f.borderColor }}; background: var(--surface); color: var(--ink); font-size: 14.5px; transition: border-color .16s ease, box-shadow .16s ease;">
+                      <span style="display: {{ f.unitShow }}; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--faint); white-space: nowrap;">{{ f.unit }}</span>
+                    </span>
+
+                    <span style="display: {{ f.chipsShow }}; gap: 7px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.opts }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.onClick }}" style="height: 36px; padding: 0 15px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease;">{{ o.label }}</button>
+                      </sc-for>
+                    </span>
+
+                    <span style="display: {{ f.multiShow }}; gap: 7px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.opts }}" as="o" hint-placeholder-count="5">
+                        <button onClick="{{ o.onClick }}" style="height: 36px; padding: 0 15px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease;">{{ o.label }}</button>
+                      </sc-for>
+                    </span>
+
+                    <textarea style="display: {{ f.areaShow }}; width: 100%; min-height: 118px; padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14.5px; line-height: 1.6; resize: vertical; transition: border-color .16s ease, box-shadow .16s ease;" value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.placeholder }}"></textarea>
+
+                    <span style="display: {{ f.photoShow }}; gap: 10px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.photos }}" as="p" hint-placeholder-count="4">
+                        <span style="position: relative; display: block; width: {{ photoW }}; height: 92px; background: oklch(0.955 0.004 90); border: 1px dashed var(--line); border-radius: calc(var(--radius) - 2px); overflow: hidden;">
+                          <image-slot id="{{ p.slotId }}" shape="rect" placeholder="{{ p.label }}" style="position: absolute; inset: 0;"></image-slot>
+                        </span>
+                      </sc-for>
+                    </span>
+
+                    <span style="font-size: 12.5px; line-height: 1.55; color: {{ f.hintColor }};">{{ f.hint }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <div style="display: {{ warnShow }}; align-items: flex-start; gap: 11px; padding: 13px 15px; border-radius: var(--radius); background: oklch(0.96 0.03 25); border: 1px solid color-mix(in srgb, oklch(0.55 0.15 25) 24%, white);">
+                <span style="color: oklch(0.53 0.15 25); display: inline-flex; flex-shrink: 0; padding-top: 1px;">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M8 5v4M8 11h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.5"/></svg>
+                </span>
+                <span style="font-size: 13.5px; line-height: 1.55; color: oklch(0.45 0.13 25);">{{ warnText }}</span>
+              </div>
+            </div>
+
+            <!-- REVIEW -->
+            <div style="display: {{ reviewShow }}; flex-direction: column; gap: 20px;">
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h3 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 500; font-size: 25px; line-height: 1.2;">Check it, then publish</h3>
+                <span style="margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--faint);">{{ stepCounter }}</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; overflow: hidden; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow); max-width: 420px;">
+                <span style="position: relative; display: block; height: 190px; background: oklch(0.955 0.004 90);">
+                  <image-slot id="mk-new-1" shape="rect" placeholder="Your first photo" style="position: absolute; inset: 0;"></image-slot>
+                </span>
+                <span style="display: flex; flex-direction: column; gap: 9px; padding: 18px;">
+                  <span style="display: flex; align-items: baseline; gap: 12px;">
+                    <span style="font-size: 16.5px; font-weight: 600; line-height: 1.3;">{{ previewTitle }}</span>
+                    <span style="font-family: 'Newsreader', serif; font-size: 20px; margin-inline-start: auto; white-space: nowrap;">{{ previewPrice }}</span>
+                  </span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; color: var(--muted);">{{ previewSpec }}</span>
+                  <span style="font-size: 13px; color: var(--faint);">{{ previewPlace }}</span>
+                </span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 11px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">This listing will show up under</span>
+                <span style="display: flex; gap: 7px; flex-wrap: wrap;">
+                  <sc-for list="{{ previewFilters }}" as="p" hint-placeholder-count="4">
+                    <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--accent) 22%, white); border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font-size: 12.5px; white-space: nowrap;">{{ p.label }}</span>
+                  </sc-for>
+                </span>
+              </div>
+
+              <div style="display: {{ missingShow }}; flex-direction: column; gap: 10px; padding: 18px; background: oklch(0.96 0.03 25); border: 1px solid color-mix(in srgb, oklch(0.55 0.15 25) 22%, white); border-radius: calc(var(--radius) + 2px);">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: oklch(0.5 0.14 25);">Still missing</span>
+                <sc-for list="{{ missingList }}" as="m" hint-placeholder-count="0">
+                  <button onClick="{{ m.onGo }}" style="display: flex; align-items: center; gap: 10px; padding: 0; border: none; background: transparent; cursor: pointer; font-family: inherit; text-align: left;">
+                    <span style="font-size: 14px; color: oklch(0.45 0.13 25);">{{ m.label }}</span>
+                    <span style="margin-inline-start: auto; font: 500 13px/1 'Hanken Grotesk', sans-serif; color: var(--accent); white-space: nowrap;">Fix</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- BOOST -->
+            <div style="display: {{ boostShow }}; flex-direction: column; gap: 22px; padding: {{ panelPad }}; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow);">
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <h3 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 500; font-size: 25px; line-height: 1.2;">{{ boostHeading }}</h3>
+                <span style="display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px; background: oklch(0.955 0.004 90); color: var(--muted); font: 500 12px/1 'Hanken Grotesk', sans-serif;">Optional</span>
+                <span style="margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: var(--faint);">{{ stepCounter }}</span>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <span style="display: flex; align-items: baseline; gap: 12px;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">Listing strength</span>
+                  <span style="margin-inline-start: auto; font-family: 'Newsreader', serif; font-size: 24px; line-height: 1;">{{ strengthLabel }}</span>
+                </span>
+                <span style="display: block; height: 6px; border-radius: 999px; background: oklch(0.94 0.005 88); overflow: hidden;">
+                  <span style="display: block; height: 100%; width: {{ strengthPct }}; background: var(--accent); transition: width .35s cubic-bezier(.2,.8,.2,1);"></span>
+                </span>
+                <span style="font-size: 13px; line-height: 1.55; color: var(--muted);">{{ strengthNote }}</span>
+              </div>
+
+              <div style="height: 1px; background: var(--line-soft);"></div>
+
+              <div style="display: grid; grid-template-columns: {{ fieldCols }}; gap: 22px;">
+                <sc-for list="{{ boostFields }}" as="f" hint-placeholder-count="6">
+                  <div style="display: flex; flex-direction: column; gap: 9px; grid-column: {{ f.span }};">
+                    <span style="display: flex; align-items: baseline; gap: 9px;">
+                      <span style="font-size: 14.5px; font-weight: 600;">{{ f.label }}</span>
+                      <span style="margin-inline-start: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: {{ f.doneColor }};">{{ f.doneLabel }}</span>
+                    </span>
+                    <span style="display: {{ f.textShow }}; align-items: center; gap: 10px;">
+                      <input value="{{ f.value }}" onChange="{{ f.onChange }}" placeholder="{{ f.placeholder }}" style="flex: 1; min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 14.5px; transition: border-color .16s ease, box-shadow .16s ease;">
+                      <span style="display: {{ f.unitShow }}; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--faint); white-space: nowrap;">{{ f.unit }}</span>
+                    </span>
+                    <span style="display: {{ f.chipsShow }}; gap: 7px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.opts }}" as="o" hint-placeholder-count="4">
+                        <button onClick="{{ o.onClick }}" style="height: 36px; padding: 0 15px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease;">{{ o.label }}</button>
+                      </sc-for>
+                    </span>
+                    <span style="display: {{ f.multiShow }}; gap: 7px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.opts }}" as="o" hint-placeholder-count="5">
+                        <button onClick="{{ o.onClick }}" style="height: 36px; padding: 0 15px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap; transition: background .16s ease, border-color .16s ease, color .16s ease;">{{ o.label }}</button>
+                      </sc-for>
+                    </span>
+                    <span style="font-size: 12.5px; line-height: 1.55; color: var(--faint);">{{ f.hint }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- PUBLISHED -->
+            <div style="display: {{ doneShow }}; flex-direction: column; gap: 16px; padding: {{ panelPad }}; background: var(--surface); border: 1px solid var(--line-soft); border-radius: calc(var(--radius) + 6px); box-shadow: var(--card-shadow); animation: mk-pop .2s ease;">
+              <span style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font: 500 12.5px/1 'Hanken Grotesk', sans-serif;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Published
+              </span>
+              <h3 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 400; font-size: 28px; line-height: 1.2;">{{ previewTitle }} is live</h3>
+              <p style="margin: 0; font-size: 15px; line-height: 1.65; color: var(--muted); max-width: 52ch; text-wrap: pretty;">It already appears in the filters listed on the review step. Adding the optional details puts it in front of the people searching for exactly this.</p>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onClick="{{ goBoost }}" style="height: 46px; padding: 0 20px; border: 1px solid transparent; border-radius: var(--radius); background: var(--accent); color: #fff; font: 500 14.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; box-shadow: 0 1px 1px rgba(40,35,30,.14); transition: background .16s ease, transform .12s ease;" style-hover="background: var(--accent-strong);" style-active="transform: translateY(1px);">Add optional details</button>
+                <button onClick="{{ goBrowse }}" style="height: 46px; padding: 0 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background .16s ease;" style-hover="background: oklch(0.966 0.004 90);">See it in the results</button>
+              </div>
+            </div>
+
+            <!-- footer -->
+            <div style="display: {{ footShow }}; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <button onClick="{{ onBack }}" style="display: {{ backShow }}; align-items: center; height: 46px; padding: 0 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background .16s ease;" style-hover="background: oklch(0.966 0.004 90);">Back</button>
+              <button onClick="{{ onNext }}" style="margin-inline-start: {{ nextMargin }}; display: inline-flex; align-items: center; gap: 9px; height: 46px; padding: 0 24px; border: 1px solid {{ nextBorder }}; border-radius: var(--radius); background-color: {{ nextBg }}; color: {{ nextColor }}; font: 500 14.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; box-shadow: {{ nextShadow }}; transition: transform .12s ease;" style-active="transform: translateY(1px);">
+                {{ nextLabel }}
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style="display: {{ nextArrowShow }};"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+              <button onClick="{{ onSkip }}" style="display: {{ skipShow }}; align-items: center; height: 46px; padding: 0 16px; border: none; border-radius: var(--radius); background: transparent; color: var(--muted); font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer;" style-hover="background: oklch(0.955 0.004 90); color: var(--ink);">Do this later</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- mobile results bar -->
+    <div style="flex-shrink: 0; display: {{ mobileBarShow }}; align-items: center; gap: 12px; padding: 12px 16px; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line-soft);">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted);">{{ resultCount }}</span>
+      <button onClick="{{ openFilters }}" style="margin-inline-start: auto; display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border: 1px solid transparent; border-radius: var(--radius); background: var(--accent); color: #fff; font: 500 14px/1 'Hanken Grotesk', sans-serif; cursor: pointer;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M4.5 8h7M6.5 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Filters {{ activeCountLabel }}
+      </button>
+    </div>
+
+    <!-- ===== mobile filter sheet ===== -->
+    <div onClick="{{ closeFilters }}" style="position: absolute; inset: 0; z-index: 60; display: {{ sheetShow }}; align-items: flex-end; background: color-mix(in srgb, oklch(0.28 0.012 70) 40%, transparent); animation: mk-fade .16s ease;">
+      <div onClick="{{ stop }}" style="width: 100%; max-height: 88%; display: flex; flex-direction: column; background: var(--bg); border-radius: calc(var(--radius) + 8px) calc(var(--radius) + 8px) 0 0; box-shadow: 0 -20px 60px -20px rgba(40,35,30,.4); animation: mk-sheet .28s cubic-bezier(.2,.8,.2,1);">
+        <div style="flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 18px 18px 12px;">
+          <h3 style="margin: 0; font-family: 'Newsreader', serif; font-weight: 500; font-size: 22px;">Filters</h3>
+          <button onClick="{{ clearAll }}" style="margin-inline-start: auto; height: 32px; padding: 0 12px; border: none; border-radius: var(--radius); background: transparent; color: var(--muted); font: 500 13px/1 'Hanken Grotesk', sans-serif; cursor: pointer;">Clear all</button>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 6px 18px 18px; display: flex; flex-direction: column; gap: 24px;">
+          <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="5">
+            <div style="display: flex; flex-direction: column; gap: 11px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">{{ g.label }}</span>
+              <span style="display: {{ g.chipsShow }}; gap: 7px; flex-wrap: wrap;">
+                <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4">
+                  <button onClick="{{ o.onClick }}" style="height: 38px; padding: 0 16px; border: {{ o.border }}; border-radius: 999px; background: {{ o.bg }}; color: {{ o.color }}; font: 500 13.5px/1 'Hanken Grotesk', sans-serif; cursor: pointer; white-space: nowrap;">{{ o.label }}</button>
+                </sc-for>
+              </span>
+              <span style="display: {{ g.rangeShow }}; flex-direction: column; gap: 8px;">
+                <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--faint);">{{ g.rangeMinLabel }}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--ink);">{{ g.rangeValLabel }}</span>
+                </span>
+                <input type="range" min="{{ g.min }}" max="{{ g.max }}" step="{{ g.step }}" value="{{ g.value }}" onChange="{{ g.onInput }}" style="width: 100%; accent-color: var(--accent);">
+              </span>
+            </div>
+          </sc-for>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);">Sort</span>
+            <span style="display: inline-flex; align-self: flex-start; padding: 3px; gap: 3px; background: oklch(0.955 0.004 90); border: 1px solid var(--line-soft); border-radius: var(--radius);">
+              <sc-for list="{{ sortOpts }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.onClick }}" style="padding: 8px 14px; border: none; border-radius: calc(var(--radius) - 3px); cursor: pointer; font: 500 13px/1 'Hanken Grotesk', sans-serif; background: {{ s.bg }}; color: {{ s.color }}; box-shadow: {{ s.shadow }};">{{ s.label }}</button>
+              </sc-for>
+            </span>
+          </div>
+        </div>
+        <div style="flex-shrink: 0; padding: 12px 18px 18px; border-top: 1px solid var(--line-soft);">
+          <button onClick="{{ closeFilters }}" style="width: 100%; height: 48px; border: 1px solid transparent; border-radius: var(--radius); background: var(--accent); color: #fff; font: 500 15px/1 'Hanken Grotesk', sans-serif; cursor: pointer;">{{ showResultsLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1040},&quot;defaultVertical&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cars&quot;,&quot;homes&quot;],&quot;default&quot;:&quot;cars&quot;,&quot;tsType&quot;:&quot;'cars' | 'homes'&quot;,&quot;section&quot;:&quot;Template&quot;},&quot;defaultDevice&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;pc&quot;,&quot;mobile&quot;],&quot;default&quot;:&quot;pc&quot;,&quot;tsType&quot;:&quot;'pc' | 'mobile'&quot;,&quot;section&quot;:&quot;Template&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2f6a51&quot;,&quot;options&quot;:[&quot;#2f6a51&quot;,&quot;#2b5f8a&quot;,&quot;#8a4b2b&quot;,&quot;#5a4a8a&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Template&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;€&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Template&quot;}}">
+/* ---------------------------------------------------------------- data ---- */
+
+const CARS = [
+  { t: "BMW 320d Touring", make: "BMW", body: "Estate", price: 24900, year: 2021, km: 62000, fuel: "Diesel", trans: "Automatic", hp: 190, place: "München", seats: 5, doors: 5, colour: "Grey", drive: "Rear", cond: "Used", owners: 1, badge: "Full service history",
+    feats: ["Navigation", "Heated seats", "Tow bar", "Reversing camera"],
+    desc: "One owner from new, serviced at the main dealer every year. Winter tyres on separate rims included." },
+  { t: "VW Golf 8 Life", make: "Volkswagen", body: "Hatchback", price: 21400, year: 2022, km: 34000, fuel: "Petrol", trans: "Manual", hp: 130, place: "Köln", seats: 5, doors: 5, colour: "White", drive: "Front", cond: "Used", owners: 1, badge: "",
+    feats: ["Navigation", "Cruise control", "Parking sensors"],
+    desc: "Non-smoker car, kept in a garage. Two keys, all documents present." },
+  { t: "Tesla Model 3 Long Range", make: "Tesla", body: "Sedan", price: 32900, year: 2022, km: 41000, fuel: "Electric", trans: "Automatic", hp: 366, place: "Berlin", seats: 5, doors: 4, colour: "Black", drive: "All-wheel", cond: "Used", owners: 2, badge: "Battery certificate",
+    feats: ["Navigation", "Heated seats", "Glass roof", "Reversing camera"],
+    desc: "Battery health report from March available. Charging cable and wall connector included." },
+  { t: "Toyota Corolla Hybrid", make: "Toyota", body: "Estate", price: 19800, year: 2020, km: 78000, fuel: "Hybrid", trans: "Automatic", hp: 122, place: "Hamburg", seats: 5, doors: 5, colour: "Silver", drive: "Front", cond: "Used", owners: 1, badge: "",
+    feats: ["Navigation", "Parking sensors", "Cruise control"],
+    desc: "Company car, motorway kilometres. New inspection at handover." },
+  { t: "Audi Q5 40 TDI quattro", make: "Audi", body: "SUV", price: 38500, year: 2021, km: 55000, fuel: "Diesel", trans: "Automatic", hp: 204, place: "Stuttgart", seats: 5, doors: 5, colour: "Blue", drive: "All-wheel", cond: "Used", owners: 1, badge: "Warranty to 2027",
+    feats: ["Navigation", "Heated seats", "Tow bar", "Sunroof", "Reversing camera"],
+    desc: "Towing package rated 2,000 kg. Remaining manufacturer warranty transfers to the buyer." },
+  { t: "Fiat 500e", make: "Fiat", body: "Hatchback", price: 15900, year: 2022, km: 18000, fuel: "Electric", trans: "Automatic", hp: 118, place: "Frankfurt", seats: 4, doors: 3, colour: "Green", drive: "Front", cond: "Used", owners: 1, badge: "",
+    feats: ["Parking sensors", "Reversing camera"],
+    desc: "City car with low mileage. Fits in every parking space in the old town." },
+  { t: "Mercedes V 250 d", make: "Mercedes-Benz", body: "Van", price: 44900, year: 2020, km: 96000, fuel: "Diesel", trans: "Automatic", hp: 190, place: "Dortmund", seats: 8, doors: 5, colour: "Black", drive: "Rear", cond: "Used", owners: 2, badge: "Eight seats",
+    feats: ["Navigation", "Tow bar", "Heated seats"],
+    desc: "Family or shuttle use. Rear bench folds flat; full height load area." },
+  { t: "Škoda Octavia 1.5 TSI", make: "Škoda", body: "Estate", price: 17600, year: 2019, km: 112000, fuel: "Petrol", trans: "Manual", hp: 150, place: "Leipzig", seats: 5, doors: 5, colour: "Red", drive: "Front", cond: "Used", owners: 2, badge: "",
+    feats: ["Cruise control", "Parking sensors"],
+    desc: "Largest boot in the class. Timing service done at 100,000 km with invoice." },
+];
+
+const HOMES = [
+  { t: "Bright 3-room flat, Prenzlauer Berg", type: "Apartment", offer: "Buy", price: 489000, size: 84, rooms: 3, beds: 2, baths: 1, floor: 3, built: 1908, heat: "District", place: "Berlin", cond: "Renovated", badge: "Balcony",
+    feats: ["Balcony", "Lift", "Cellar", "Parquet floors"],
+    desc: "Corner building flat with two facing windows in the living room. Quiet courtyard side bedrooms." },
+  { t: "2-room flat near the Isar", type: "Apartment", offer: "Rent", price: 1480, size: 58, rooms: 2, beds: 1, baths: 1, floor: 2, built: 1976, heat: "Gas", place: "München", cond: "Good", badge: "",
+    feats: ["Balcony", "Furnished", "Cellar"],
+    desc: "Furnished and available at short notice. Ten minutes on foot to the river path." },
+  { t: "Family house with garden", type: "House", offer: "Buy", price: 745000, size: 168, rooms: 5, beds: 4, baths: 2, floor: 0, built: 2015, heat: "Heat pump", place: "Hamburg", cond: "New-ish", badge: "Heat pump",
+    feats: ["Garden", "Parking", "Cellar", "Underfloor heating"],
+    desc: "Detached, south-facing garden of 420 m². Two parking spaces on the plot." },
+  { t: "Studio in the old town", type: "Studio", offer: "Rent", price: 690, size: 31, rooms: 1, beds: 1, baths: 1, floor: 4, built: 1930, heat: "Electric", place: "Köln", cond: "Good", badge: "",
+    feats: ["Furnished", "Pets allowed"],
+    desc: "Top floor, no lift. Suits one person; everything within walking distance." },
+  { t: "Loft in a former factory", type: "Loft", offer: "Buy", price: 615000, size: 132, rooms: 3, beds: 2, baths: 2, floor: 1, built: 1954, heat: "District", place: "Leipzig", cond: "Renovated", badge: "4 m ceilings",
+    feats: ["Lift", "Parking", "Parquet floors"],
+    desc: "Four-metre ceilings and original steel windows, insulated from the inside in 2021." },
+  { t: "4-room flat with two balconies", type: "Apartment", offer: "Rent", price: 1950, size: 106, rooms: 4, beds: 3, baths: 2, floor: 5, built: 2019, heat: "Heat pump", place: "Frankfurt", cond: "New-ish", badge: "",
+    feats: ["Balcony", "Lift", "Parking", "Underfloor heating"],
+    desc: "Newer building with a lift straight to the underground garage. Two full bathrooms." },
+  { t: "Terraced house, quiet street", type: "House", offer: "Buy", price: 398000, size: 124, rooms: 4, beds: 3, baths: 1, floor: 0, built: 1968, heat: "Gas", place: "Dortmund", cond: "Needs work", badge: "Priced to renovate",
+    feats: ["Garden", "Cellar", "Parking"],
+    desc: "Sound structure, dated interior. Priced with a full renovation in mind." },
+  { t: "1-room flat, student quarter", type: "Apartment", offer: "Rent", price: 540, size: 27, rooms: 1, beds: 1, baths: 1, floor: 1, built: 1995, heat: "District", place: "Stuttgart", cond: "Good", badge: "",
+    feats: ["Furnished", "Cellar", "Pets allowed"],
+    desc: "Small, cheap, and five minutes from the campus tram stop." },
+];
+
+/* ------------------------------------------------------------- filters ---- */
+
+const FILTERS = {
+  cars: [
+    { k: "price", kind: "range", label: "Price up to", min: 10000, max: 50000, step: 1000, money: true },
+    { k: "km", kind: "range", label: "Mileage up to", min: 20000, max: 120000, step: 10000, unit: " km" },
+    { k: "fuel", kind: "chips", label: "Fuel", opts: ["Petrol", "Diesel", "Hybrid", "Electric"] },
+    { k: "trans", kind: "chips", label: "Transmission", opts: ["Manual", "Automatic"] },
+    { k: "body", kind: "chips", label: "Body", opts: ["Hatchback", "Sedan", "Estate", "SUV", "Van"] },
+    { k: "seatsMin", kind: "chips", label: "Seats", opts: ["4+", "5+", "7+"] },
+    { k: "feats", kind: "multi", label: "Extras", opts: ["Navigation", "Heated seats", "Tow bar", "Sunroof", "Reversing camera", "Parking sensors"] },
+  ],
+  homes: [
+    { k: "offer", kind: "chips", label: "Offer", opts: ["Rent", "Buy"] },
+    { k: "price", kind: "range", label: "Price up to", min: 500, max: 800000, step: 500, money: true },
+    { k: "type", kind: "chips", label: "Property type", opts: ["Apartment", "House", "Studio", "Loft"] },
+    { k: "roomsMin", kind: "chips", label: "Rooms", opts: ["1+", "2+", "3+", "4+"] },
+    { k: "sizeMin", kind: "range", label: "Size from", min: 20, max: 170, step: 10, unit: " m²" },
+    { k: "heat", kind: "chips", label: "Heating", opts: ["District", "Gas", "Electric", "Heat pump"] },
+    { k: "feats", kind: "multi", label: "Extras", opts: ["Balcony", "Garden", "Lift", "Parking", "Cellar", "Furnished", "Pets allowed", "Underfloor heating", "Parquet floors"] },
+  ],
+};
+
+/* --------------------------------------------------------- form schema ---- */
+
+const STEPS = {
+  cars: [
+    { id: "vehicle", label: "Vehicle", meta: "Required", req: true, title: "What are you selling?",
+      hint: "Make, model and year decide where your car sits in the results. Get these right and the rest is quick.",
+      fields: [
+        { k: "make", label: "Make", type: "chips", req: true, filter: true, opts: ["BMW", "Volkswagen", "Audi", "Mercedes-Benz", "Toyota", "Tesla", "Škoda", "Other"], hint: "Buyers filter by make more than anything else." },
+        { k: "model", label: "Model", type: "text", req: true, filter: true, placeholder: "320d Touring", hint: "Write it as it appears in the papers." },
+        { k: "year", label: "First registration", type: "text", req: true, filter: true, placeholder: "2021", hint: "Year only." },
+        { k: "body", label: "Body", type: "chips", req: true, filter: true, opts: ["Hatchback", "Sedan", "Estate", "SUV", "Van"], hint: "" },
+      ] },
+    { id: "price", label: "Price & mileage", meta: "Required", req: true, title: "Price and kilometres",
+      hint: "Both are range filters, so a realistic number keeps you inside the searches buyers actually run.",
+      fields: [
+        { k: "price", label: "Asking price", type: "text", req: true, filter: true, unit: "€", placeholder: "24900", hint: "Digits only." },
+        { k: "km", label: "Mileage", type: "text", req: true, filter: true, unit: "km", placeholder: "62000", hint: "" },
+        { k: "cond", label: "Condition", type: "chips", req: true, filter: true, opts: ["New", "Used", "Needs work"], hint: "" },
+        { k: "owners", label: "Previous owners", type: "text", req: false, filter: true, placeholder: "1", hint: "Optional, but buyers look for it." },
+      ] },
+    { id: "engine", label: "Engine", meta: "Required", req: true, title: "Engine and gearbox",
+      hint: "Fuel and transmission are the two filters almost every buyer sets before they scroll.",
+      fields: [
+        { k: "fuel", label: "Fuel", type: "chips", req: true, filter: true, opts: ["Petrol", "Diesel", "Hybrid", "Electric"], hint: "" },
+        { k: "trans", label: "Transmission", type: "chips", req: true, filter: true, opts: ["Manual", "Automatic"], hint: "" },
+        { k: "hp", label: "Power", type: "text", req: false, filter: true, unit: "hp", placeholder: "190", hint: "" },
+        { k: "drive", label: "Drivetrain", type: "chips", req: false, filter: true, opts: ["Front", "Rear", "All-wheel"], hint: "" },
+      ] },
+    { id: "photos", label: "Photos & text", meta: "Required", req: true, title: "Photos and description",
+      hint: "The first photo is the one buyers see in the results. Four is enough to be taken seriously.",
+      fields: [
+        { k: "photos", label: "Photos", type: "photos", req: true, filter: false, hint: "Drop images here. First one becomes the cover." },
+        { k: "title", label: "Listing title", type: "text", req: true, filter: false, placeholder: "BMW 320d Touring, one owner", hint: "" },
+        { k: "desc", label: "Description", type: "area", req: false, filter: false, span: "1 / -1", placeholder: "Service history, tyres, what is included…", hint: "Say what a buyer would otherwise have to ask." },
+      ] },
+    { id: "contact", label: "Contact", meta: "Required", req: true, title: "Where should buyers reach you?",
+      hint: "Location is a filter too — most buyers narrow to their own region first.",
+      fields: [
+        { k: "seller", label: "Your name", type: "text", req: true, filter: false, placeholder: "M. Keller", hint: "" },
+        { k: "place", label: "City", type: "text", req: true, filter: true, placeholder: "München", hint: "" },
+        { k: "phone", label: "Phone", type: "text", req: true, filter: false, placeholder: "+49 89 000000", hint: "Shown only after a buyer taps to reveal it." },
+        { k: "sellerKind", label: "You are", type: "chips", req: false, filter: true, opts: ["Private seller", "Dealer"], hint: "" },
+      ] },
+  ],
+  homes: [
+    { id: "property", label: "Property", meta: "Required", req: true, title: "What are you listing?",
+      hint: "Offer type and property type are the first two filters a visitor sets.",
+      fields: [
+        { k: "offer", label: "Offer", type: "chips", req: true, filter: true, opts: ["Rent", "Buy"], hint: "" },
+        { k: "type", label: "Property type", type: "chips", req: true, filter: true, opts: ["Apartment", "House", "Studio", "Loft"], hint: "" },
+        { k: "place", label: "City", type: "text", req: true, filter: true, placeholder: "Berlin", hint: "" },
+        { k: "district", label: "District", type: "text", req: false, filter: true, placeholder: "Prenzlauer Berg", hint: "Optional, and heavily searched." },
+      ] },
+    { id: "facts", label: "Key facts", meta: "Required", req: true, title: "Price, size and rooms",
+      hint: "These three carry almost every search. Rooms and size are range filters.",
+      fields: [
+        { k: "price", label: "Price", type: "text", req: true, filter: true, unit: "€", placeholder: "489000", hint: "Monthly rent, or the asking price." },
+        { k: "size", label: "Living space", type: "text", req: true, filter: true, unit: "m²", placeholder: "84", hint: "" },
+        { k: "rooms", label: "Rooms", type: "text", req: true, filter: true, placeholder: "3", hint: "" },
+        { k: "baths", label: "Bathrooms", type: "text", req: false, filter: true, placeholder: "1", hint: "" },
+      ] },
+    { id: "building", label: "Building", meta: "Required", req: true, title: "The building itself",
+      hint: "Heating and year built matter to anyone thinking about running costs.",
+      fields: [
+        { k: "floor", label: "Floor", type: "text", req: true, filter: true, placeholder: "3", hint: "0 for ground floor." },
+        { k: "built", label: "Year built", type: "text", req: true, filter: true, placeholder: "1908", hint: "" },
+        { k: "heat", label: "Heating", type: "chips", req: true, filter: true, opts: ["District", "Gas", "Electric", "Heat pump"], hint: "" },
+        { k: "cond", label: "Condition", type: "chips", req: false, filter: true, opts: ["New-ish", "Renovated", "Good", "Needs work"], hint: "" },
+      ] },
+    { id: "photos", label: "Photos & text", meta: "Required", req: true, title: "Photos and description",
+      hint: "Empty rooms in daylight. The first photo is the one that appears in the results.",
+      fields: [
+        { k: "photos", label: "Photos", type: "photos", req: true, filter: false, hint: "Drop images here. First one becomes the cover." },
+        { k: "title", label: "Listing title", type: "text", req: true, filter: false, placeholder: "Bright 3-room flat with balcony", hint: "" },
+        { k: "desc", label: "Description", type: "area", req: false, filter: false, span: "1 / -1", placeholder: "Layout, light, the street, what is nearby…", hint: "Say what the photos cannot show." },
+      ] },
+    { id: "contact", label: "Contact", meta: "Required", req: true, title: "Who is showing the property?",
+      hint: "Viewing requests go straight to this contact.",
+      fields: [
+        { k: "seller", label: "Your name", type: "text", req: true, filter: false, placeholder: "A. Weber", hint: "" },
+        { k: "phone", label: "Phone", type: "text", req: true, filter: false, placeholder: "+49 30 000000", hint: "Shown only after a visitor taps to reveal it." },
+        { k: "sellerKind", label: "You are", type: "chips", req: false, filter: true, opts: ["Private landlord", "Agency"], hint: "" },
+        { k: "available", label: "Available from", type: "text", req: false, filter: true, placeholder: "1 September", hint: "" },
+      ] },
+  ],
+};
+
+const BOOST = {
+  cars: [
+    { k: "colour", label: "Colour", type: "chips", opts: ["Black", "White", "Grey", "Silver", "Blue", "Red", "Green"], hint: "A filter on its own." },
+    { k: "seats", label: "Seats", type: "chips", opts: ["2", "4", "5", "7", "8"], hint: "Families filter by this." },
+    { k: "doors", label: "Doors", type: "chips", opts: ["3", "4", "5"], hint: "" },
+    { k: "service", label: "Service history", type: "chips", opts: ["Full", "Partial", "None"], hint: "The single biggest trust signal on a used car." },
+    { k: "warranty", label: "Warranty until", type: "text", placeholder: "03/2027", hint: "Shows as a badge on your card." },
+    { k: "inspection", label: "Next inspection", type: "text", placeholder: "09/2027", hint: "" },
+    { k: "consumption", label: "Consumption", type: "text", unit: "l/100km", placeholder: "5.2", hint: "" },
+    { k: "emission", label: "Emission class", type: "chips", opts: ["Euro 5", "Euro 6", "Euro 6d"], hint: "Needed for city-centre searches." },
+    { k: "feats", label: "Extras", type: "multi", opts: ["Navigation", "Heated seats", "Tow bar", "Sunroof", "Reversing camera", "Parking sensors", "Cruise control", "Glass roof"], hint: "Each extra you tick is another filter you appear in.", span: "1 / -1" },
+  ],
+  homes: [
+    { k: "beds", label: "Bedrooms", type: "chips", opts: ["1", "2", "3", "4", "5"], hint: "Searched as often as total rooms." },
+    { k: "energy", label: "Energy class", type: "chips", opts: ["A+", "A", "B", "C", "D", "E"], hint: "Required in most listings, and a filter." },
+    { k: "deposit", label: "Deposit", type: "text", unit: "€", placeholder: "3 months", hint: "Renters filter this out early." },
+    { k: "orientation", label: "Orientation", type: "chips", opts: ["North", "East", "South", "West"], hint: "" },
+    { k: "internet", label: "Internet", type: "text", unit: "Mbit/s", placeholder: "250", hint: "Matters to anyone working from home." },
+    { k: "pets", label: "Pets", type: "chips", opts: ["Allowed", "On request", "Not allowed"], hint: "" },
+    { k: "plot", label: "Plot size", type: "text", unit: "m²", placeholder: "420", hint: "Houses only." },
+    { k: "commission", label: "Commission", type: "chips", opts: ["None", "Buyer pays", "Split"], hint: "" },
+    { k: "feats", label: "Extras", type: "multi", opts: ["Balcony", "Garden", "Lift", "Parking", "Cellar", "Furnished", "Pets allowed", "Underfloor heating", "Parquet floors", "Guest toilet", "Fitted kitchen"], hint: "Each extra you tick is another filter you appear in.", span: "1 / -1" },
+  ],
+};
+
+const SORTS = [
+  { k: "new", label: "Newest" },
+  { k: "asc", label: "Price ↑" },
+  { k: "desc", label: "Price ↓" },
+];
+
+const THUMBS = { cars: ["Front", "Interior", "Rear", "Engine bay"], homes: ["Living room", "Kitchen", "Bedroom", "Floor plan"] };
+
+const DANGER = "oklch(0.53 0.15 25)";
+
+class Component extends DCLogic {
+  state = {
+    vertical: "cars", device: "pc", view: "browse",
+    q: "", sort: "new", detail: -1, filtersOpen: false,
+    f: { cars: {}, homes: {} },
+    step: 0, published: false, touched: false,
+    form: { cars: {}, homes: {} },
+  };
+
+  componentDidMount() {
+    const v = this.props.defaultVertical;
+    const d = this.props.defaultDevice;
+    const next = {};
+    if (v === "cars" || v === "homes") next.vertical = v;
+    if (d === "pc" || d === "mobile") next.device = d;
+    if (Object.keys(next).length) this.setState(next);
+  }
+
+  scrollRef = (el) => { this._scroll = el; };
+  toTop = () => { if (this._scroll) this._scroll.scrollTop = 0; };
+  stop = (e) => e.stopPropagation();
+
+  setF = (k, v) => this.setState((s) => {
+    const cur = s.f[s.vertical] || {};
+    const next = Object.assign({}, cur);
+    if (v === null || next[k] === v) delete next[k]; else next[k] = v;
+    return { f: Object.assign({}, s.f, { [s.vertical]: next }) };
+  });
+  toggleFMulti = (k, v) => this.setState((s) => {
+    const cur = s.f[s.vertical] || {};
+    const list = cur[k] || [];
+    const nl = list.indexOf(v) >= 0 ? list.filter((x) => x !== v) : list.concat(v);
+    const next = Object.assign({}, cur);
+    if (nl.length) next[k] = nl; else delete next[k];
+    return { f: Object.assign({}, s.f, { [s.vertical]: next }) };
+  });
+  clearAll = () => this.setState((s) => ({ f: Object.assign({}, s.f, { [s.vertical]: {} }), q: "" }));
+
+  setForm = (k, v) => this.setState((s) => ({
+    form: Object.assign({}, s.form, {
+      [s.vertical]: Object.assign({}, s.form[s.vertical], { [k]: v }),
+    }),
+  }));
+  toggleFormMulti = (k, v) => this.setState((s) => {
+    const cur = s.form[s.vertical] || {};
+    const list = cur[k] || [];
+    const nl = list.indexOf(v) >= 0 ? list.filter((x) => x !== v) : list.concat(v);
+    return { form: Object.assign({}, s.form, { [s.vertical]: Object.assign({}, cur, { [k]: nl }) }) };
+  });
+
+  go = (view) => { this.setState({ view, filtersOpen: false }); this.toTop(); };
+  setStep = (n) => { this.setState({ step: n, touched: false }); this.toTop(); };
+
+  money(n, rent) {
+    const cur = this.props.currency ?? "€";
+    const v = Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u2009");
+    return cur + v + (rent ? " / mo" : "");
+  }
+
+  matches(item) {
+    const f = this.state.f[this.state.vertical] || {};
+    const q = this.state.q.trim().toLowerCase();
+    const cars = this.state.vertical === "cars";
+    if (q) {
+      const hay = (cars ? [item.t, item.make, item.body, item.fuel, item.place] : [item.t, item.type, item.place, item.offer]).join(" ").toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    if (f.price != null && item.price > f.price) return false;
+    if (f.feats && f.feats.some((x) => (item.feats || []).indexOf(x) < 0)) return false;
+
+    if (cars) {
+      if (f.km != null && item.km > f.km) return false;
+      if (f.fuel && item.fuel !== f.fuel) return false;
+      if (f.trans && item.trans !== f.trans) return false;
+      if (f.body && item.body !== f.body) return false;
+      if (f.seatsMin && item.seats < parseInt(f.seatsMin, 10)) return false;
+    } else {
+      if (f.offer && item.offer !== f.offer) return false;
+      if (f.type && item.type !== f.type) return false;
+      if (f.roomsMin && item.rooms < parseInt(f.roomsMin, 10)) return false;
+      if (f.sizeMin != null && item.size < f.sizeMin) return false;
+      if (f.heat && item.heat !== f.heat) return false;
+    }
+    return true;
+  }
+
+  renderVals() {
+    const cars = this.state.vertical === "cars";
+    const mobile = this.state.device === "mobile";
+    const pc = !mobile;
+    const data = cars ? CARS : HOMES;
+    const f = this.state.f[this.state.vertical] || {};
+    const form = this.state.form[this.state.vertical] || {};
+    const money = (n, rent) => this.money(n, rent);
+    const isRent = (it) => !cars && it.offer === "Rent";
+
+    /* Gallery chip: soft accent fill when on, plain surface + hairline when off */
+    const chip = (on) => ({
+      bg: on ? "var(--accent-soft)" : "var(--surface)",
+      color: on ? "var(--accent-strong)" : "var(--muted)",
+      border: on ? "1px solid color-mix(in srgb, var(--accent) 28%, white)" : "1px solid var(--line)",
+    });
+    /* Gallery segmented: selected pill lifts on white */
+    const seg = (on) => ({
+      bg: on ? "var(--surface)" : "transparent",
+      color: on ? "var(--ink)" : "var(--muted)",
+      shadow: on ? "0 1px 2px rgba(40,35,30,.10)" : "none",
+    });
+
+    let list = data.map((it, i) => ({ it, i })).filter(({ it }) => this.matches(it));
+    if (this.state.sort === "asc") list = list.slice().sort((a, b) => a.it.price - b.it.price);
+    if (this.state.sort === "desc") list = list.slice().sort((a, b) => b.it.price - a.it.price);
+    if (this.state.sort === "new") list = list.slice().sort((a, b) => (cars ? b.it.year - a.it.year : b.it.built - a.it.built));
+
+    const specOf = (it) => cars
+      ? [it.year, it.km.toLocaleString("en-GB") + " km", it.fuel, it.trans, it.hp + " hp"].join(" · ")
+      : [it.rooms + " rooms", it.size + " m²", it.type, it.floor > 0 ? it.floor + ". floor" : "Ground floor", "Built " + it.built].join(" · ");
+
+    const results = list.map(({ it, i }, n) => ({
+      title: it.t,
+      price: money(it.price, isRent(it)),
+      specLine: specOf(it),
+      place: it.place,
+      badge: it.badge, badgeShow: it.badge ? "inline-flex" : "none",
+      slotId: (cars ? "mk-car-" : "mk-home-") + (i + 1),
+      onOpen: () => { this.setState({ view: "detail", detail: i }); this.toTop(); },
+      anim: `mk-rise .4s cubic-bezier(.2,.7,.2,1) ${Math.min(n, 6) * 45}ms both`,
+    }));
+
+    const filterGroups = FILTERS[this.state.vertical].map((g) => {
+      if (g.kind === "range") {
+        const val = f[g.k] != null ? f[g.k] : (g.k === "sizeMin" ? g.min : g.max);
+        const label = g.money ? money(val) : val.toLocaleString("en-GB") + (g.unit || "");
+        return {
+          label: g.label, chipsShow: "none", rangeShow: "flex",
+          min: g.min, max: g.max, step: g.step, value: val,
+          rangeMinLabel: g.money ? money(g.min) : g.min + (g.unit || ""),
+          rangeValLabel: (f[g.k] == null && g.k !== "sizeMin") ? "Any" : label,
+          onInput: (e) => this.setF(g.k, Number(e.target.value)),
+          opts: [],
+        };
+      }
+      const multi = g.kind === "multi";
+      return {
+        label: g.label, chipsShow: "flex", rangeShow: "none",
+        min: 0, max: 1, step: 1, value: 0, rangeMinLabel: "", rangeValLabel: "", onInput: null,
+        opts: g.opts.map((o) => {
+          const on = multi ? (f[g.k] || []).indexOf(o) >= 0 : f[g.k] === o;
+          return Object.assign({ label: o, onClick: () => (multi ? this.toggleFMulti(g.k, o) : this.setF(g.k, o)) }, chip(on));
+        }),
+      };
+    });
+
+    const activeFilters = [];
+    FILTERS[this.state.vertical].forEach((g) => {
+      const v = f[g.k];
+      if (v == null) return;
+      if (g.kind === "multi") {
+        v.forEach((x) => activeFilters.push({ label: x, onClear: () => this.toggleFMulti(g.k, x) }));
+      } else if (g.kind === "range") {
+        const lab = g.money ? money(v) : v.toLocaleString("en-GB") + (g.unit || "");
+        activeFilters.push({ label: g.label + " " + lab, onClear: () => this.setF(g.k, null) });
+      } else {
+        activeFilters.push({ label: v, onClear: () => this.setF(g.k, null) });
+      }
+    });
+
+    const d = this.state.detail >= 0 ? data[this.state.detail] : data[0];
+    const rent = isRent(d);
+    const detailSpecs = cars ? [
+      { label: "Make", value: d.make }, { label: "Body", value: d.body },
+      { label: "First registration", value: String(d.year) }, { label: "Mileage", value: d.km.toLocaleString("en-GB") + " km" },
+      { label: "Fuel", value: d.fuel }, { label: "Transmission", value: d.trans },
+      { label: "Power", value: d.hp + " hp" }, { label: "Drivetrain", value: d.drive },
+      { label: "Seats / doors", value: d.seats + " / " + d.doors }, { label: "Colour", value: d.colour },
+      { label: "Condition", value: d.cond }, { label: "Previous owners", value: String(d.owners) },
+    ] : [
+      { label: "Property type", value: d.type }, { label: "Offer", value: d.offer },
+      { label: "Living space", value: d.size + " m²" }, { label: "Rooms", value: String(d.rooms) },
+      { label: "Bedrooms", value: String(d.beds) }, { label: "Bathrooms", value: String(d.baths) },
+      { label: "Floor", value: d.floor > 0 ? d.floor + ". floor" : "Ground floor" }, { label: "Year built", value: String(d.built) },
+      { label: "Heating", value: d.heat }, { label: "Condition", value: d.cond },
+    ];
+    const detailKeyFacts = cars
+      ? [{ label: "Year", value: String(d.year) }, { label: "Mileage", value: (d.km / 1000) + "k km" }, { label: "Fuel", value: d.fuel }, { label: "Gearbox", value: d.trans }]
+      : [{ label: "Rooms", value: String(d.rooms) }, { label: "Size", value: d.size + " m²" }, { label: "Floor", value: d.floor > 0 ? String(d.floor) : "Ground" }, { label: "Built", value: String(d.built) }];
+
+    /* ---- stepper ---- */
+    const steps = STEPS[this.state.vertical];
+    const total = steps.length + 2;
+    const step = Math.min(this.state.step, total - 1);
+    const onReview = step === steps.length;
+    const onBoost = step === steps.length + 1;
+
+    const missingIn = (si) => steps[si].fields.filter((fl) => fl.req && !form[fl.k]);
+    const allMissing = [];
+    steps.forEach((s, si) => missingIn(si).forEach((fl) => allMissing.push({
+      label: s.label + " — " + fl.label, onGo: () => this.setStep(si),
+    })));
+
+    const cur = steps[step];
+    const curMissing = cur ? cur.fields.filter((fl) => fl.req && !form[fl.k]) : [];
+    const stepValid = curMissing.length === 0;
+
+    const fieldOf = (fl) => {
+      const val = form[fl.k];
+      const isMulti = fl.type === "multi";
+      const bad = this.state.touched && fl.req && !val;
+      return {
+        label: fl.label,
+        span: fl.span || "auto",
+        reqLabel: fl.req ? "Required" : "Optional",
+        reqColor: fl.req ? DANGER : "var(--faint)",
+        filterShow: fl.filter ? "inline-flex" : "none",
+        textShow: (fl.type === "text") ? "flex" : "none",
+        chipsShow: (fl.type === "chips") ? "flex" : "none",
+        multiShow: isMulti ? "flex" : "none",
+        areaShow: (fl.type === "area") ? "block" : "none",
+        photoShow: (fl.type === "photos") ? "flex" : "none",
+        unit: fl.unit || "", unitShow: fl.unit ? "inline" : "none",
+        placeholder: fl.placeholder || "",
+        value: isMulti ? "" : (val || ""),
+        onChange: (e) => this.setForm(fl.k, e.target.value),
+        borderColor: bad ? "color-mix(in srgb, " + DANGER + " 55%, white)" : "var(--line)",
+        hint: bad ? "This one is needed to publish." : (fl.hint || ""),
+        hintColor: bad ? DANGER : "var(--faint)",
+        opts: (fl.opts || []).map((o) => {
+          const on = isMulti ? (val || []).indexOf(o) >= 0 : val === o;
+          return Object.assign({ label: o, onClick: () => (isMulti ? this.toggleFormMulti(fl.k, o) : this.setForm(fl.k, o)) }, chip(on));
+        }),
+        photos: THUMBS[this.state.vertical].map((label, n) => ({ label, slotId: "mk-new-" + (n + 1) })),
+      };
+    };
+
+    const boostDefs = BOOST[this.state.vertical];
+    const boostDone = boostDefs.filter((fl) => {
+      const v = form[fl.k];
+      return fl.type === "multi" ? (v || []).length > 0 : !!v;
+    }).length;
+    const strength = Math.round(55 + (boostDone / boostDefs.length) * 45);
+
+    const railItem = (on, done, label, meta, onClick, dotLabel) => ({
+      label, meta, onClick, dotLabel,
+      bg: on && pc ? "oklch(0.966 0.004 90)" : "transparent",
+      dotBg: on ? "var(--accent)" : done ? "var(--accent-soft)" : "transparent",
+      dotColor: on ? "#fff" : done ? "var(--accent-strong)" : "var(--faint)",
+      dotBorder: on ? "var(--accent)" : done ? "color-mix(in srgb, var(--accent) 24%, white)" : "var(--line)",
+      color: on ? "var(--ink)" : "var(--muted)",
+      metaColor: done ? "var(--accent)" : "var(--faint)",
+      weight: on ? 600 : 500,
+      underline: mobile && on ? "2px solid var(--accent)" : "2px solid transparent",
+    });
+
+    const stepRail = steps.map((s, i) => railItem(step === i, missingIn(i).length === 0, s.label, missingIn(i).length === 0 ? "Complete" : s.meta, () => this.setStep(i), missingIn(i).length === 0 ? "✓" : String(i + 1)))
+      .concat([
+        railItem(onReview, allMissing.length === 0, "Review", allMissing.length ? allMissing.length + " missing" : "Ready", () => this.setStep(steps.length), String(steps.length + 1)),
+        railItem(onBoost, false, "Boost", this.state.published ? boostDone + " of " + boostDefs.length : "After publishing", () => this.setStep(steps.length + 1), "+"),
+      ]);
+
+    const previewFilters = [];
+    steps.forEach((s) => s.fields.forEach((fl) => {
+      if (!fl.filter) return;
+      const v = form[fl.k];
+      if (!v) return;
+      previewFilters.push({ label: fl.label + ": " + v });
+    }));
+    boostDefs.forEach((fl) => {
+      const v = form[fl.k];
+      if (!v) return;
+      if (fl.type === "multi") v.forEach((x) => previewFilters.push({ label: x }));
+      else previewFilters.push({ label: fl.label + ": " + v });
+    });
+
+    const onNext = () => {
+      if (onBoost) { this.go("browse"); return; }
+      if (onReview) {
+        if (allMissing.length) { this.setStep(0); this.setState({ touched: true }); return; }
+        this.setState({ published: true, step: steps.length + 1, touched: false });
+        this.toTop();
+        return;
+      }
+      if (!stepValid) { this.setState({ touched: true }); return; }
+      this.setStep(step + 1);
+    };
+
+    const priceNum = Number(String(form.price || "").replace(/\D/g, ""));
+    const nextBlocked = onReview && allMissing.length > 0;
+    const sellerName = cars ? "M. Keller" : "A. Weber";
+
+    return {
+      accent: this.props.accent ?? "#2f6a51",
+
+      verticalOpts: [["cars", "Cars"], ["homes", "Homes"]].map(([k, label]) => {
+        const on = this.state.vertical === k;
+        return Object.assign({ label, onClick: () => { this.setState({ vertical: k, detail: -1, step: 0, published: false, touched: false, q: "" }); this.toTop(); } }, seg(on));
+      }),
+      deviceOpts: [["pc", "PC"], ["mobile", "Mobile"]].map(([k, label]) => {
+        const on = this.state.device === k;
+        return Object.assign({ label, onClick: () => this.setState({ device: k, filtersOpen: false }) }, seg(on));
+      }),
+      viewTabs: [["browse", "Search"], ["create", "Add a listing"]].map(([k, label]) => {
+        const on = this.state.view === k || (k === "browse" && this.state.view === "detail");
+        return {
+          label, onClick: () => this.go(k),
+          bg: on ? "oklch(0.955 0.004 90)" : "transparent",
+          color: on ? "var(--ink)" : "var(--muted)",
+          weight: on ? 600 : 500,
+        };
+      }),
+      verticalWord: cars ? "Cars" : "Homes",
+      frameW: mobile ? "392px" : "1240px",
+      frameH: mobile ? "812px" : "900px",
+      frameRadius: mobile ? "30px" : "calc(var(--radius) + 8px)",
+      headPad: mobile ? "12px 16px" : "16px 26px",
+      padX: mobile ? "16px" : "26px",
+      h2Size: mobile ? "26px" : "34px",
+      pcOnly: pc ? "flex" : "none",
+      pcOnlyFlex: pc ? "flex" : "none",
+      mobileOnly: mobile ? "inline-flex" : "none",
+      ctaMargin: mobile ? "auto" : "0",
+      ctaLabel: mobile ? "Sell" : "Add a listing",
+      scrollRef: this.scrollRef,
+      stop: this.stop,
+
+      vBrowse: this.state.view === "browse" ? "flex" : "none",
+      vDetail: this.state.view === "detail" ? "flex" : "none",
+      vCreate: this.state.view === "create" ? "flex" : "none",
+      goBrowse: () => this.go("browse"),
+      goCreate: () => this.go("create"),
+
+      headLeft: cars ? "Used cars · private sellers and dealers" : "Flats & houses · to rent and to buy",
+      headTitle: cars ? "Find your next car" : "Find your next home",
+      resultCount: list.length + (list.length === 1 ? " listing" : " listings"),
+      searchPlaceholder: cars ? "Make, model or city" : "City, district or property type",
+      qValue: this.state.q,
+      onQ: (e) => this.setState({ q: e.target.value }),
+      sortOpts: SORTS.map((s) => Object.assign({ label: s.label, onClick: () => this.setState({ sort: s.k }) }, seg(this.state.sort === s.k))),
+      filterGroups,
+      activeFilters,
+      activeShow: activeFilters.length ? "flex" : "none",
+      activeCountLabel: activeFilters.length ? "(" + activeFilters.length + ")" : "",
+      clearAll: this.clearAll,
+      results,
+      emptyShow: list.length ? "none" : "flex",
+      browseCols: pc ? "248px minmax(0, 1fr)" : "minmax(0, 1fr)",
+      cardCols: pc ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+      cardImgH: mobile ? "180px" : "210px",
+      openFilters: () => this.setState({ filtersOpen: true }),
+      closeFilters: () => this.setState({ filtersOpen: false }),
+      sheetShow: this.state.filtersOpen ? "flex" : "none",
+      showResultsLabel: "Show " + list.length + " listings",
+      mobileBarShow: mobile && this.state.view === "browse" ? "flex" : "none",
+
+      detailCols: pc ? "minmax(0, 1.5fr) minmax(0, 1fr)" : "minmax(0, 1fr)",
+      specCols: pc ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+      asidePos: pc ? "sticky" : "static",
+      heroH: mobile ? "220px" : "380px",
+      thumbH: mobile ? "58px" : "84px",
+      detailSlot: (cars ? "mk-car-" : "mk-home-") + ((this.state.detail < 0 ? 0 : this.state.detail) + 1),
+      detailThumbs: THUMBS[this.state.vertical].map((label, n) => ({ label, slotId: (cars ? "mk-cart-" : "mk-homet-") + ((this.state.detail < 0 ? 0 : this.state.detail) + 1) + "-" + (n + 1) })),
+      detailTitle: d.t,
+      detailPrice: money(d.price, rent),
+      detailPriceNote: rent ? "Plus utilities" : cars ? "Negotiable · VAT not deductible" : "Plus purchase costs",
+      detailPlace: cars ? d.place : d.place + " · " + d.type,
+      detailDesc: d.desc,
+      detailSpecs,
+      detailKeyFacts,
+      detailFeats: (d.feats || []).map((label) => ({ label })),
+      detailSeller: sellerName,
+      detailInitials: sellerName.replace(/[^A-Za-zÄÖÜ]/g, "").slice(0, 2).toUpperCase(),
+      detailSellerKind: cars ? "Private seller · replies within a day" : "Private landlord · viewings on Saturdays",
+
+      createKicker: this.state.published ? "Listing published" : "New listing · " + (cars ? "car" : "property"),
+      createTitle: this.state.published ? "Make it easier to find" : (cars ? "Sell your car" : "List your property"),
+      createIntro: this.state.published
+        ? "Required fields are done and the listing is live. Everything below is optional — each one adds a filter you show up in."
+        : "Five short steps of required fields, then publish. Optional details come after, so nothing blocks you from going live today.",
+      stepperCols: pc ? "236px minmax(0, 1fr)" : "minmax(0, 1fr)",
+      railDir: pc ? "column" : "row",
+      railGap: pc ? "4px" : "6px",
+      railPos: pc ? "sticky" : "static",
+      railItemPad: pc ? "10px 12px" : "0 10px 10px",
+      railItemRadius: pc ? "var(--radius)" : "0",
+      railTextShow: pc ? "flex" : "none",
+      stepRail,
+      fieldCols: pc ? "repeat(2, minmax(0, 1fr))" : "minmax(0, 1fr)",
+      panelPad: mobile ? "20px" : "28px",
+      photoW: mobile ? "76px" : "110px",
+
+      formShow: (!onReview && !onBoost) ? "flex" : "none",
+      reviewShow: onReview ? "flex" : "none",
+      boostShow: (onBoost && this.state.published) ? "flex" : "none",
+      doneShow: (onBoost && !this.state.published) ? "flex" : "none",
+
+      stepTitle: cur ? cur.title : "",
+      stepHint: cur ? cur.hint : "",
+      stepReqLabel: cur && cur.req ? "Required to publish" : "Optional",
+      stepReqBg: cur && cur.req ? "oklch(0.96 0.03 25)" : "oklch(0.955 0.004 90)",
+      stepReqColor: cur && cur.req ? "oklch(0.45 0.13 25)" : "var(--muted)",
+      stepCounter: "Step " + (step + 1) + " of " + total,
+      stepFields: cur ? cur.fields.map(fieldOf) : [],
+      warnShow: (this.state.touched && !stepValid) ? "flex" : "none",
+      warnText: curMissing.map((x) => x.label).join(", ") + " — fill these in to carry on.",
+
+      previewTitle: form.title || (cars ? "Your car" : "Your property"),
+      previewPrice: priceNum ? money(priceNum, !cars && form.offer === "Rent") : "Price not set",
+      previewSpec: cars
+        ? [form.year, form.km ? Number(String(form.km).replace(/\D/g, "")).toLocaleString("en-GB") + " km" : "", form.fuel, form.trans].filter(Boolean).join(" · ") || "Add the key facts"
+        : [form.rooms ? form.rooms + " rooms" : "", form.size ? form.size + " m²" : "", form.type, form.heat].filter(Boolean).join(" · ") || "Add the key facts",
+      previewPlace: form.place || form.district || "Location not set",
+      previewFilters: previewFilters.length ? previewFilters : [{ label: "Fill a filterable field to see this" }],
+      missingList: allMissing,
+      missingShow: allMissing.length ? "flex" : "none",
+
+      boostHeading: cars ? "Details that sell the car" : "Details that let people find it",
+      boostFields: boostDefs.map((fl) => {
+        const v = form[fl.k];
+        const done = fl.type === "multi" ? (v || []).length > 0 : !!v;
+        return Object.assign(fieldOf(Object.assign({ filter: true, req: false }, fl)), {
+          doneLabel: done ? "Added" : "Empty",
+          doneColor: done ? "var(--accent)" : "var(--faint)",
+        });
+      }),
+      strengthPct: strength + "%",
+      strengthLabel: strength + "%",
+      strengthNote: boostDone === boostDefs.length
+        ? "Every optional field is filled. Your listing appears in all the filters this category offers."
+        : "You appear in " + previewFilters.length + " filters. " + (boostDefs.length - boostDone) + " optional fields left.",
+
+      footShow: (onBoost && !this.state.published) ? "none" : "flex",
+      backShow: step > 0 ? "inline-flex" : "none",
+      onBack: () => this.setStep(Math.max(0, step - 1)),
+      onNext,
+      nextMargin: pc ? "auto" : "0",
+      nextBg: nextBlocked ? "var(--surface)" : "var(--accent)",
+      nextColor: nextBlocked ? "var(--ink)" : "#fff",
+      nextBorder: nextBlocked ? "var(--line)" : "transparent",
+      nextShadow: nextBlocked ? "none" : "0 1px 1px rgba(40,35,30,.14)",
+      nextArrowShow: (onReview || onBoost) ? "none" : "inline",
+      nextLabel: onBoost ? "See it in the results" : onReview ? (allMissing.length ? "Finish the required fields" : "Publish the listing") : "Continue",
+      skipShow: onBoost ? "inline-flex" : "none",
+      onSkip: () => this.go("browse"),
+      goBoost: () => this.setStep(steps.length + 1),
+    };
+  }
+}
+</script>
+</body>
+</html>

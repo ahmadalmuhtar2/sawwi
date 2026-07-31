@@ -1,0 +1,75 @@
+name: Deploy migrations (production)
+
+# After CI passes on main, apply any new Prisma migrations to the PRODUCTION
+# database. This is what keeps prod's schema in lockstep with the code Railway
+# ships. Without it, Railway deploys new code against an un-migrated DB and every
+# query touching a new column 500s — which is exactly how auth broke once
+# (`users.endDate does not exist` → every Better Auth call failed).
+#
+# Runs on the completion of the CI workflow (so a broken migration never reaches
+# prod), in its own non-cancelable concurrency group (never kill a half-applied
+# migration). Migrations MUST stay additive / backward-compatible so they're safe
+# whether they land just before or just after the new app image goes live — see
+# AGENTS.md § Database migrations.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Manual re-run (e.g. after adding the secret, or to re-sync after an incident).
+  workflow_dispatch:
+
+# One prod migration at a time; NEVER cancel an in-flight one.
+concurrency:
+  group: deploy-migrations-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: prisma migrate deploy → production
+    runs-on: ubuntu-latest
+    # Only when the CI run we're following actually succeeded (workflow_dispatch
+    # has no workflow_run payload, so allow it through too).
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Check out the exact commit CI validated (for workflow_run); falls back
+          # to the default ref for a manual dispatch.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Guard — require the production DB secret
+        run: |
+          if [ -z "${DATABASE_URL}" ]; then
+            echo "::error::PRODUCTION_DATABASE_URL secret is not set. Add it in repo → Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      # --ignore-scripts skips the postinstall `prisma generate` (same as CI);
+      # we run generate explicitly once the schema is present.
+      - name: Install
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      # Applies every not-yet-applied migration in order. No-ops when prod is
+      # already up to date, so it's safe to run on every push.
+      - name: Apply migrations to production
+        run: pnpm prisma migrate deploy
+
+      # Fails loudly if schema.prisma and the applied history have drifted.
+      - name: Verify schema is in sync
+        run: pnpm prisma migrate status

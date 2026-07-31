@@ -4,71 +4,65 @@
 // src/server/auth/claims.ts.
 
 import type { SessionClaims } from "@/server/access/access.rules";
-import { resolveSiteAccess } from "@/server/access/access.rules";
+import { resolveSiteAccess, canManageWorkspace } from "@/server/access/access.rules";
 import { getPrisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { sitesRepository } from "@/server/sites/sites.repository";
 import { sendMail } from "@/lib/mailer";
 import { buildEmail } from "@/constants/emails";
 import { errors } from "@/shared/errors";
-import type { InviteCollaboratorInput, UpdateCollaboratorInput } from "./members.schema";
+import type {
+  InviteSiteCollaboratorInput,
+  UpdateCollaboratorInput,
+} from "./members.schema";
 import { membersRepository } from "./members.repository";
 
-/** Ensure the caller may manage access on a site; returns the site. */
-async function requireManageAccess(claims: SessionClaims, siteId: string) {
+type SiteLite = { id: string; businessName: string };
+
+/** Ensure the caller is the OWNER of the site's workspace (or a platform admin) —
+ *  the person who first created the site / first granted access. Only the owner
+ *  manages a single site's collaborators (per-site Collaborators tab), which is
+ *  STRICTER than canManageAccess (that also allows ordinary workspace members). */
+async function requireSiteOwner(claims: SessionClaims, siteId: string) {
   const site = await sitesRepository.findById(siteId);
   if (!site) throw errors.notFound("الموقع غير موجود");
-  if (!resolveSiteAccess(claims, site).canManageAccess) {
-    throw errors.forbidden("لا تملك صلاحية إدارة الأعضاء");
+  if (!canManageWorkspace(claims, site.workspaceId)) {
+    throw errors.forbidden("إدارة المتعاونين متاحة لمالك الموقع فقط");
   }
   return site;
 }
 
-/** Collaborators for the caller's ACTIVE workspace. Site names are joined into
- *  each grant, so the manager never loads every workspace site — the invite
- *  picker searches sites on the server instead (see searchSites). */
-export async function listCollaborators(claims: SessionClaims) {
-  if (!claims.workspace) throw errors.forbidden("لا توجد مساحة عمل نشطة");
-  const workspaceId = claims.workspace.id;
-  const [siteCount, grants] = await Promise.all([
-    sitesRepository.countByWorkspace(workspaceId),
-    membersRepository.listGrantsForWorkspace(workspaceId),
-  ]);
-  return { hasSites: siteCount > 0, grants };
-}
-
-export async function inviteCollaborator(
+/** Upsert a per-site grant for each site and email the invitee — the shared core
+ *  of both the workspace-wide invite and the per-site invite. The CALLER is
+ *  responsible for authorizing every site in `sites` first. */
+async function grantAndInvite(
   claims: SessionClaims,
-  input: InviteCollaboratorInput,
+  sites: SiteLite[],
+  email: string,
+  builderAccess: boolean,
 ) {
-  // Every target site must be manageable by the caller (and thus in one of their
-  // workspaces). Validate all before writing anything.
-  const sites = await Promise.all(
-    input.siteIds.map((id) => requireManageAccess(claims, id)),
-  );
-
   // You can't collaborate with yourself.
   const me = await getPrisma().user.findUnique({
     where: { id: claims.userId },
     select: { email: true, name: true },
   });
-  if (me?.email?.toLowerCase() === input.email) {
+  if (me?.email?.toLowerCase() === email) {
     throw errors.validation("لا يمكنك دعوة نفسك", { email: "أدخل بريدًا مختلفًا" });
   }
 
-  for (const siteId of input.siteIds) {
-    const existing = await membersRepository.findGrant(siteId, input.email);
+  for (const site of sites) {
+    const existing = await membersRepository.findGrant(site.id, email);
     if (existing) {
       await membersRepository.updateGrant(existing.id, {
-        builderAccess: input.builderAccess,
+        builderAccess,
         revokedAt: null,
         invitedBy: claims.userId,
       });
     } else {
       await membersRepository.createGrant({
-        siteId,
-        invitedEmail: input.email,
-        builderAccess: input.builderAccess,
+        siteId: site.id,
+        invitedEmail: email,
+        builderAccess,
         invitedBy: claims.userId,
       });
     }
@@ -84,50 +78,75 @@ export async function inviteCollaborator(
   const inviter = me?.name || me?.email || "أحد مستخدمي سوّي";
 
   const existingUser = await getPrisma().user.findUnique({
-    where: { email: input.email },
+    where: { email },
     select: { id: true, accounts: { where: { password: { not: null } }, select: { id: true }, take: 1 } },
   });
 
   if (existingUser && existingUser.accounts.length > 0) {
-    // Registered WITH a password → just a login link; the grant auto-accepts.
     await sendMail({
-      to: input.email,
+      to: email,
       ...buildEmail("collaboratorInvite", { inviter, businesses, url: `${base}/login` }),
     });
   } else {
-    // Brand-new person, or invited before but never set a password → create the
-    // account if needed (emailVerified: true — they prove control via this link)
-    // and email a set-password link. sendResetPassword detects "no password yet"
-    // and sends the welcome/set-password email, not a reset email.
     if (!existingUser) {
       await getPrisma().user.create({
-        data: { email: input.email, emailVerified: true, platformRole: "user" },
+        data: { email, emailVerified: true, platformRole: "user" },
       });
     }
     await auth.api.requestPasswordReset({
-      body: { email: input.email, redirectTo: "/reset-password" },
+      body: { email, redirectTo: "/reset-password" },
     });
   }
 
-  return { invited: input.email, sites: input.siteIds.length };
+  return { invited: email, sites: sites.length };
 }
 
-export async function updateCollaborator(
+/* ─────────────────────── per-site Collaborators tab ────────────────────── */
+
+/** All active collaborators on ONE site, plus whether the caller may manage them
+ *  (owner-only). Any user who can VIEW the site can see the list. */
+export async function listSiteCollaborators(claims: SessionClaims, siteId: string) {
+  const site = await sitesRepository.findById(siteId);
+  if (!site || !resolveSiteAccess(claims, site).canView) {
+    throw errors.notFound("الموقع غير موجود"); // don't leak existence
+  }
+  const grants = await membersRepository.listGrantsForSites([siteId]);
+  return { canManage: canManageWorkspace(claims, site.workspaceId), grants };
+}
+
+/** Invite one email as a collaborator on a single site — owner only. */
+export async function inviteSiteCollaborator(
   claims: SessionClaims,
+  siteId: string,
+  input: InviteSiteCollaboratorInput,
+) {
+  const site = await requireSiteOwner(claims, siteId);
+  return grantAndInvite(claims, [site], input.email, input.builderAccess);
+}
+
+/** Toggle a single-site collaborator's builder access — owner only. */
+export async function updateSiteCollaborator(
+  claims: SessionClaims,
+  siteId: string,
   accessId: string,
   input: UpdateCollaboratorInput,
 ) {
+  await requireSiteOwner(claims, siteId);
   const grant = await membersRepository.findById(accessId);
-  if (!grant || grant.revokedAt) throw errors.notFound("العضو غير موجود");
-  await requireManageAccess(claims, grant.siteId);
+  if (!grant || grant.revokedAt || grant.siteId !== siteId) throw errors.notFound("المتعاون غير موجود");
   await membersRepository.updateGrant(accessId, { builderAccess: input.builderAccess });
   return { id: accessId, builderAccess: input.builderAccess };
 }
 
-export async function revokeCollaborator(claims: SessionClaims, accessId: string) {
+/** Revoke a single-site collaborator's access — owner only. */
+export async function revokeSiteCollaborator(
+  claims: SessionClaims,
+  siteId: string,
+  accessId: string,
+) {
+  await requireSiteOwner(claims, siteId);
   const grant = await membersRepository.findById(accessId);
-  if (!grant) throw errors.notFound("العضو غير موجود");
-  await requireManageAccess(claims, grant.siteId);
+  if (!grant || grant.siteId !== siteId) throw errors.notFound("المتعاون غير موجود");
   await membersRepository.revoke(accessId);
   return { id: accessId, revoked: true };
 }

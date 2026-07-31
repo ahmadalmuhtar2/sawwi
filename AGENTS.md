@@ -11,6 +11,28 @@ approval in the current message.** Committing locally and preparing a branch is 
 the push/PR/merge step must be approved first, every time. Do not infer approval from earlier
 messages or from the task being "ready" — ask, then wait.
 
+## Database migrations — NEVER break production
+
+Railway ships the new code on every push to `main`, but it does **not** run migrations.
+Prod's schema is kept in lockstep by CI: after the `CI` workflow passes on `main`, the
+`Deploy migrations (production)` workflow (`.github/workflows/deploy-migrations.yml`) runs
+`prisma migrate deploy` against the prod DB (secret `PRODUCTION_DATABASE_URL`). Rules:
+
+1. **Every schema change ships as a migration file.** Never hand-edit `schema.prisma` without
+   generating a matching migration (`pnpm prisma migrate dev --name <what>`). CI's `migrate
+   status` fails the build if the schema and migration history drift apart.
+2. **Migrations must be additive / backward-compatible (expand → contract).** The old code and
+   the new code both run against the DB during the deploy window, so a migration that *removes*
+   or *renames* a column the currently-live code still reads will 500 prod. To drop/rename:
+   ship the additive change first (add new column, backfill, dual-write), deploy, and only
+   remove the old column in a *later* migration once nothing reads it.
+3. **Never point local `prisma migrate dev` at the prod DB.** Author migrations against a local
+   Postgres; prod is migrated only by the CI workflow above (or, in an incident, a deliberate
+   `prisma migrate deploy` with the prod `DATABASE_URL`).
+
+Symptom of a skipped migration: `The column X does not exist in the current database` (Prisma
+`P2022`) — the code is ahead of the DB. Fix by applying the pending migrations to prod.
+
 # Sawwi
 
 **Read [`AGENT_GUIDE.md`](AGENT_GUIDE.md) before doing any work** — it is the authoritative

@@ -1,0 +1,42 @@
+// Zod DTOs for per-site end-user auth. The public register/login inputs are the
+// trust boundary for unauthenticated endpoints — the site itself comes from the
+// Host header (siteSlugFromHost), never from the body.
+
+import { z } from "zod";
+
+export const RegisterInput = z.object({
+  email: z.string().trim().toLowerCase().email("بريد إلكتروني غير صالح").max(120),
+  password: z.string().min(8, "كلمة المرور ٨ أحرف على الأقل").max(200),
+  // Name is required — accounts always carry a real name (used to prefill enquiry
+  // / contact forms and to attribute listings).
+  name: z.string().trim().min(2, "الاسم مطلوب").max(80),
+  // Optional contact phone captured at signup; editable later in account settings.
+  phone: z.string().trim().max(30).optional(),
+  // Self-selected account type at signup. Maps to a role in the service:
+  // seller → contributor (can post), buyer/absent → member. NEVER manager
+  // (manager is owner-assigned only), so this can't escalate privileges.
+  accountType: z.enum(["buyer", "seller"]).optional(),
+  // Honeypot — a hidden field real users never fill. Bots do; we drop those.
+  company: z.string().max(200).optional(),
+});
+export type RegisterInput = z.infer<typeof RegisterInput>;
+
+/** A signed-in site-user editing their own profile. Email is intentionally NOT
+ *  editable (it's the account identity). At least one field should be present. */
+export const UpdateProfileInput = z.object({
+  name: z.string().trim().min(2, "الاسم مطلوب").max(80).optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  password: z.string().min(8, "كلمة المرور ٨ أحرف على الأقل").max(200).optional(),
+});
+export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
+
+export const LoginInput = z.object({
+  email: z.string().trim().toLowerCase().email("بيانات الدخول غير صحيحة").max(120),
+  password: z.string().min(1).max(200),
+});
+export type LoginInput = z.infer<typeof LoginInput>;
+
+export const SetRoleInput = z.object({
+  role: z.enum(["manager", "contributor", "member"]),
+});
+export type SetRoleInput = z.infer<typeof SetRoleInput>;

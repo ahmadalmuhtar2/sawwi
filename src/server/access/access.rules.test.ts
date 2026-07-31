@@ -79,21 +79,22 @@ describe("resolveSiteAccess — workspace user", () => {
 });
 
 describe("resolveSiteAccess — site-scoped grants", () => {
-  it("collaborator WITHOUT builder grant: settings only, no builder/publish", () => {
+  it("collaborator WITHOUT builder grant: view-only, cannot edit anything", () => {
     const editor = claims({
       siteAccess: [{ siteId: "site_1", level: "editor", builderAccess: false }],
     });
     const perms = resolveSiteAccess(editor, site);
     expect(perms.canView).toBe(true);
-    expect(perms.canEditSettings).toBe(true);
+    expect(perms.canEditSettings).toBe(false); // builderAccess is the master edit switch
     expect(perms.canEditBuilder).toBe(false);
     expect(perms.canPublish).toBe(false);
     expect(perms.canManageAccess).toBe(false);
     expect(perms.canDelete).toBe(false);
     expect(perms.canManageBilling).toBe(false);
+    expect(perms.canViewBilling).toBe(true); // still sees expiry + gets notifications
   });
 
-  it("collaborator WITH builder grant: also builder + publish", () => {
+  it("collaborator WITH builder grant: full editor + publish", () => {
     const editor = claims({
       siteAccess: [{ siteId: "site_1", level: "editor", builderAccess: true }],
     });

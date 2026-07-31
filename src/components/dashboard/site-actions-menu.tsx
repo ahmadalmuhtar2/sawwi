@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users, UserCog,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
+import { authOnByDefault } from "@/templates/auth-defaults";
 import { siteUrl } from "@/lib/site-url";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
@@ -15,9 +16,15 @@ import { Button } from "@/components/ui/button";
 export function SiteActionsMenu({
   site,
   canDelete = false,
+  unread = 0,
+  templateKey = null,
 }: {
   site: { id: string; slug: string; businessName: string; status: string };
   canDelete?: boolean;
+  /** Unread visitor messages — shows a count badge on the الرسائل item. */
+  unread?: number;
+  /** Marketplace sites get an "الإعلانات" (listings) entry. */
+  templateKey?: string | null;
 }) {
   const toast = useToast();
   const router = useRouter();
@@ -92,6 +99,30 @@ export function SiteActionsMenu({
           </Link>
           <Link href={`/dashboard/sites/${site.id}/settings`} onClick={() => setOpen(false)} className={itemCls}>
             <Settings className="size-4 text-muted" /> الإعدادات
+          </Link>
+          {templateKey === "marketplace" && (
+            <Link href={`/dashboard/sites/${site.id}/listings`} onClick={() => setOpen(false)} className={itemCls}>
+              <Tag className="size-4 text-muted" /> الإعلانات
+            </Link>
+          )}
+          {/* Site end-users (SiteUser) only exist for templates that use visitor
+              accounts (auth on by default). Hide the link elsewhere. */}
+          {authOnByDefault(templateKey) && (
+            <Link href={`/dashboard/sites/${site.id}/users`} onClick={() => setOpen(false)} className={itemCls}>
+              <Users className="size-4 text-muted" /> المستخدمون
+            </Link>
+          )}
+          <Link href={`/dashboard/sites/${site.id}/collaborators`} onClick={() => setOpen(false)} className={itemCls}>
+            <UserCog className="size-4 text-muted" /> المتعاونون
+          </Link>
+          <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
+            <MessageSquare className="size-4 text-muted" />
+            <span className="flex-1">الرسائل</span>
+            {unread > 0 && (
+              <span className="min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white">
+                {unread > 99 ? "٩٩+" : unread.toLocaleString("ar-EG")}
+              </span>
+            )}
           </Link>
           <a href={`/preview/${site.id}`} target="_blank" rel="noreferrer" onClick={() => setOpen(false)} className={itemCls}>
             <Eye className="size-4 text-muted" /> معاينة

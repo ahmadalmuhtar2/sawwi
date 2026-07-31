@@ -62,6 +62,25 @@ export function formatArabicAmount(n: number): string {
   return toArabicDigits(grouped).replace(/,/g, "٬");
 }
 
+/**
+ * Format any number for display in Arabic: Arabic-Indic digits, an Arabic
+ * thousands separator (٬) and an Arabic decimal separator (٫) — e.g. 120000 →
+ * "١٢٠٬٠٠٠", 12.5 → "١٢٫٥". A value that is NOT a plain number (already has a
+ * unit, Arabic digits, or is free text like "بنزين") is passed through with only
+ * its digits localized, so it's safe as a drop-in wherever a spec may be text.
+ * Note: do NOT use this for years — a year would wrongly gain a separator (٢٬٠٢٣).
+ */
+export function formatArabicNumber(v: string | number | null | undefined): string {
+  if (v == null) return "";
+  const s = String(v).trim();
+  if (/^-?\d+(\.\d+)?$/.test(s)) {
+    const [int, dec] = s.split(".");
+    const grouped = Number(int).toLocaleString("en-US");
+    return toArabicDigits(dec ? `${grouped}.${dec}` : grouped).replace(/,/g, "٬").replace(/\./g, "٫");
+  }
+  return toArabicDigits(s);
+}
+
 // Any currency token a user might have typed into a price, so we can strip it and
 // re-append the site's chosen symbol — this is what makes every service share one
 // currency even if they were entered inconsistently. Longest variants first.

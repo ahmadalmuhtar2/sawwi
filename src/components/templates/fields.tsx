@@ -153,7 +153,7 @@ function FieldRow({
   if (field.type === "select") {
     const options = selectOptions(root, field);
     return (
-      <Field label={field.label} hint={field.help}>
+      <Field label={field.label} info={field.help}>
         <Select value={value} onChange={(e) => set(field.key, e.target.value)}>
           <option value="">{field.placeholder ?? "اختر"}</option>
           {options.map((o) => (
@@ -174,7 +174,7 @@ function FieldRow({
   }
 
   return (
-    <Field label={field.label} hint={field.help}>
+    <Field label={field.label} info={field.help}>
       {field.type === "textarea" ? (
         <Textarea
           value={value}

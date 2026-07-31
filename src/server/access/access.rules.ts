@@ -122,21 +122,25 @@ export function resolveSiteAccess(
   // but we also match strictly on siteId).
   const grant = claims.siteAccess.find((g) => g.siteId === site.id);
   if (grant) {
-    if (grant.level === "editor") {
-      // Collaborators edit settings by default. The builder + publish require an
-      // explicit builderAccess grant from the reseller (owner decision).
+    if (grant.level === "editor" && grant.builderAccess) {
+      // `builderAccess` is the master EDIT switch for a collaborator: with it they
+      // are a full editor — content, appearance (theme) and publish. Without it
+      // they fall through to view-only below. (Owner decision, set per-site on the
+      // Collaborators tab.) Managing members/billing/delete stays owner/admin only.
       return {
         ...NONE,
         canView: true,
         canEditSettings: true,
-        canEditBuilder: grant.builderAccess,
-        canPublish: grant.builderAccess, // subscription gating applied separately
+        canEditBuilder: true,
+        canPublish: true, // subscription gating applied separately
         // The invited business owner sees a READ-ONLY expiry (banner + tab), but
         // never manages billing — that stays with the reseller.
         canViewBilling: true,
       };
     }
-    // viewer
+    // Editor WITHOUT builder access, or an explicit viewer → view-only (they may
+    // still receive this site's notifications — that keys off the SiteAccess row,
+    // not these permissions).
     return { ...NONE, canView: true, canViewBilling: true };
   }
 

@@ -7,8 +7,9 @@ import { DEFAULT_CURRENCY } from "@/shared/currency";
 import { barbershopFiveStar } from "./barbershop-five-star";
 import { restaurant } from "./restaurant";
 import { foulFatteh } from "./foul-fatteh";
+import { marketplace } from "./marketplace";
 
-export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, foulFatteh];
+export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, foulFatteh, marketplace];
 
 const BY_KEY = new Map(TEMPLATES.map((t) => [t.key, t]));
 

@@ -112,10 +112,25 @@ export const sitesRepository = {
     // currency is non-nullable with a default; only touch it when the caller
     // actually sends one, so a PUT that omits it never resets the site's choice.
     const currency = data.currency || undefined;
+    // authEnabled / roleLabels are preserve-on-omit too — saving another tab must
+    // never flip end-user auth off or wipe the labels.
+    const authEnabled = data.authEnabled;
+    const roleLabels = data.roleLabels as Prisma.InputJsonValue | undefined;
     return getPrisma().siteSettings.upsert({
       where: { siteId },
-      create: { siteId, ...fields, currency: currency ?? "SYP" },
-      update: { ...fields, ...(currency ? { currency } : {}) },
+      create: {
+        siteId,
+        ...fields,
+        currency: currency ?? "SYP",
+        authEnabled: authEnabled ?? false,
+        roleLabels: roleLabels ?? {},
+      },
+      update: {
+        ...fields,
+        ...(currency ? { currency } : {}),
+        ...(authEnabled !== undefined ? { authEnabled } : {}),
+        ...(roleLabels !== undefined ? { roleLabels } : {}),
+      },
     });
   },
 

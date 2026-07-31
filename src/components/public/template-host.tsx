@@ -10,6 +10,7 @@ import { deepMerge } from "@/templates/content";
 import { getFont } from "@/lib/palette";
 import type { TemplateTheme } from "@/server/sites/template-data";
 import { EditProvider } from "@/components/templates/inline-edit";
+import { SiteAuthProvider, SiteAuthWidget, type RoleLabels, type SiteUser } from "@/components/public/site-auth";
 
 type TokenColors = Record<string, string | null>;
 
@@ -19,6 +20,14 @@ export function TemplateHost({
   theme,
   currency,
   edit,
+  listings,
+  data,
+  slug,
+  route,
+  logoUrl,
+  authEnabled,
+  roleLabels,
+  initialUser = null,
 }: {
   templateKey: string | null;
   content: Record<string, unknown>;
@@ -27,6 +36,28 @@ export function TemplateHost({
   /** Builder only: enables inline editing. Commits call onChange with the next
    *  content. Omitted on the published site → the template renders inert. */
   edit?: { onChange: (next: Record<string, unknown>) => void };
+  /** Data-backed templates (marketplace) get their live rows here. Undefined for
+   *  content-only templates and for the gallery (→ the template shows its demo). */
+  listings?: unknown[];
+  /** Template-specific server payload (e.g. the marketplace's filtered results +
+   *  facets + parsed URL filters). Opaque to the host; the template narrows it. */
+  data?: unknown;
+  /** The public slug — forwarded so a template's enquiry form can reach the API. */
+  slug?: string;
+  /** URL path segments after the site root (e.g. ["properties","<id>"]). Only
+   *  URL-routed templates (marketplace) read it; others ignore it. Undefined in
+   *  the gallery/builder → the template uses its own internal-state navigation. */
+  route?: string[];
+  /** The site's uploaded logo (Site.logoUrl). Templates that show a brand logo in
+   *  their header read it; others ignore it. Undefined in the gallery. */
+  logoUrl?: string | null;
+  /** End-user auth: when enabled, every template gets the auth context + widget.
+   *  Off in the gallery/builder (→ inert). */
+  authEnabled?: boolean;
+  roleLabels?: Partial<RoleLabels>;
+  /** Server-resolved current site-user — seeds the auth context (avoids a gate flash
+   *  on auth-first templates). */
+  initialUser?: SiteUser | null;
 }) {
   const tpl = getTemplate(templateKey);
   if (!tpl) {
@@ -55,7 +86,10 @@ export function TemplateHost({
 
   const merged = deepMerge(tpl.defaults, content);
   const Component = tpl.Component;
-  const rendered = <Component {...merged} currency={currency} />;
+  // `listings`/`slug` are extra props only data-backed templates read; others
+  // ignore them. `listings` stays undefined for the gallery so those templates
+  // fall back to their own demo data.
+  const rendered = <Component {...merged} currency={currency} listings={listings} data={data} slug={slug} route={route} logoUrl={logoUrl} />;
 
   // data-theme="light": templates are always light and own their palette; this
   // stops the dashboard's dark chrome from bleeding into the builder preview.
@@ -64,13 +98,21 @@ export function TemplateHost({
     // z-indexes (sticky header, bottom nav, sheet) stay contained and never
     // overlay the dashboard chrome (e.g. the profile dropdown) in the builder.
     <div data-theme="light" data-tpl={templateKey ?? undefined} className="sw-tpl-scope isolate" style={style}>
-      {edit ? (
-        <EditProvider content={content} onChange={edit.onChange}>
-          {rendered}
-        </EditProvider>
-      ) : (
-        rendered
-      )}
+      {/* Site-user auth wraps every template so any of them can useSiteAuth();
+          the floating widget + modal render here too (only when enabled & not in
+          the builder). */}
+      <SiteAuthProvider enabled={!edit && !!authEnabled} labels={roleLabels} initialUser={initialUser}>
+        {edit ? (
+          <EditProvider content={content} onChange={edit.onChange}>
+            {rendered}
+          </EditProvider>
+        ) : (
+          rendered
+        )}
+        {/* Floating widget only for templates that DON'T own their auth UI. Auth-first
+            templates (marketplace) render their own mandatory gate instead. */}
+        {!edit && authEnabled && !tpl.ownsAuthUI ? <SiteAuthWidget /> : null}
+      </SiteAuthProvider>
     </div>
   );
 }

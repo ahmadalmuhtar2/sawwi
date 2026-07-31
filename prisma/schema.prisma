@@ -90,6 +90,30 @@ enum CommissionStatus {
   settled
 }
 
+/// Lifecycle of a lead/message a visitor submits through a published site's
+/// contact form. Owners triage from the dashboard inbox.
+enum SiteMessageStatus {
+  unread
+  read
+  archived
+}
+
+/// The two verticals of the marketplace template. A single site can list both.
+enum ListingVertical {
+  car
+  home
+}
+
+/// End-user role on a PUBLISHED site (distinct from the platform's PlatformRole).
+/// manager = delegated site admin · contributor = manages their own content (e.g.
+/// posts ads) · member = registered visitor. New signups default to `member`;
+/// display labels are owner-customizable per site (SiteSettings.roleLabels).
+enum SiteUserRole {
+  manager
+  contributor
+  member
+}
+
 // ============================================================================
 // Identity
 // NOTE: provisional. Better Auth will own the auth tables (Session/Account/
@@ -111,12 +135,32 @@ model User {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  memberships WorkspaceMember[]
-  siteAccess  SiteAccess[]
-  sessions    Session[]
-  accounts    Account[]
+  memberships   WorkspaceMember[]
+  siteAccess    SiteAccess[]
+  sessions      Session[]
+  accounts      Account[]
+  notifications Notification[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
+}
+
+/// A browser Web Push subscription for a platform User (PWA notifications). One
+/// row per browser/device endpoint; `endpoint` is globally unique. Created when
+/// the user enables notifications, deleted on unsubscribe or when a send returns
+/// 404/410 (expired). Cascades away with the user.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String // client public key (from the browser subscription)
+  auth      String // client auth secret
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 // ---- Better Auth tables (managed by Better Auth via src/lib/auth.ts) --------
@@ -259,9 +303,144 @@ model Site {
   testimonials Testimonial[]
   faq          FaqItem[]
   snapshots    PublishSnapshot[]
+  messages     SiteMessage[]
+  notifications Notification[]
+  listings     Listing[]
+  siteUsers    SiteUser[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// An END-USER account on a published site (a customer/seller of the tenant's
+/// website) — completely separate from the platform `User` (dashboard identity).
+/// Scoped per site; email is unique within a site. Password is a scrypt hash
+/// (salt:hash). Sessions are opaque tokens in `SiteUserSession`.
+model SiteUser {
+  id           String       @id @default(cuid())
+  siteId       String
+  email        String
+  name         String?
+  /// Optional contact phone/WhatsApp the user manages in their account settings;
+  /// prefills the enquiry + contact forms. Nullable → existing rows unaffected.
+  phone        String?
+  passwordHash String
+  role         SiteUserRole @default(member)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  sessions SiteUserSession[]
+  listings Listing[]
+
+  @@unique([siteId, email])
+  @@index([siteId])
+  @@map("site_users")
+}
+
+/// A site-user session — the cookie holds only `token`; everything else is
+/// server-side. `siteId` is denormalized so a session is validated against the
+/// site it was minted for (defense-in-depth on top of host-only cookie scoping).
+model SiteUserSession {
+  id         String   @id @default(cuid())
+  siteUserId String
+  siteId     String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  siteUser SiteUser @relation(fields: [siteUserId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([siteUserId])
+  @@map("site_user_sessions")
+}
+
+/// A marketplace listing (a car or a home) the site OWNER publishes. Unlike
+/// ordinary template content (frozen in a PublishSnapshot), listings are served
+/// LIVE from this table — a dealer/agency adds and removes them daily, so there
+/// is no "publish the whole site" step gating them.
+///
+/// The physical shape is fixed (human-controlled + CI-migrated); the per-vertical
+/// FIELD set is defined in the template module and stored in `specs` (JSON), so
+/// the marketplace can grow new fields without a migration (see the generative-
+/// architecture direction). Hot filter/sort keys are promoted to columns.
+model Listing {
+  id          String          @id @default(cuid())
+  siteId      String
+  vertical    ListingVertical
+  title       String
+  price       Float? // integer amount; render applies currency + separators. null = "on request"
+  offer       String? // homes: "rent" | "buy" (a filter); null for cars
+  place       String? // city / area — a filter + shown on the card
+  description String?
+  images      Json            @default("[]") // string[] of storage URLs; first = cover
+  features    Json            @default("[]") // string[] extras (the `multi` filter)
+  specs       Json            @default("{}") // all other vertical fields, keyed by field key
+  published   Boolean         @default(false)
+  /// Merchandising/monetization lever: featured listings sort first and show a
+  /// "مميّز" badge — the dealer's way to push high-margin stock (or a paid boost).
+  featured    Boolean         @default(false)
+  /// available | reserved | sold — keeps the showroom credible + creates urgency.
+  status      String          @default("available")
+  /// The site-user (seller/contributor) who authored this listing, when posted
+  /// on-site. null = owner-authored from the dashboard. onDelete SetNull so
+  /// removing a seller account never deletes their listings.
+  authorSiteUserId String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  site   Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  author SiteUser? @relation(fields: [authorSiteUserId], references: [id], onDelete: SetNull)
+
+  @@index([siteId, vertical, published])
+  @@index([siteId, createdAt])
+  @@index([siteId, authorSiteUserId])
+  @@map("listings")
+}
+
+/// A lead captured from a published site's public contact form. Append-only
+/// from the visitor's side; the owner only changes `status` (read/archived) or
+/// deletes. No account is required to submit — anti-abuse is enforced in the
+/// service (honeypot + per-IP rate limit); `ipHash` is a coarse, non-PII signal.
+model SiteMessage {
+  id        String            @id @default(cuid())
+  siteId    String
+  name      String
+  contact   String? // phone / WhatsApp / email — free text, optional
+  body      String
+  status    SiteMessageStatus @default(unread)
+  ipHash    String? // sha256(ip)[:16] — abuse signal only, not stored PII
+  createdAt DateTime          @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, status])
+  @@index([siteId, createdAt])
+  @@map("site_messages")
+}
+
+/// A per-user in-app notification (dashboard bell). Created as a best-effort
+/// side effect of an event — e.g. a visitor sends a message → every user who can
+/// see that site (workspace members + accepted collaborators) gets one. Read /
+/// cleared from the bell. Cascades away with the user or the related site.
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // event kind, e.g. "site_message"
+  title     String
+  body      String?
+  siteId    String? // context for grouping / navigation
+  link      String? // dashboard path opened on click
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site? @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }
 
 /// Site-scoped invite: how a business owner edits ONLY their one site.
@@ -298,6 +477,12 @@ model SiteSettings {
   currency       String  @default("SYP") // site-wide price currency, see src/shared/currency.ts
   logoMediaId    String?
   loadingIconId  String?
+  /// End-user auth: when true the published site shows sign-in/up and accepts
+  /// SiteUser accounts. Off by default so existing sites are unchanged.
+  authEnabled    Boolean @default(false)
+  /// Owner's custom display labels for the 3 SiteUserRole values, e.g.
+  /// { "manager": "مدير", "contributor": "بائع", "member": "زبون" }.
+  roleLabels     Json    @default("{}")
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 

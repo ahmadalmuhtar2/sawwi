@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Globe, ExternalLink } from "lucide-react";
+import { Globe, ExternalLink, MessageSquare } from "lucide-react";
 import { getSessionClaims } from "@/lib/auth";
 import { listSites } from "@/server/sites/sites.service";
+import { unreadCountsForSites } from "@/server/messages/messages.service";
 import { canManageWorkspace } from "@/server/access/access.rules";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/badge";
@@ -13,6 +14,8 @@ import { siteHost, siteUrl } from "@/lib/site-url";
 export default async function SitesPage() {
   const claims = await getSessionClaims();
   const sites = claims ? await listSites(claims) : [];
+  // Unread visitor-message counts, for the badge on each site card + its menu.
+  const unreadBySite = sites.length ? await unreadCountsForSites(sites.map((s) => s.id)) : {};
   // Resellers create freely; a direct owner may create only their first site;
   // business owners (no workspace) never create.
   const canCreate =
@@ -39,36 +42,43 @@ export default async function SitesPage() {
           />
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-3">
           {sites.map((s) => (
-            <Card key={s.id} className="flex flex-col p-5 transition hover:shadow-md">
-              <div className="flex items-start justify-between">
-                {s.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URL
-                  <img
-                    src={s.logoUrl}
-                    alt={s.businessName}
-                    className="size-11 rounded-lg border border-line object-cover"
-                  />
-                ) : (
-                  <div className="flex size-11 items-center justify-center rounded-lg bg-accent-100 text-accent">
-                    <Globe className="size-5" />
-                  </div>
-                )}
-                <div className="flex items-center gap-1">
-                  <StatusBadge status={s.status} />
-                  <SiteActionsMenu
-                    site={{ id: s.id, slug: s.slug, businessName: s.businessName, status: s.status }}
-                    canDelete={claims ? canManageWorkspace(claims, s.workspaceId) : false}
-                  />
+            <Card key={s.id} className="flex items-center gap-4 p-4 transition hover:shadow-md">
+              {s.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- user-uploaded storage URL
+                <img
+                  src={s.logoUrl}
+                  alt={s.businessName}
+                  className="size-11 shrink-0 rounded-lg border border-line object-cover"
+                />
+              ) : (
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-accent-100 text-accent">
+                  <Globe className="size-5" />
                 </div>
-              </div>
-              <h3 className="mt-4 font-bold text-ink">{s.businessName}</h3>
-              <p className="font-label text-[11px] text-faint">{siteHost(s.slug)}</p>
-              <div className="mt-4 flex items-center gap-2 border-t border-line pt-4">
+              )}
+
+              {/* Name + host — the whole block links to the editor */}
+              <Link href={`/dashboard/sites/${s.id}`} className="min-w-0 flex-1">
+                <h3 className="truncate font-bold text-ink">{s.businessName}</h3>
+                <p className="truncate font-label text-[11px] text-faint">{siteHost(s.slug)}</p>
+              </Link>
+
+              <div className="flex shrink-0 items-center gap-2">
+                {(unreadBySite[s.id] ?? 0) > 0 && (
+                  <Link
+                    href={`/dashboard/sites/${s.id}/messages`}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent-100 px-2 py-0.5 text-[11px] font-bold text-accent-900 transition hover:bg-accent-200"
+                    title="رسائل غير مقروءة"
+                  >
+                    <MessageSquare className="size-3" />
+                    {unreadBySite[s.id]!.toLocaleString("ar-EG")}
+                  </Link>
+                )}
+                <StatusBadge status={s.status} />
                 <Link
                   href={`/dashboard/sites/${s.id}`}
-                  className="flex-1 rounded-md bg-accent-100 py-2 text-center text-sm font-medium text-accent-900 transition hover:bg-accent-200"
+                  className="hidden rounded-md bg-accent-100 px-4 py-1.5 text-sm font-medium text-accent-900 transition hover:bg-accent-200 sm:inline-block"
                 >
                   تحرير
                 </Link>
@@ -83,6 +93,12 @@ export default async function SitesPage() {
                     <ExternalLink className="size-4" />
                   </a>
                 )}
+                <SiteActionsMenu
+                  site={{ id: s.id, slug: s.slug, businessName: s.businessName, status: s.status }}
+                  canDelete={claims ? canManageWorkspace(claims, s.workspaceId) : false}
+                  unread={unreadBySite[s.id] ?? 0}
+                  templateKey={s.templateKey}
+                />
               </div>
             </Card>
           ))}
