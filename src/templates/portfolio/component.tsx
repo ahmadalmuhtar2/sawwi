@@ -359,11 +359,11 @@ export default function Portfolio(props: PortfolioProps) {
       {/* ══════════ masthead (sticky) ══════════ */}
       <header className="sticky top-0 z-40 border-b border-[var(--pf-line-soft)] bg-[color-mix(in_oklch,var(--pf-bg)_88%,transparent)] backdrop-blur-md">
         <div className="mx-auto flex max-w-[1240px] items-center gap-3 px-[18px] py-3 lg:gap-4 lg:px-8">
-          <button onClick={() => jump("top")} className="flex shrink-0 items-baseline gap-2 text-[var(--pf-ink)]">
-            <span className="text-[20px] font-medium" style={{ fontFamily: "var(--pf-display)" }}>
+          <button onClick={() => jump("top")} className="flex min-w-0 items-baseline gap-2 text-[var(--pf-ink)]">
+            <span className="min-w-0 truncate text-[20px] font-medium" style={{ fontFamily: "var(--pf-display)" }}>
               {shop.brand || firstName || (lang === "ar" ? "الاسم" : "Name")}
             </span>
-            {shop.role && <span className="hidden text-[10.5px] uppercase tracking-[0.12em] text-[var(--pf-faint)] sm:inline" style={{ fontFamily: MONO }}>{shop.role}</span>}
+            {shop.role && <span className="hidden shrink-0 text-[10.5px] uppercase tracking-[0.12em] text-[var(--pf-faint)] sm:inline" style={{ fontFamily: MONO }}>{shop.role}</span>}
           </button>
           <nav className="sw-no-scrollbar ms-auto hidden min-w-0 gap-1 overflow-x-auto md:flex">
             {NAV_IDS.map((id) => (
@@ -375,12 +375,12 @@ export default function Portfolio(props: PortfolioProps) {
             ))}
           </nav>
           {shop.status && (
-            <span className="ms-auto inline-flex shrink-0 items-center gap-2 whitespace-nowrap md:ms-0">
+            <span className="hidden shrink-0 items-center gap-2 whitespace-nowrap md:ms-0 md:inline-flex">
               <span className="size-[7px] animate-pulse rounded-full bg-[var(--pf-accent)]" />
               <span className="text-[10.5px] uppercase tracking-[0.1em] text-[var(--pf-muted)]" style={{ fontFamily: MONO }}>{shop.status}</span>
             </span>
           )}
-          <button onClick={() => jump("contact")} className="inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--pf-accent)] px-4 text-[14px] font-medium text-white transition hover:bg-[var(--pf-accent-strong)]">
+          <button onClick={() => jump("contact")} className="ms-auto inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-[10px] bg-[var(--pf-accent)] px-4 text-[14px] font-medium text-white transition hover:bg-[var(--pf-accent-strong)] md:ms-0">
             {t.contactCta}
           </button>
         </div>
