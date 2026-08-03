@@ -287,6 +287,39 @@ export async function setUserEndDate(
   return user;
 }
 
+/**
+ * Delete a user account. Cascades sessions/accounts/memberships/notifications/
+ * push subs and nullifies their SiteAccess grants (see schema onDelete rules).
+ * Guarded: an admin can't delete themselves, and can't delete a user who still
+ * OWNS a workspace with live sites (that would orphan them — remove the sites
+ * first). Empty workspaces the user solely owns are cleaned up in the same tx.
+ */
+export async function deleteUser(claims: SessionClaims, userId: string) {
+  assertAdmin(claims);
+  if (claims.userId === userId) throw errors.conflict("لا يمكنك حذف حسابك الخاص");
+  const prisma = getPrisma();
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      memberships: {
+        where: { role: "owner" },
+        select: { workspace: { select: { id: true, _count: { select: { sites: true } } } } },
+      },
+    },
+  });
+  if (!user) throw errors.notFound("المستخدم غير موجود");
+  if (user.memberships.some((m) => m.workspace._count.sites > 0)) {
+    throw errors.conflict("لا يمكن حذف مالك لديه مواقع. احذف مواقعه أولًا ثم أعد المحاولة.");
+  }
+  const emptyOwned = user.memberships.map((m) => m.workspace.id);
+  await prisma.$transaction(async (tx) => {
+    if (emptyOwned.length) await tx.workspace.deleteMany({ where: { id: { in: emptyOwned } } });
+    await tx.user.delete({ where: { id: userId } });
+  });
+  return { ok: true };
+}
+
 export async function setPaymentStatus(
   claims: SessionClaims,
   paymentId: string,

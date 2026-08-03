@@ -15,6 +15,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useEdit, EditableText } from "@/components/templates/inline-edit";
 import { useSiteAuth } from "@/components/public/site-auth";
+import { whatsappLink } from "@/lib/whatsapp";
 import { formatArabicAmount, formatArabicNumber } from "@/shared/currency";
 import {
   FILTERS, SORTS, DETAIL_SPECS, VERTICAL_LABEL, VERTICAL_WORD, STATUS_LABEL,
@@ -83,7 +84,7 @@ export interface MarketplaceProps {
 
 /* ─────────────────────────────── shell ──────────────────────────────── */
 
-export default function Marketplace({ shop, currency = "$", data, slug, logoUrl }: MarketplaceProps) {
+export default function Marketplace({ shop, currency = "$", data, logoUrl }: MarketplaceProps) {
   const edit = useEdit();
   const auth = useSiteAuth();
   // The `logoUrl` prop is the LIVE, permanent Site.logoUrl (passed by the served
@@ -118,7 +119,7 @@ export default function Marketplace({ shop, currency = "$", data, slug, logoUrl 
   } else if (auth.user.role === "contributor") {
     body = <SellerArea currency={currency} theme={theme} onToggleTheme={onToggleTheme} />;
   } else {
-    body = <BuyerShell shop={shop} currency={currency} data={data} slug={slug} theme={theme} onToggleTheme={onToggleTheme} logoUrl={brandLogo} />;
+    body = <BuyerShell shop={shop} currency={currency} data={data} theme={theme} onToggleTheme={onToggleTheme} logoUrl={brandLogo} />;
   }
 
   return (
@@ -130,7 +131,7 @@ export default function Marketplace({ shop, currency = "$", data, slug, logoUrl 
 
 /* ───────────────────── buyer / manager shell (served) ────────────────── */
 
-function BuyerShell({ shop, currency, data, slug, theme, onToggleTheme, logoUrl }: { shop: MarketplaceProps["shop"]; currency: string; data: MarketplaceData; slug?: string; theme: MkTheme; onToggleTheme: () => void; logoUrl?: string | null }) {
+function BuyerShell({ shop, currency, data, theme, onToggleTheme, logoUrl }: { shop: MarketplaceProps["shop"]; currency: string; data: MarketplaceData; theme: MkTheme; onToggleTheme: () => void; logoUrl?: string | null }) {
   const router = useRouter();
   const view = data.view;
   const vertical = view.vertical;
@@ -175,7 +176,6 @@ function BuyerShell({ shop, currency, data, slug, theme, onToggleTheme, logoUrl 
           listing={data.detail}
           currency={currency}
           shop={shop}
-          slug={slug}
           onBack={() => go({ kind: "browse", vertical })}
           onSellerOpen={(id) => go({ kind: "sellerPage", vertical, id })}
         />
@@ -759,18 +759,20 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
 
 /* ─────────────────────────────── detail ─────────────────────────────── */
 
-function DetailView({ listing, currency, shop, slug, onBack, onSellerOpen }: {
+function DetailView({ listing, currency, shop, onBack, onSellerOpen }: {
   listing: MarketplaceListing;
   currency: string;
   shop: MarketplaceProps["shop"];
-  slug?: string;
   onBack: () => void;
   onSellerOpen?: (id: string) => void;
 }) {
   const [phoneShown, setPhoneShown] = React.useState(false);
   const [enquiry, setEnquiry] = React.useState(false);
-  const phone = (listing.specs.phone as string) || shop.phone || "";
-  const seller = (listing.specs.seller as string) || shop.sellerName || shop.name;
+  // The contact is the SELLER's — never the site owner's. A seller-posted ad
+  // (has authorId) carries the seller's own required phone in specs; only an
+  // owner-managed ad (no author) may fall back to the shop number.
+  const phone = (listing.specs.phone as string) || (listing.authorId ? "" : shop.phone) || "";
+  const seller = (listing.specs.seller as string) || (listing.authorId ? "" : shop.sellerName || shop.name) || "";
   const sellerKind = (listing.specs.sellerKind as string) || shop.sellerKind || "";
   const sellerLink = !!(listing.authorId && onSellerOpen);
   const specs = DETAIL_SPECS[listing.vertical].filter((s) => listing.specs[s.k] != null && listing.specs[s.k] !== "");
@@ -855,7 +857,7 @@ function DetailView({ listing, currency, shop, slug, onBack, onSellerOpen }: {
                 </span>
               </span>
             )}
-            <button onClick={() => setEnquiry(true)} className="h-11 rounded-[10px] bg-mk-accent text-[14.5px] font-medium text-white transition hover:bg-mk-strong">أرسل رسالة</button>
+            {phone && <button onClick={() => setEnquiry(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#25D366] text-[14.5px] font-semibold text-white transition hover:brightness-95">راسل البائع عبر واتساب</button>}
             {phone && (phoneShown
               ? <a href={`tel:${phone.replace(/\s/g, "")}`} className="h-11 rounded-[10px] border border-mk-line bg-mk-surface text-center text-[14px] font-medium leading-[44px] text-mk-ink hover:bg-mk-track" style={{ fontFamily: MONO }} dir="ltr">{phone}</a>
               : <button onClick={() => setPhoneShown(true)} className="h-11 rounded-[10px] border border-mk-line bg-mk-surface text-[14px] font-medium text-mk-ink hover:bg-mk-track">إظهار رقم الهاتف</button>)}
@@ -863,73 +865,58 @@ function DetailView({ listing, currency, shop, slug, onBack, onSellerOpen }: {
         </div>
       </div>
 
-      {enquiry && <EnquiryModal listing={listing} slug={slug} onClose={() => setEnquiry(false)} />}
+      {enquiry && <EnquiryModal listing={listing} seller={seller} onClose={() => setEnquiry(false)} />}
     </div>
   );
 }
 
-function EnquiryModal({ listing, slug, onClose }: { listing: MarketplaceListing; slug?: string; onClose: () => void }) {
-  const auth = useSiteAuth();
-  // Name + a starter message are prefilled from the signed-in user; the WhatsApp
-  // number is the one thing they usually need to add (prefilled if on file).
-  const [form, setForm] = React.useState(() => ({
-    name: auth.user?.name ?? "",
-    contact: auth.user?.phone ?? "",
-    message: `مرحبًا، أنا مهتم بـ «${listing.title}». هل ما زال متاحًا؟`,
-    company: "",
-  }));
-  const [state, setState] = React.useState<"idle" | "sending" | "sent">("idle");
-  const [error, setError] = React.useState<string | null>(null);
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((s) => ({ ...s, [k]: e.target.value }));
+// Build a WhatsApp deep link to the SELLER. Normalizes a locally-entered Syrian
+// number (leading 0 → +963) so wa.me resolves internationally.
+function sellerWaHref(phone: string, text: string): string {
+  let d = phone.replace(/[^0-9]/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.startsWith("0")) d = `963${d.slice(1)}`;
+  return whatsappLink(d, text);
+}
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (state === "sending") return;
-    if (!form.name.trim() || !form.message.trim()) { setError("الرجاء إدخال الاسم والرسالة"); return; }
-    if (!form.contact.trim()) { setError("الرجاء إدخال رقم واتساب للتواصل"); return; }
-    setError(null); setState("sending");
-    const body = `استفسار عن: ${listing.title}\n\n${form.message}`;
-    if (!slug) { setTimeout(() => setState("sent"), 300); return; }
-    try {
-      const res = await fetch("/api/public/messages", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ slug, name: form.name, contact: form.contact, body, company: form.company }) });
-      const json = await res.json().catch(() => null);
-      if (res.ok && json?.ok) { setState("sent"); return; }
-      setError(json && !json.ok ? json.error?.message ?? "تعذّر الإرسال" : "تعذّر الإرسال"); setState("idle");
-    } catch { setError("تعذّر الاتصال، حاول مجددًا"); setState("idle"); }
+function EnquiryModal({ listing, seller, onClose }: { listing: MarketplaceListing; seller: string; onClose: () => void }) {
+  const auth = useSiteAuth();
+  const sellerPhone = (listing.specs.phone as string) || "";
+  const [message, setMessage] = React.useState(
+    `مرحبًا${seller ? ` ${seller}` : ""}، أنا مهتم بـ «${listing.title}». هل ما زال متاحًا؟`,
+  );
+
+  // A listing enquiry goes STRAIGHT to the seller over WhatsApp — never to the
+  // site's message inbox (that's reserved for the floating "contact us" widget,
+  // which reaches the site owner/collaborators).
+  function openWhatsApp() {
+    if (!sellerPhone) return;
+    const who = auth.user?.name ? `${auth.user.name}: ` : "";
+    window.open(sellerWaHref(sellerPhone, who + message), "_blank", "noopener,noreferrer");
+    onClose();
   }
 
   return (
     <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
       <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[420px] overflow-hidden rounded-2xl bg-mk-surface shadow-xl">
         <div className="flex items-center justify-between border-b border-mk-line-soft px-5 py-3.5">
-          <span className="text-[16px] font-semibold text-mk-ink">{state === "sent" ? "تم الإرسال" : "أرسل رسالة للبائع"}</span>
+          <span className="text-[16px] font-semibold text-mk-ink">راسل البائع</span>
           <button onClick={onClose} aria-label="إغلاق" className="rounded-md p-1 text-mk-muted hover:text-mk-ink">✕</button>
         </div>
-        {state === "sent" ? (
-          <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-            <span className="text-[40px]">✅</span>
-            <p className="text-[14.5px] text-mk-muted">وصلت رسالتك، سيعاود البائع التواصل معك قريبًا.</p>
-            <button onClick={onClose} className="h-10 rounded-[10px] bg-mk-accent px-5 text-[14px] font-medium text-white">تم</button>
+        {sellerPhone ? (
+          <div className="flex flex-col gap-2.5 px-5 py-4">
+            <p className="text-[13px] leading-relaxed text-mk-muted">استفسار حول <span className="font-semibold text-mk-ink">{listing.title}</span> — ستُفتح محادثة واتساب مع البائع مباشرة.</p>
+            <label className="flex flex-col gap-1">
+              <span className="text-[11px] text-mk-faint" style={{ fontFamily: MONO }}>رسالتك</span>
+              <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} maxLength={1000} className="resize-none rounded-[10px] border border-mk-line bg-mk-surface px-3.5 py-2.5 text-[14.5px] text-mk-ink outline-none focus:border-mk-accent" />
+            </label>
+            <button onClick={openWhatsApp} className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[10px] bg-[#25D366] text-[14.5px] font-semibold text-white transition hover:brightness-95">متابعة عبر واتساب</button>
           </div>
         ) : (
-          <form onSubmit={submit} className="flex flex-col gap-2.5 px-5 py-4">
-            <p className="text-[13px] leading-relaxed text-mk-muted">استفسار حول <span className="font-semibold text-mk-ink">{listing.title}</span></p>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] text-mk-faint" style={{ fontFamily: MONO }}>الاسم</span>
-              <input value={form.name} onChange={set("name")} placeholder="الاسم" maxLength={80} className="h-11 rounded-[10px] border border-mk-line bg-mk-surface px-3.5 text-[14.5px] text-mk-ink outline-none focus:border-mk-accent" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] text-mk-faint" style={{ fontFamily: MONO }}>رقم واتساب *</span>
-              <input value={form.contact} onChange={set("contact")} placeholder="09xxxxxxxx" inputMode="tel" dir="ltr" maxLength={60} className="h-11 rounded-[10px] border border-mk-line bg-mk-surface px-3.5 text-[14.5px] text-mk-ink outline-none focus:border-mk-accent" />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] text-mk-faint" style={{ fontFamily: MONO }}>الرسالة</span>
-              <textarea value={form.message} onChange={set("message")} placeholder="رسالتك…" rows={3} maxLength={1000} className="resize-none rounded-[10px] border border-mk-line bg-mk-surface px-3.5 py-2.5 text-[14.5px] text-mk-ink outline-none focus:border-mk-accent" />
-            </label>
-            <input value={form.company} onChange={set("company")} name="company" tabIndex={-1} autoComplete="off" aria-hidden className="absolute left-[-9999px] h-0 w-0 opacity-0" />
-            {error && <span className="text-[12.5px] font-medium text-mk-danger">{error}</span>}
-            <button type="submit" disabled={state === "sending"} className="mt-1 h-11 rounded-[10px] bg-mk-accent text-[14.5px] font-medium text-white transition hover:bg-mk-strong disabled:opacity-60">{state === "sending" ? "جارٍ الإرسال…" : "إرسال"}</button>
-          </form>
+          <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+            <p className="text-[14.5px] text-mk-muted">لم يُضِف البائع رقم تواصل لهذا الإعلان.</p>
+            <button onClick={onClose} className="h-10 rounded-[10px] bg-mk-accent px-5 text-[14px] font-medium text-white">حسنًا</button>
+          </div>
         )}
       </div>
     </div>

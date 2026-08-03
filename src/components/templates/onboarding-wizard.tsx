@@ -29,6 +29,11 @@ export function OnboardingWizard({ templateKey }: { templateKey: string }) {
   const [name, setName] = React.useState("");
   const [slug, setSlug] = React.useState("");
   const [logo, setLogo] = React.useState("");
+  // Optional per-template create variant (e.g. site language for bilingual
+  // templates). Defaults to the module's default option.
+  const [variant, setVariant] = React.useState<string>(
+    tpl?.create ? (tpl.create.default ?? tpl.create.options[0]?.value ?? "") : "",
+  );
   const [uploadingLogo, setUploadingLogo] = React.useState(false);
   const [restored, setRestored] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
@@ -55,11 +60,12 @@ export function OnboardingWizard({ templateKey }: { templateKey: string }) {
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
-        const s = JSON.parse(raw) as { name?: string; slug?: string; logo?: string };
+        const s = JSON.parse(raw) as { name?: string; slug?: string; logo?: string; variant?: string };
         // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore on mount
         if (s.name) setName(s.name);
         if (s.slug) setSlug(s.slug);
         if (s.logo) setLogo(s.logo);
+        if (s.variant) setVariant(s.variant);
       }
     } catch { /* corrupt draft — start clean */ }
     setRestored(true);
@@ -69,10 +75,10 @@ export function OnboardingWizard({ templateKey }: { templateKey: string }) {
   React.useEffect(() => {
     if (!restored) return;
     const id = setTimeout(() => {
-      try { localStorage.setItem(storageKey, JSON.stringify({ name, slug, logo })); } catch { /* quota */ }
+      try { localStorage.setItem(storageKey, JSON.stringify({ name, slug, logo, variant })); } catch { /* quota */ }
     }, 400);
     return () => clearTimeout(id);
-  }, [name, slug, logo, restored, storageKey]);
+  }, [name, slug, logo, variant, restored, storageKey]);
 
   if (!tpl) return <p className="p-6 text-center text-muted">قالب غير معروف.</p>;
 
@@ -84,10 +90,14 @@ export function OnboardingWizard({ templateKey }: { templateKey: string }) {
     setCreating(true);
     setError(null);
     try {
-      const shop: Record<string, string> = {};
+      // Start from the chosen create-variant's seed (e.g. the English content for
+      // a bilingual template), then merge the typed name/logo over it.
+      const content: Record<string, unknown> =
+        tpl.create ? structuredClone(tpl.create.options.find((o) => o.value === variant)?.seed ?? {}) : {};
+      const shop: Record<string, unknown> = { ...((content.shop as Record<string, unknown>) ?? {}) };
       if (name.trim()) shop.name = name.trim();
       if (logo) shop.logo = logo;
-      const content = Object.keys(shop).length ? { shop } : {};
+      if (Object.keys(shop).length) content.shop = shop;
       const res = await api.post<{ id: string }>("/api/sites", {
         templateKey,
         slug,
@@ -113,6 +123,26 @@ export function OnboardingWizard({ templateKey }: { templateKey: string }) {
           تعدّله مباشرةً على الموقع بعد الإنشاء (انقر مرتين على أي نص).
         </p>
       </div>
+
+      {tpl.create && (
+        <Field label={tpl.create.label}>
+          <div className="inline-flex gap-1 rounded-md border border-line bg-neutral-100 p-1">
+            {tpl.create.options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => setVariant(o.value)}
+                className={
+                  "cursor-pointer rounded px-4 py-1.5 text-sm font-medium transition " +
+                  (variant === o.value ? "bg-surface text-ink shadow-sm" : "text-muted hover:text-ink")
+                }
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
 
       <Field label="اسم النشاط">
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={shopDef.name} />

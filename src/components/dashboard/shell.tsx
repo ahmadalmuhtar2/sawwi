@@ -242,8 +242,8 @@ export function DashboardShell({
 
         {/* Main */}
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex h-16 items-center justify-between border-b border-line bg-surface px-4 md:px-5">
-            <div className="flex items-center gap-2 md:gap-3">
+          <header className="flex h-16 items-center justify-between gap-2 border-b border-line bg-surface px-4 md:px-5">
+            <div className="flex min-w-0 items-center gap-2 md:gap-3">
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
@@ -267,7 +267,7 @@ export function DashboardShell({
                 <span className="text-sm font-semibold text-ink">موقعي</span>
               )}
             </div>
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex shrink-0 items-center gap-1 md:gap-2">
               <NotificationBell />
               <UserMenu user={user} showBilling={showResellerNav} />
             </div>

@@ -96,18 +96,21 @@ export function WorkspaceMenu({
   }
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative min-w-0">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm transition hover:border-neutral-400 hover:bg-neutral-100 cursor-pointer"
+        className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg border border-line bg-surface px-2 py-1.5 text-sm transition hover:border-neutral-400 hover:bg-neutral-100 cursor-pointer"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-md font-display text-[13px] font-bold", tintFor(Math.max(activeIndex, 0)))}>
           {monogram(active?.name ?? "؟")}
         </span>
-        <span className="max-w-40 truncate font-medium text-ink">{active?.name ?? "مساحة العمل"}</span>
-        <ChevronDown className={cn("size-4 text-faint transition", open && "rotate-180")} />
+        {/* min-w-0 lets the name shrink and truncate to the space actually left in
+            the header on narrow screens, instead of a fixed width that overflows
+            and pushes the right-side items off-screen. Capped on desktop. */}
+        <span className="min-w-0 flex-1 truncate font-medium text-ink sm:max-w-56">{active?.name ?? "مساحة العمل"}</span>
+        <ChevronDown className={cn("size-4 shrink-0 text-faint transition", open && "rotate-180")} />
       </button>
 
       {open && (

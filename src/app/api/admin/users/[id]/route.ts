@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { withRoute } from "@/lib/http";
 import { requireSessionClaims } from "@/lib/auth";
-import { setUserEndDate } from "@/server/admin/admin.service";
+import { setUserEndDate, deleteUser } from "@/server/admin/admin.service";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -13,4 +13,11 @@ export const PATCH = withRoute(async (req, { params }: Ctx) => {
   const { id } = await params;
   const { endDate } = schema.parse(await req.json());
   return setUserEndDate(claims, id, endDate);
+});
+
+// DELETE /api/admin/users/:id — permanently delete a user account (admin only).
+export const DELETE = withRoute(async (_req, { params }: Ctx) => {
+  const claims = await requireSessionClaims();
+  const { id } = await params;
+  return deleteUser(claims, id);
 });

@@ -138,4 +138,15 @@ export interface TemplateModule {
    *  so the host must NOT also render the floating SiteAuthWidget. Auth-first
    *  templates (marketplace) set this. */
   ownsAuthUI?: boolean;
+  /** Optional: offer a starting-variant choice in the create wizard (e.g. site
+   *  LANGUAGE for a bilingual template). The chosen option's `seed` becomes the
+   *  new site's initial content, with the typed name/logo merged over it. When
+   *  omitted, the wizard behaves normally (seeds only name/logo). */
+  create?: {
+    /** label shown above the segmented choice, e.g. "لغة الموقع". */
+    label: string;
+    /** default option value (falls back to the first option). */
+    default?: string;
+    options: { value: string; label: string; seed: Record<string, unknown> }[];
+  };
 }

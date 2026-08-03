@@ -44,3 +44,6 @@ next-env.d.ts
 
 # prisma generated client (regenerated via `pnpm prisma generate`)
 /src/generated
+
+# Design handoff reference material (not app code)
+/handoff-portfolio/

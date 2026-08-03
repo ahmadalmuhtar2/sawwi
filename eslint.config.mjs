@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "src/generated/**",
     "handoff/**",
+    "handoff-portfolio/**",
   ]),
 ]);
 

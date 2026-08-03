@@ -8,8 +8,9 @@ import { barbershopFiveStar } from "./barbershop-five-star";
 import { restaurant } from "./restaurant";
 import { foulFatteh } from "./foul-fatteh";
 import { marketplace } from "./marketplace";
+import { portfolio } from "./portfolio";
 
-export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, foulFatteh, marketplace];
+export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, foulFatteh, marketplace, portfolio];
 
 const BY_KEY = new Map(TEMPLATES.map((t) => [t.key, t]));
 

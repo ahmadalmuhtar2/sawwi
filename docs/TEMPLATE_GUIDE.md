@@ -591,6 +591,11 @@ The **content editor** ([`content-editor.tsx`](../src/components/templates/conte
 - **Palette cascade:** wire the `[data-tpl]` shade block (§7.4) or accent text/section grounds won't
   follow palettes.
 - **`isolate`** on the scope wrapper is already applied by the host — keep internal z-indexes contained.
+- **"أنشئ موقعك مع سوّي" footer** is rendered **automatically** by `TemplateHost` at the complete
+  bottom of every template on the served site + draft preview (hidden in the builder). It's a
+  clickable link whose href follows `NEXT_PUBLIC_APP_URL`, for platform advertising.
+  **Do not** add it per-template, and **do not** cover it with a fixed/sticky element that spans
+  the very bottom of the page.
 - **Canonical-class ESLint warnings** (`px-[22px]` → `px-5.5`) are **non-fatal**; templates use
   arbitrary values by design. Do not let them block you; only real errors matter.
 - **No item counts** — do **not** show the number of services (or any list count) inside category
