@@ -204,6 +204,9 @@ type TextProps = {
   /** rendered element (span by default) */
   as?: React.ElementType;
   className?: string;
+  /** inline style passed through to the rendered element (e.g. a template's
+   *  per-language font-family var). Applied in both published and editing modes. */
+  style?: React.CSSProperties;
   /** allow line breaks (Enter inserts a newline instead of committing) */
   multiline?: boolean;
   /** shown faded (and editable) when the value is empty — so optional fields
@@ -214,18 +217,19 @@ type TextProps = {
   keepLatinDigits?: boolean;
 };
 
-export function EditableText({ path, value, onCommit, as, className, multiline, placeholder, keepLatinDigits }: TextProps) {
+export function EditableText({ path, value, onCommit, as, className, style, multiline, placeholder, keepLatinDigits }: TextProps) {
   const api = useEdit();
   const Tag = (as ?? "span") as React.ElementType;
   const write = onCommit ?? (path && api ? (t: string) => api.set(path, t) : undefined);
   // Arabic-first site: normalise typed digits to ٠-٩ unless the field opts out.
   const commit = write && (keepLatinDigits ? write : (t: string) => write(toArabicDigits(t)));
   // Published site (or no writer): render the value, and nothing when empty.
-  if (!api?.editing || !commit) return value ? <Tag className={className}>{value}</Tag> : null;
+  if (!api?.editing || !commit) return value ? <Tag className={className} style={style}>{value}</Tag> : null;
   return (
     <InlineText
       Tag={Tag}
       className={className}
+      style={style}
       value={value}
       multiline={multiline ?? false}
       placeholder={placeholder}
@@ -237,6 +241,7 @@ export function EditableText({ path, value, onCommit, as, className, multiline, 
 function InlineText({
   Tag,
   className,
+  style,
   value,
   multiline,
   placeholder,
@@ -244,6 +249,7 @@ function InlineText({
 }: {
   Tag: React.ElementType;
   className?: string;
+  style?: React.CSSProperties;
   value: string;
   multiline: boolean;
   placeholder?: string;
@@ -304,6 +310,7 @@ function InlineText({
   return (
     <Tag
       ref={ref}
+      style={style}
       // touch-manipulation: kill the browser's double-tap-to-zoom on editable
       // text (mobile) while keeping pinch-zoom + scroll. Single-tap edits (above).
       className={cn(className, "sw-edit touch-manipulation", active && "sw-edit-active", empty && "opacity-45 italic")}

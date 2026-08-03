@@ -113,6 +113,31 @@ export function TemplateHost({
             templates (marketplace) render their own mandatory gate instead. */}
         {!edit && authEnabled && !tpl.ownsAuthUI ? <SiteAuthWidget /> : null}
       </SiteAuthProvider>
+      {/* Platform attribution at the complete bottom of every template — served
+          site + draft preview, but NOT the builder (edit) where it'd clutter
+          editing. Rendered centrally here so it's automatic for all templates. */}
+      {!edit && <PoweredBySawwi />}
+    </div>
+  );
+}
+
+/** A subtle, self-contained "powered by سوّي" footer bar with a clickable link
+ *  back to the platform — free advertising on every published customer site. Has
+ *  its own light background so it reads under any template's palette. Both the
+ *  link and the shown host follow NEXT_PUBLIC_APP_URL (inlined at build), so it
+ *  points at whatever domain this deployment serves. */
+function PoweredBySawwi() {
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://sawwi.online").replace(/\/+$/, "");
+  return (
+    <div className="w-full border-t border-black/10 bg-white py-3 text-center">
+      <a
+        href={appUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-[12px] text-neutral-500 transition hover:text-neutral-800"
+      >
+        أنشئ موقعك مع <span className="font-semibold text-neutral-700">سوّي</span>
+      </a>
     </div>
   );
 }

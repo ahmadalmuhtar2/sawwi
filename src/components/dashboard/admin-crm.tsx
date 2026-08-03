@@ -8,7 +8,7 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { UserPlus, Search, Send, Loader2, Wallet, X } from "lucide-react";
+import { UserPlus, Search, Send, Loader2, Wallet, X, Trash2 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
@@ -167,6 +167,8 @@ export function AdminCRM({ data, tab, query }: { data: AdminData; tab: TabKey; q
   // Site currently having a payment recorded (admin can do this for ANY site —
   // direct or reseller — to keep every payment tracked in the system).
   const [payFor, setPayFor] = React.useState<{ id: string; name: string } | null>(null);
+  // User pending permanent deletion (confirmation modal).
+  const [delUser, setDelUser] = React.useState<{ id: string; label: string } | null>(null);
 
   async function mutate(id: string, fn: () => Promise<unknown>, ok: string) {
     setBusyId(id);
@@ -198,10 +200,16 @@ export function AdminCRM({ data, tab, query }: { data: AdminData; tab: TabKey; q
     },
     {
       key: "actions", label: "", render: (u) => (
-        <button onClick={() => mutate(u.id, () => api.post(`/api/admin/users/${u.id}/resend`), "تم إرسال الرابط")} disabled={busyId === u.id}
-          className="inline-flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50">
-          {busyId === u.id ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />} إرسال رابط الدخول
-        </button>
+        <div className="flex items-center justify-end gap-1">
+          <button onClick={() => mutate(u.id, () => api.post(`/api/admin/users/${u.id}/resend`), "تم إرسال الرابط")} disabled={busyId === u.id}
+            className="inline-flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50">
+            {busyId === u.id ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />} إرسال رابط الدخول
+          </button>
+          <button onClick={() => setDelUser({ id: u.id, label: u.name || u.email })} disabled={busyId === u.id} title="حذف الحساب"
+            className="rounded-md p-1.5 text-muted transition hover:bg-danger-100/60 hover:text-danger disabled:opacity-40 cursor-pointer">
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -363,6 +371,54 @@ export function AdminCRM({ data, tab, query }: { data: AdminData; tab: TabKey; q
           }}
         />
       )}
+
+      {delUser && (
+        <ConfirmDeleteUser
+          label={delUser.label}
+          busy={busyId === delUser.id}
+          onCancel={() => setDelUser(null)}
+          onConfirm={async () => {
+            const id = delUser.id;
+            await mutate(id, () => api.del(`/api/admin/users/${id}`), "تم حذف الحساب");
+            setDelUser(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────── confirm delete user ───────────────────────── */
+
+function ConfirmDeleteUser({
+  label,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  label: string;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <Card className="relative z-10 w-full max-w-sm rounded-b-none p-6 sm:rounded-2xl">
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-danger-100 text-danger">
+            <Trash2 className="size-[18px]" />
+          </span>
+          <h2 className="font-bold text-ink">حذف الحساب</h2>
+        </div>
+        <p className="text-sm leading-relaxed text-muted">
+          سيتم حذف حساب <span className="font-semibold text-ink" dir="ltr">{label}</span> نهائيًا، مع جلساته وإشعاراته وصلاحياته على المواقع. لا يمكن التراجع عن هذا الإجراء.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>إلغاء</Button>
+          <Button type="button" variant="danger" onClick={onConfirm} loading={busy}>حذف نهائي</Button>
+        </div>
+      </Card>
     </div>
   );
 }

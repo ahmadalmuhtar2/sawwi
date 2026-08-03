@@ -9,6 +9,10 @@
 @import "@fontsource-variable/noto-kufi-arabic";
 @import "@fontsource-variable/reem-kufi";
 @import "@fontsource-variable/el-messiri";
+/* Latin faces for the bilingual portfolio template: Newsreader (editorial serif
+   display) + Hanken Grotesk (UI). Arabic side uses El Messiri + Readex. */
+@import "@fontsource-variable/newsreader";
+@import "@fontsource-variable/hanken-grotesk";
 
 /* Dark mode is opt-in and SCOPED: it activates only inside an element carrying
    [data-theme="dark"] (the dashboard shell wrapper), so it never bleeds into the
@@ -301,6 +305,26 @@
   --color-ink-900: color-mix(in oklch, var(--color-ink) 92%, var(--color-bone));
   --color-ink-950: color-mix(in oklch, var(--color-ink) 88%, var(--color-bone));
   --color-plate: color-mix(in oklch, var(--color-ink) 90%, var(--color-bone));
+}
+
+/* Portfolio — accent + ground + ink are the 3 tokens; every other surface/line/
+   text tone is DERIVED here by mixing the ground toward the ink (text) token, so
+   the whole design adapts to BOTH light and dark palettes from one formula (same
+   trick as barbershop). The component reads these as arbitrary values, e.g.
+   bg-[var(--pf-surface)] / text-[var(--pf-muted)] / border-[var(--pf-line)]. */
+[data-tpl="portfolio"] {
+  --pf-page: var(--pf-ground);
+  --pf-bg: color-mix(in oklch, var(--pf-ground) 97%, var(--pf-ink));
+  --pf-surface: color-mix(in oklch, var(--pf-ground) 93.5%, var(--pf-ink));
+  --pf-wash: color-mix(in oklch, var(--pf-ground) 95%, var(--pf-ink));
+  --pf-wash-2: color-mix(in oklch, var(--pf-ground) 92%, var(--pf-ink));
+  --pf-line: color-mix(in oklch, var(--pf-ground) 82%, var(--pf-ink));
+  --pf-line-soft: color-mix(in oklch, var(--pf-ground) 90%, var(--pf-ink));
+  --pf-muted: color-mix(in oklch, var(--pf-ink) 66%, var(--pf-ground));
+  --pf-faint: color-mix(in oklch, var(--pf-ink) 48%, var(--pf-ground));
+  --pf-accent-soft: color-mix(in oklch, var(--pf-accent) 16%, var(--pf-ground));
+  --pf-accent-strong: color-mix(in oklch, var(--pf-accent) 74%, var(--pf-ink));
+  --pf-card-shadow: 0 1px 2px color-mix(in oklch, var(--pf-ink) 12%, transparent), 0 24px 48px -34px color-mix(in oklch, var(--pf-ink) 40%, transparent);
 }
 
 /* Restaurant — accent = gold, ground = warm, text = cream. */

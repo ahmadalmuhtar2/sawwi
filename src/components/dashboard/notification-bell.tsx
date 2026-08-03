@@ -121,7 +121,10 @@ export function NotificationBell() {
       {open && (
         <div
           role="menu"
-          className="absolute end-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-line bg-surface shadow-xl"
+          // Mobile: a viewport-pinned panel (fixed, 0.5rem side margins) so it can
+          // never spill past the screen edges regardless of the bell's position.
+          // sm+: the normal dropdown anchored to the bell's end edge.
+          className="fixed inset-x-2 top-16 z-50 overflow-hidden rounded-xl border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:end-0 sm:top-auto sm:mt-2 sm:w-[22rem]"
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
             <span className="text-sm font-bold text-ink">الإشعارات</span>
