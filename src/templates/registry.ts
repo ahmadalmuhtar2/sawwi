@@ -9,8 +9,9 @@ import { restaurant } from "./restaurant";
 import { foulFatteh } from "./foul-fatteh";
 import { marketplace } from "./marketplace";
 import { portfolio } from "./portfolio";
+import { restaurantSplit } from "./restaurant-split";
 
-export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, foulFatteh, marketplace, portfolio];
+export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, restaurantSplit, foulFatteh, marketplace, portfolio];
 
 const BY_KEY = new Map(TEMPLATES.map((t) => [t.key, t]));
 

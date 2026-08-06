@@ -7,7 +7,7 @@ import { visitCountsForSites } from "@/server/visits/visits.service";
 import { canManageWorkspace } from "@/server/access/access.rules";
 import { getTemplate } from "@/templates/registry";
 import { formatArabicDate } from "@/lib/expiry-format";
-import { siteHost } from "@/lib/site-url";
+import { siteHost, siteLogo } from "@/lib/site-url";
 import { EmptyState } from "@/components/ui/feedback";
 import { CreateSiteButton } from "@/components/dashboard/create-site";
 import { PageHeader, Panel } from "@/components/dashboard/ui";
@@ -46,7 +46,7 @@ export default async function SitesPage({
     status: s.status as SiteRow["status"],
     templateKey: s.templateKey,
     templateLabel: getTemplate(s.templateKey)?.label ?? s.verticalKey,
-    logoUrl: s.logoUrl,
+    logoUrl: siteLogo(s.logoUrl, s.content),
     unread: unreadBySite[s.id] ?? 0,
     visits: visitsBySite[s.id] ?? 0,
     canDelete: claims ? canManageWorkspace(claims, s.workspaceId) : false,

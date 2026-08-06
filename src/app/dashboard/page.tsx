@@ -6,7 +6,7 @@ import { listSites } from "@/server/sites/sites.service";
 import { displayStatus, daysUntil } from "@/server/billing/billing.rules";
 import { getTemplate } from "@/templates/registry";
 import { formatArabicDate } from "@/lib/expiry-format";
-import { siteHost } from "@/lib/site-url";
+import { siteHost, siteLogo } from "@/lib/site-url";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/feedback";
@@ -126,7 +126,7 @@ export default async function DashboardHome() {
                   >
                     <Td>
                       <Link href={`/dashboard/sites/${site.id}`} className="flex items-center gap-3">
-                        <SiteThumb name={site.businessName} logoUrl={site.logoUrl} />
+                        <SiteThumb name={site.businessName} logoUrl={siteLogo(site.logoUrl, site.content)} />
                         <span className="min-w-0">
                           <span className="block truncate text-[13.5px] text-ink">{site.businessName}</span>
                           <span className="block truncate font-mono text-[11.5px] text-faint" dir="ltr">
@@ -163,7 +163,7 @@ export default async function DashboardHome() {
                     key={site.id}
                     className="flex items-center gap-3 border-b border-line px-4.5 py-3.25 last:border-0"
                   >
-                    <SiteThumb name={site.businessName} logoUrl={site.logoUrl} />
+                    <SiteThumb name={site.businessName} logoUrl={siteLogo(site.logoUrl, site.content)} />
                     <div className="min-w-0">
                       <Link
                         href={`/dashboard/sites/${site.id}`}
