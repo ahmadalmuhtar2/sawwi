@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/feedback";
 import { MenuSelect } from "@/components/ui/dropdown";
+import { Tooltip } from "@/components/ui/tooltip";
 import { ListingStepper } from "@/components/dashboard/listing-stepper";
 import {
   STATUS_LABEL, VERTICAL_LABEL, cardSpecLine,
@@ -180,18 +181,24 @@ export function ListingsManager({
                     onChange={(v) => patch(l.id, { status: v })}
                     className="w-28"
                   />
-                  <button onClick={() => patch(l.id, { featured: !l.featured })} disabled={busy === l.id} title={l.featured ? "إلغاء التمييز" : "تمييز"} className={"rounded-md p-2 transition disabled:opacity-40 " + (l.featured ? "text-accent" : "text-muted hover:text-ink")}>
-                    <Star className={"size-4 " + (l.featured ? "fill-current" : "")} />
-                  </button>
+                  <Tooltip label={l.featured ? "إلغاء التمييز" : "تمييز"}>
+                    <button onClick={() => patch(l.id, { featured: !l.featured })} disabled={busy === l.id} aria-label={l.featured ? "إلغاء التمييز" : "تمييز"} className={"rounded-md p-2 transition disabled:opacity-40 " + (l.featured ? "text-accent" : "text-muted hover:text-ink")}>
+                      <Star className={"size-4 " + (l.featured ? "fill-current" : "")} />
+                    </button>
+                  </Tooltip>
                   <button onClick={() => patch(l.id, { published: !l.published })} disabled={busy === l.id} className="rounded-md border border-line px-2.5 py-1.5 text-xs font-medium text-ink transition hover:bg-black/[0.04] disabled:opacity-40 dark:hover:bg-white/6">
                     {l.published ? "إخفاء" : "نشر"}
                   </button>
-                  <button onClick={() => setView({ mode: "form", vertical: l.vertical, editing: l })} title="تعديل" className="rounded-md p-2 text-muted transition hover:text-ink">
-                    <Pencil className="size-4" />
-                  </button>
-                  <button onClick={() => remove(l.id)} disabled={busy === l.id} title="حذف" className="rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
-                    <Trash2 className="size-4" />
-                  </button>
+                  <Tooltip label="تعديل">
+                    <button onClick={() => setView({ mode: "form", vertical: l.vertical, editing: l })} aria-label="تعديل" className="rounded-md p-2 text-muted transition hover:text-ink">
+                      <Pencil className="size-4" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="حذف">
+                    <button onClick={() => remove(l.id)} disabled={busy === l.id} aria-label="حذف" className="rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
+                      <Trash2 className="size-4" />
+                    </button>
+                  </Tooltip>
                 </div>
               </Card>
             </li>

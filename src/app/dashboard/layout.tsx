@@ -35,8 +35,9 @@ export default async function DashboardLayout({
 
   // Apply the saved theme during SSR from the cookie — reliable persistence,
   // no post-paint flash. ThemeInit only fills in the OS default on first visit.
+  // Dark is the platform default: only an explicit `light` cookie opts out.
   const savedTheme = (await cookies()).get("sawwi_theme")?.value;
-  const theme = savedTheme === "dark" || savedTheme === "light" ? savedTheme : undefined;
+  const theme = savedTheme === "light" ? "light" : "dark";
 
   return (
     // display:contents wrapper carries data-theme for the dark-mode scope.

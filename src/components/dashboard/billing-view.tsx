@@ -1,21 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Wallet, CalendarClock, Plus, History, CircleCheck, TriangleAlert, CircleX,
-} from "lucide-react";
+import { CalendarClock, Plus, History } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Field, Input, Select } from "@/components/ui/field";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
+import { PageHeader, StatGrid, StatCell, Panel, SiteThumb, toArabicDigits } from "@/components/dashboard/ui";
+import { siteHost } from "@/lib/site-url";
 import { CURRENCIES, symbolOf } from "@/shared/currency";
 import { cn } from "@/lib/cn";
 
 type Status = "active" | "expiring" | "expired";
+/** The billing-table filter, reflected in the URL as ?status=. */
+export type BillingStatusFilter = Status;
 interface Sub {
   status: Status;
   expiry: string;
@@ -31,6 +34,7 @@ interface Row {
   paymentsCount: number;
   lastPaymentAt: string | null;
 }
+export type BillingRow = Row;
 interface Summary {
   total: number;
   active: number;
@@ -76,7 +80,19 @@ const METHOD_LABEL: Record<string, string> = {
   other: "أخرى",
 };
 
-export function BillingView({ summary, sites }: { summary: Summary; sites: Row[] }) {
+export function BillingView({
+  summary,
+  sites,
+  upcoming,
+  activeStatus = null,
+}: {
+  summary: Summary;
+  /** Already filtered server-side to `activeStatus` (the subscriptions table). */
+  sites: Row[];
+  /** Soonest-expiring sites from the FULL set (renewals panel). */
+  upcoming: Row[];
+  activeStatus?: BillingStatusFilter | null;
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -85,72 +101,186 @@ export function BillingView({ summary, sites }: { summary: Summary; sites: Row[]
   const [historyRow, setHistoryRow] = useState<Row | null>(null);
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-extrabold text-ink">الفوترة والاشتراكات</h1>
-      <p className="mt-1 text-sm text-muted">
-        حدّد تاريخ انتهاء كل موقع، وسجّل الدفعات التي تحصّلها من العملاء. الموقع
-        يتوقّف تلقائيًا عند انتهاء التاريخ ما لم يُجدَّد.
-      </p>
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        title="الفوترة والاشتراكات"
+        subtitle="حدّد تاريخ انتهاء كل موقع وسجّل الدفعات المحصّلة — يتوقّف الموقع تلقائيًا عند الانتهاء ما لم يُجدَّد."
+      />
 
-      {/* Summary */}
-      <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Tile icon={<Wallet className="size-4" />} label="المواقع" value={summary.total} tone="ink" />
-        <Tile icon={<CircleCheck className="size-4" />} label="نشطة" value={summary.active} tone="accent" />
-        <Tile icon={<TriangleAlert className="size-4" />} label="تنتهي قريبًا" value={summary.expiring} tone="warn" />
-        <Tile icon={<CircleX className="size-4" />} label="منتهية" value={summary.expired} tone="danger" />
+      <div className="mb-5">
+        <StatGrid>
+          <StatCell
+            label="المواقع"
+            value={toArabicDigits(summary.total)}
+            href="/dashboard/billing"
+            active={activeStatus === null}
+          />
+          <StatCell
+            label="نشطة"
+            value={toArabicDigits(summary.active)}
+            hint="اشتراكات فعّالة"
+            hintTone="up"
+            href="/dashboard/billing?status=active"
+            active={activeStatus === "active"}
+          />
+          <StatCell
+            label="تنتهي قريبًا"
+            value={toArabicDigits(summary.expiring)}
+            valueTone={summary.expiring ? "warn" : undefined}
+            hint="خلال ٧ أيام"
+            hintTone={summary.expiring ? "warn" : "muted"}
+            href="/dashboard/billing?status=expiring"
+            active={activeStatus === "expiring"}
+          />
+          <StatCell
+            label="منتهية"
+            value={toArabicDigits(summary.expired)}
+            valueTone={summary.expired ? "down" : undefined}
+            hint="تحتاج تجديدًا"
+            hintTone={summary.expired ? "down" : "muted"}
+            href="/dashboard/billing?status=expired"
+            active={activeStatus === "expired"}
+          />
+        </StatGrid>
       </div>
 
-      {sites.length === 0 ? (
-        <Card className="mt-6 p-8 text-center text-sm text-muted">
-          لا مواقع بعد. أنشئ موقعًا لتظهر فوترته هنا.
-        </Card>
+      {summary.total === 0 ? (
+        <Panel>
+          <p className="px-6 py-12 text-center text-[13.5px] text-muted">لا مواقع بعد. أنشئ موقعًا لتظهر فوترته هنا.</p>
+        </Panel>
       ) : (
-        <div className="mt-6 space-y-3">
-          {sites.map((s) => {
-            const sub = s.subscription;
-            return (
-              <Card key={s.id} className="p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-bold text-ink">{s.businessName}</span>
-                      <StatusChip sub={sub} />
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                      {sub ? (
-                        <span className="inline-flex items-center gap-1">
-                          <CalendarClock className="size-3.5" />
-                          ينتهي {fmtDate(sub.expiry)}
-                          <span className={cn(
-                            "font-medium",
-                            sub.status === "expired" ? "text-danger"
-                              : sub.status === "expiring" ? "text-warn" : "text-accent",
-                          )}>
-                            · {sub.daysLeft < 0 ? `متأخر ${Math.abs(sub.daysLeft)} يومًا` : `${sub.daysLeft} يومًا متبقية`}
-                          </span>
-                        </span>
-                      ) : (
-                        <span>لم يُحدَّد تاريخ انتهاء بعد</span>
-                      )}
-                      <span>المحصّل: {fmtMoney(s.totalCollected, sub?.currency ?? "SYP")} ({s.paymentsCount} دفعات)</span>
-                    </div>
-                  </div>
+        <div className="grid gap-4.5 lg:grid-cols-[1.6fr_1fr]">
+          {/* Subscriptions */}
+          <Panel
+            title="الاشتراكات"
+            action={
+              activeStatus ? (
+                <Link href="/dashboard/billing" className="text-accent-300 hover:underline">
+                  عرض الكل ←
+                </Link>
+              ) : undefined
+            }
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <Th>الموقع</Th>
+                    <Th>الحالة</Th>
+                    <Th>ينتهي</Th>
+                    <Th>المحصّل</Th>
+                    <Th className="w-0" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sites.map((s) => {
+                    const sub = s.subscription;
+                    return (
+                      <tr key={s.id} className="border-b border-line last:border-0">
+                        <Td>
+                          <div className="flex items-center gap-3">
+                            <SiteThumb name={s.businessName} />
+                            <span className="min-w-0">
+                              <span className="block truncate text-[13.5px] text-ink">{s.businessName}</span>
+                              <span className="block truncate font-mono text-[11.5px] text-faint" dir="ltr">
+                                {siteHost(s.slug)}
+                              </span>
+                            </span>
+                          </div>
+                        </Td>
+                        <Td>
+                          <StatusChip sub={sub} />
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          {sub ? (
+                            <span
+                              dir="ltr"
+                              className={cn(
+                                "inline-block tabular-nums text-[12.5px]",
+                                sub.status === "expired" ? "text-danger" : sub.status === "expiring" ? "text-warn" : "text-muted",
+                              )}
+                            >
+                              {fmtDate(sub.expiry)}
+                            </span>
+                          ) : (
+                            <span className="text-faint">لم يُحدَّد</span>
+                          )}
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          {s.paymentsCount > 0 ? (
+                            <Tooltip label={`${toArabicDigits(s.paymentsCount)} دفعات`}>
+                              <span dir="ltr" className="inline-block tabular-nums text-ink">
+                                {fmtMoney(s.totalCollected, sub?.currency ?? "SYP")}
+                              </span>
+                            </Tooltip>
+                          ) : (
+                            <span className="text-faint">—</span>
+                          )}
+                        </Td>
+                        <Td className="text-end">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Tooltip label="تسجيل دفعة">
+                              <button
+                                type="button"
+                                aria-label="تسجيل دفعة"
+                                onClick={() => setPay(s)}
+                                className="grid size-8 place-items-center rounded-md bg-accent text-white transition hover:bg-accent-600 cursor-pointer"
+                              >
+                                <Plus className="size-4" />
+                              </button>
+                            </Tooltip>
+                            <IconBtn title="تعديل تاريخ الانتهاء" onClick={() => setExpiryRow(s)}>
+                              <CalendarClock className="size-4" />
+                            </IconBtn>
+                            <IconBtn title="سجل الدفعات" onClick={() => setHistoryRow(s)}>
+                              <History className="size-4" />
+                            </IconBtn>
+                          </div>
+                        </Td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {sites.length === 0 && (
+              <p className="px-6 py-10 text-center text-[13.5px] text-muted">لا اشتراكات بهذا التصنيف.</p>
+            )}
+          </Panel>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Button size="sm" onClick={() => setPay(s)} className="gap-1.5">
-                      <Plus className="size-4" /> دفعة
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={() => setExpiryRow(s)} className="gap-1.5">
-                      <CalendarClock className="size-4" /> التاريخ
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setHistoryRow(s)} className="gap-1.5">
-                      <History className="size-4" /> السجل
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
+          {/* Upcoming renewals */}
+          <Panel title="تجديدات قادمة">
+            {upcoming.length === 0 ? (
+              <p className="px-6 py-12 text-center text-[13.5px] text-muted">لا اشتراكات لعرضها.</p>
+            ) : (
+              <ul>
+                {upcoming.map((s) => {
+                  const sub = s.subscription!;
+                  const pct = Math.max(4, Math.min(100, Math.round((sub.daysLeft / 365) * 100)));
+                  const bar =
+                    sub.status === "expired" ? "bg-danger" : sub.status === "expiring" ? "bg-warn" : "bg-accent-300";
+                  return (
+                    <li key={s.id} className="border-b border-line px-4.5 py-3.5 last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13.5px] text-ink">{s.businessName}</p>
+                          <p className="mt-0.5 text-[11.5px] text-faint">
+                            {sub.status === "expired" ? "انتهى — يحتاج تجديدًا" : `يُجدَّد ${fmtDate(sub.expiry)}`}
+                          </p>
+                        </div>
+                        <Badge tone={sub.status === "expired" ? "danger" : sub.status === "expiring" ? "warn" : "accent"}>
+                          {sub.daysLeft < 0 ? "منتهٍ" : `${toArabicDigits(sub.daysLeft)} يوم`}
+                        </Badge>
+                      </div>
+                      <span className="mt-2 block h-1.25 overflow-hidden rounded-full bg-neutral-100">
+                        <span className={cn("block h-full rounded-full", bar)} style={{ width: `${sub.status === "expired" ? 6 : pct}%` }} />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
         </div>
       )}
 
@@ -161,15 +291,33 @@ export function BillingView({ summary, sites }: { summary: Summary; sites: Row[]
   );
 }
 
-function Tile({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: number; tone: "ink" | "accent" | "warn" | "danger" }) {
-  const c = {
-    ink: "text-muted", accent: "text-accent", warn: "text-warn", danger: "text-danger",
-  }[tone];
+function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <Card className="p-4">
-      <div className={cn("flex items-center gap-1.5 text-sm", c)}>{icon}<span className="text-muted">{label}</span></div>
-      <p className="mt-1.5 text-2xl font-extrabold text-ink">{value}</p>
-    </Card>
+    <th
+      className={cn(
+        "border-b border-line px-4.5 py-2.75 text-start text-[11px] font-normal tracking-wide whitespace-nowrap text-faint",
+        className,
+      )}
+    >
+      {children}
+    </th>
+  );
+}
+function Td({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <td className={cn("px-4.5 py-3.25 align-middle", className)}>{children}</td>;
+}
+function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <Tooltip label={title}>
+      <button
+        type="button"
+        aria-label={title}
+        onClick={onClick}
+        className="rounded-md border border-line p-1.5 text-muted transition hover:border-neutral-300 hover:text-ink cursor-pointer"
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }
 

@@ -12,6 +12,7 @@ import {
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Card } from "@/components/ui/card";
+import { Tooltip } from "@/components/ui/tooltip";
 import { EmptyState, Spinner } from "@/components/ui/feedback";
 import { SegmentedControl } from "@/components/ui/segmented";
 
@@ -283,20 +284,21 @@ function IconBtn({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={label}
-      aria-label={label}
-      className={
-        "rounded-md p-1.5 transition disabled:opacity-40 " +
-        (danger
-          ? "text-muted hover:bg-danger-100 hover:text-danger"
-          : "text-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/6")
-      }
-    >
-      {children}
-    </button>
+    <Tooltip label={label}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        className={
+          "rounded-md p-1.5 transition disabled:opacity-40 " +
+          (danger
+            ? "text-muted hover:bg-danger-100 hover:text-danger"
+            : "text-muted hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/6")
+        }
+      >
+        {children}
+      </button>
+    </Tooltip>
   );
 }

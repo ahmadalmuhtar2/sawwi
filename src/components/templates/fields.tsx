@@ -12,6 +12,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { MenuSelect } from "@/components/ui/dropdown";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { Tooltip } from "@/components/ui/tooltip";
 import { api, ApiClientError } from "@/lib/api-client";
 import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 
@@ -299,29 +300,35 @@ function ListEditor({
                 {itemLabel} {i + 1}
               </span>
               <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => move(i, -1)}
-                  disabled={i === 0}
-                  className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
-                  title="أعلى"
-                >
-                  <ChevronUp className="size-4" />
-                </button>
-                <button
-                  onClick={() => move(i, 1)}
-                  disabled={i === items.length - 1}
-                  className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
-                  title="أسفل"
-                >
-                  <ChevronDown className="size-4" />
-                </button>
-                <button
-                  onClick={() => remove(i)}
-                  className="p-1 text-faint hover:text-danger cursor-pointer"
-                  title="حذف"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
+                <Tooltip label="أعلى">
+                  <button
+                    onClick={() => move(i, -1)}
+                    disabled={i === 0}
+                    aria-label="أعلى"
+                    className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
+                  >
+                    <ChevronUp className="size-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="أسفل">
+                  <button
+                    onClick={() => move(i, 1)}
+                    disabled={i === items.length - 1}
+                    aria-label="أسفل"
+                    className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
+                  >
+                    <ChevronDown className="size-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="حذف">
+                  <button
+                    onClick={() => remove(i)}
+                    aria-label="حذف"
+                    className="p-1 text-faint hover:text-danger cursor-pointer"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </Tooltip>
               </div>
             </div>
             <div className="space-y-3">
@@ -415,32 +422,38 @@ function CategoriesEditor({
               className="flex-1"
             />
             <div className="flex items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => move(i, -1)}
-                disabled={i === 0}
-                className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
-                title="أعلى"
-              >
-                <ChevronUp className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => move(i, 1)}
-                disabled={i === cats.length - 1}
-                className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
-                title="أسفل"
-              >
-                <ChevronDown className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => remove(i)}
-                className="p-1 text-faint hover:text-danger cursor-pointer"
-                title="حذف القسم"
-              >
-                <Trash2 className="size-3.5" />
-              </button>
+              <Tooltip label="أعلى">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  aria-label="أعلى"
+                  className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
+                >
+                  <ChevronUp className="size-4" />
+                </button>
+              </Tooltip>
+              <Tooltip label="أسفل">
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === cats.length - 1}
+                  aria-label="أسفل"
+                  className="p-1 text-faint hover:text-ink disabled:opacity-30 cursor-pointer"
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              </Tooltip>
+              <Tooltip label="حذف القسم">
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  aria-label="حذف القسم"
+                  className="p-1 text-faint hover:text-danger cursor-pointer"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </Tooltip>
             </div>
           </div>
         ))}

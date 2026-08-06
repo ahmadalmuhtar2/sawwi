@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
+import { FilterChips } from "@/components/dashboard/ui";
 import { DataTable, type Column, type Filter } from "@/components/dashboard/data-table";
 import { formatArabicAmount, symbolOf, CURRENCIES } from "@/shared/currency";
 import { formatArabicDate } from "@/lib/expiry-format";
@@ -205,10 +207,12 @@ export function AdminCRM({ data, tab, query }: { data: AdminData; tab: TabKey; q
             className="inline-flex items-center gap-1 text-xs text-accent hover:underline disabled:opacity-50">
             {busyId === u.id ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />} إرسال رابط الدخول
           </button>
-          <button onClick={() => setDelUser({ id: u.id, label: u.name || u.email })} disabled={busyId === u.id} title="حذف الحساب"
-            className="rounded-md p-1.5 text-muted transition hover:bg-danger-100/60 hover:text-danger disabled:opacity-40 cursor-pointer">
-            <Trash2 className="size-3.5" />
-          </button>
+          <Tooltip label="حذف الحساب">
+            <button onClick={() => setDelUser({ id: u.id, label: u.name || u.email })} disabled={busyId === u.id} aria-label="حذف الحساب"
+              className="rounded-md p-1.5 text-muted transition hover:bg-danger-100/60 hover:text-danger disabled:opacity-40 cursor-pointer">
+              <Trash2 className="size-3.5" />
+            </button>
+          </Tooltip>
         </div>
       ),
     },
@@ -329,20 +333,11 @@ export function AdminCRM({ data, tab, query }: { data: AdminData; tab: TabKey; q
 
       {/* tabs + search */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={cn(
-                "rounded-full px-3.5 py-1.5 text-sm font-medium transition cursor-pointer",
-                tab === t.key ? "bg-accent-100 text-accent-900" : "text-muted hover:bg-neutral-200 hover:text-ink",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <FilterChips
+          options={TABS.map((t) => ({ key: t.key, label: t.label }))}
+          value={tab}
+          onChange={setTab}
+        />
         <div className="relative">
           <Search className="pointer-events-none absolute inset-y-0 end-3 my-auto size-4 text-faint" />
           <Input

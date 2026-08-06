@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/feedback";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 export interface CollaboratorRow {
@@ -155,17 +156,18 @@ export function SiteCollaboratorsManager({
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {canManage ? (
-                      <button
-                        onClick={() => toggleBuilder(g)}
-                        title="صلاحية التعديل والنشر"
-                        className={cn(
-                          "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition cursor-pointer",
-                          g.builderAccess ? "border-accent bg-accent-50 text-accent-900" : "border-line text-muted hover:text-ink",
-                        )}
-                      >
-                        <Wrench className="size-3.5" />
-                        {g.builderAccess ? "تعديل ونشر" : "عرض فقط"}
-                      </button>
+                      <Tooltip label="صلاحية التعديل والنشر">
+                        <button
+                          onClick={() => toggleBuilder(g)}
+                          className={cn(
+                            "inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition cursor-pointer",
+                            g.builderAccess ? "border-accent bg-accent-50 text-accent-900" : "border-line text-muted hover:text-ink",
+                          )}
+                        >
+                          <Wrench className="size-3.5" />
+                          {g.builderAccess ? "تعديل ونشر" : "عرض فقط"}
+                        </button>
+                      </Tooltip>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-1 text-xs text-muted">
                         <Wrench className="size-3.5" />
@@ -173,13 +175,15 @@ export function SiteCollaboratorsManager({
                       </span>
                     )}
                     {canManage && (
-                      <button
-                        onClick={() => revoke(g)}
-                        title="إزالة الوصول"
-                        className="rounded-md p-1.5 text-faint transition hover:bg-danger-100 hover:text-danger cursor-pointer"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+                      <Tooltip label="إزالة الوصول">
+                        <button
+                          onClick={() => revoke(g)}
+                          aria-label="إزالة الوصول"
+                          className="rounded-md p-1.5 text-faint transition hover:bg-danger-100 hover:text-danger cursor-pointer"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </Tooltip>
                     )}
                   </div>
                 </Card>

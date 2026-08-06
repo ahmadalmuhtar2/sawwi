@@ -17,6 +17,7 @@ import { AlertCircle, Loader2, Plus, RotateCw, Search, SquareArrowOutUpRight, X 
 import { apiFetch } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 /* ── contract (mirrors src/server/templates/templates.service.ts) ── */
@@ -138,11 +139,10 @@ function Chip({
         : active
           ? "border-transparent bg-accent font-medium text-white"
           : "border-line bg-surface text-muted hover:border-accent hover:text-ink";
-  return (
+  const btn = (
     <button
       type="button"
       aria-pressed={active}
-      title={title}
       onClick={onClick}
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border transition cursor-pointer",
@@ -154,6 +154,7 @@ function Chip({
       {typeof count === "number" && <span className="font-mono text-[11px] opacity-60">{arNum(count)}</span>}
     </button>
   );
+  return title ? <Tooltip label={title}>{btn}</Tooltip> : btn;
 }
 
 /* ── "+N" overflow pill: same height as the chips (so the row stays aligned),
@@ -291,10 +292,12 @@ function AllTagsPanel({
         <div className="flex shrink-0 items-center gap-3 border-b border-line px-5 py-4">
           <span className="font-display text-[17px] font-extrabold text-ink">كل الوسوم</span>
           <span className="font-mono text-[11px] text-faint">{arNum(tags.length)} وسمًا</span>
-          <button type="button" onClick={onClose} title="إغلاق"
-            className="ms-auto rounded-md p-1.5 text-faint hover:text-ink cursor-pointer">
-            <X className="size-4" />
-          </button>
+          <Tooltip label="إغلاق">
+            <button type="button" onClick={onClose} aria-label="إغلاق"
+              className="ms-auto rounded-md p-1.5 text-faint hover:text-ink cursor-pointer">
+              <X className="size-4" />
+            </button>
+          </Tooltip>
         </div>
         <div className="shrink-0 border-b border-line p-4">
           <div className="relative">
@@ -425,10 +428,12 @@ export function TemplatesGallery({
             <span className="absolute inset-y-0 end-2.5 my-auto flex h-fit items-center gap-1.5">
               {searching && <Loader2 className="size-4 animate-spin text-faint" />}
               {rawQuery && (
-                <button type="button" onClick={() => setRawQuery("")} title="مسح البحث"
-                  className="grid size-6 place-items-center rounded-full bg-neutral-200 text-muted hover:text-ink cursor-pointer">
-                  <X className="size-3.5" />
-                </button>
+                <Tooltip label="مسح البحث">
+                  <button type="button" onClick={() => setRawQuery("")} aria-label="مسح البحث"
+                    className="grid size-6 place-items-center rounded-full bg-neutral-200 text-muted hover:text-ink cursor-pointer">
+                    <X className="size-3.5" />
+                  </button>
+                </Tooltip>
               )}
             </span>
           </div>

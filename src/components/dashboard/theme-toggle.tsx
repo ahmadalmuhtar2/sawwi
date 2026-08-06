@@ -87,16 +87,15 @@ export function ThemeInit() {
     const el = document.getElementById(ROOT_ID);
     if (!el) return;
     // The server already applied the cookie theme (see dashboard/layout.tsx). If
-    // there's no cookie yet (first visit), fall back to the OS preference and
-    // persist it as a cookie so every later render is server-applied + flash-free.
+    // there's no cookie yet (first visit), fall back to DARK — the platform
+    // default — and persist it so every later render is server-applied + flash-free.
     const saved = readThemeCookie();
     if (saved) {
       el.setAttribute("data-theme", saved);
       return;
     }
-    const os = window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    el.setAttribute("data-theme", os);
-    writeThemeCookie(os);
+    el.setAttribute("data-theme", "dark");
+    writeThemeCookie("dark");
   }, []);
   return null;
 }

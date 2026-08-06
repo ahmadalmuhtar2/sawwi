@@ -39,6 +39,28 @@ export async function notifySiteMessage(
   return recipients.length;
 }
 
+/**
+ * Fan out "new landing-page lead" to every platform admin, with a link to the
+ * admin leads dashboard. Returns the number notified (0 when there are no
+ * admins). Called best-effort from the public lead-submit path.
+ */
+export async function notifyNewLead(lead: {
+  id: string;
+  businessName: string;
+  whatsapp: string;
+}): Promise<number> {
+  const admins = await notificationsRepository.adminUserIds();
+  if (!admins.length) return 0;
+  const link = "/dashboard/leads";
+  const title = "طلب معاينة جديد";
+  const body = `${lead.businessName} — ${lead.whatsapp}`;
+  await notificationsRepository.createMany(
+    admins.map((userId) => ({ userId, type: "lead", title, body, link })),
+  );
+  void sendPushToUsers(admins, { title, body, url: link, tag: `lead-${lead.id}` }).catch(() => {});
+  return admins.length;
+}
+
 export async function listMyNotifications(claims: SessionClaims) {
   const [items, unread] = await Promise.all([
     notificationsRepository.listForUser(claims.userId),
