@@ -109,7 +109,23 @@ jobs:
       - name: Migrate deploy
         run: pnpm prisma migrate deploy
 
-      # Fails if the schema and the migration history have drifted apart (e.g.
-      # schema.prisma edited without a matching migration).
+      # Fails if the migration history and the DB's applied migrations disagree.
       - name: Migrate status
         run: pnpm prisma migrate status
+
+      # The real guard against prod P2022s: after every committed migration is
+      # applied above, the DB must match schema.prisma EXACTLY. If someone edited
+      # schema.prisma without generating a matching migration (`prisma migrate
+      # dev`), this diff is non-empty and `--exit-code` returns 2 → red build.
+      # This makes it impossible to merge an un-migrated schema change — which is
+      # exactly how prod ends up with "column X does not exist". migrate status
+      # alone does NOT catch this (it only compares migration files to the DB).
+      - name: Fail if schema.prisma has un-migrated changes
+        run: pnpm prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      # Last line of defence for prod DATA: a migration carrying a data-destroying
+      # statement (DROP TABLE/COLUMN, TRUNCATE, DELETE FROM, DROP SCHEMA/DATABASE)
+      # fails the build UNLESS it explicitly opts in with an `-- allow-destructive:
+      # <reason>` marker. Stops an accidental prod wipe from merging silently.
+      - name: Guard against destructive migrations
+        run: node scripts/check-destructive-migrations.mjs
