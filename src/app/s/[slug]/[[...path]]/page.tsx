@@ -18,6 +18,7 @@ import { buildMarketplaceData } from "@/templates/marketplace/filters";
 import { TemplateHost } from "@/components/public/template-host";
 import { HoldingPage, type HoldingVariant } from "@/components/public/holding-page";
 import { ContactWidget } from "@/components/public/contact-widget";
+import { VisitBeacon } from "@/components/public/visit-beacon";
 
 type Params = Promise<{ slug: string; path?: string[] }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -196,6 +197,8 @@ export default async function PublicSitePage({
         defaultName={initialUser?.name}
         defaultContact={initialUser?.phone}
       />
+      {/* Count this pageview (deduped per browser session by the endpoint). */}
+      <VisitBeacon slug={slug} />
     </>
   );
 }

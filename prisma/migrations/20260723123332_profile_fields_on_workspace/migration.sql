@@ -1,3 +1,4 @@
+-- allow-destructive: misplaced contact columns moved off users; already shipped.
 /*
   Warnings:
 

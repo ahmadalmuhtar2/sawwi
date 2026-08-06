@@ -1,3 +1,4 @@
+-- allow-destructive: section/page system removed (see template-model); already shipped.
 /*
   Warnings:
 

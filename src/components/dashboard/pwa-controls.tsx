@@ -11,6 +11,7 @@ import { Download, Bell, BellRing, BellOff } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { api } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -179,22 +180,25 @@ export function PwaControls({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <div className="space-y-1">
       {showInstall && (
-        <button type="button" onClick={install} title={collapsed ? "تثبيت التطبيق" : undefined} className={itemCls}>
-          <Download className="size-[18px]" />
-          {!collapsed && "تثبيت التطبيق"}
-        </button>
+        <Tooltip label={collapsed ? "تثبيت التطبيق" : ""} side="left">
+          <button type="button" onClick={install} className={itemCls}>
+            <Download className="size-[18px]" />
+            {!collapsed && "تثبيت التطبيق"}
+          </button>
+        </Tooltip>
       )}
       {push !== "unsupported" && (
-        <button
-          type="button"
-          onClick={enableNotifications}
-          disabled={push === "busy" || push === "denied"}
-          title={collapsed ? notifLabel : undefined}
-          className={cn(itemCls, (push === "busy" || push === "denied") && "opacity-60 cursor-not-allowed")}
-        >
-          {push === "enabled" ? <BellRing className="size-[18px] text-accent" /> : push === "denied" ? <BellOff className="size-[18px]" /> : <Bell className="size-[18px]" />}
-          {!collapsed && notifLabel}
-        </button>
+        <Tooltip label={collapsed ? notifLabel : ""} side="left">
+          <button
+            type="button"
+            onClick={enableNotifications}
+            disabled={push === "busy" || push === "denied"}
+            className={cn(itemCls, (push === "busy" || push === "denied") && "opacity-60 cursor-not-allowed")}
+          >
+            {push === "enabled" ? <BellRing className="size-[18px] text-accent" /> : push === "denied" ? <BellOff className="size-[18px]" /> : <Bell className="size-[18px]" />}
+            {!collapsed && notifLabel}
+          </button>
+        </Tooltip>
       )}
     </div>
   );

@@ -17,6 +17,7 @@ import { TemplateHost } from "@/components/public/template-host";
 import type { TemplateTheme } from "@/server/sites/template-data";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 type Content = Record<string, unknown>;
@@ -255,32 +256,34 @@ export function ContentEditor({
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-0.5 pe-1">
-            <button
-              type="button"
-              onClick={undo}
-              disabled={!canUndo}
-              title="تراجع (Ctrl+Z)"
-              aria-label="تراجع"
-              className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
-            >
-              <Undo2 className="size-4" />
-            </button>
-            <button
-              type="button"
-              onClick={redo}
-              disabled={!canRedo}
-              title="إعادة (Ctrl+Shift+Z)"
-              aria-label="إعادة"
-              className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
-            >
-              <Redo2 className="size-4" />
-            </button>
+            <Tooltip label="تراجع (Ctrl+Z)">
+              <button
+                type="button"
+                onClick={undo}
+                disabled={!canUndo}
+                aria-label="تراجع"
+                className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+              >
+                <Undo2 className="size-4" />
+              </button>
+            </Tooltip>
+            <Tooltip label="إعادة (Ctrl+Shift+Z)">
+              <button
+                type="button"
+                onClick={redo}
+                disabled={!canRedo}
+                aria-label="إعادة"
+                className="rounded-md p-1.5 text-muted transition hover:bg-neutral-200 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+              >
+                <Redo2 className="size-4" />
+              </button>
+            </Tooltip>
           </div>
           {canManageBilling && (
+            <Tooltip label={maintenance ? "إعادة تشغيل الموقع" : "إيقاف الموقع مؤقتًا (صيانة)"}>
             <button
               onClick={toggleMaintenance}
               disabled={pausing}
-              title={maintenance ? "إعادة تشغيل الموقع" : "إيقاف الموقع مؤقتًا (صيانة)"}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition cursor-pointer disabled:opacity-50",
                 maintenance
@@ -297,6 +300,7 @@ export function ContentEditor({
               )}
               {maintenance ? "تشغيل" : "إيقاف مؤقت"}
             </button>
+            </Tooltip>
           )}
           <Link
             href={`/preview/${siteId}`}
@@ -306,14 +310,15 @@ export function ContentEditor({
             <Eye className="size-4" /> معاينة
           </Link>
           {canPublish && published && (
-            <button
-              onClick={unpublish}
-              disabled={publishing}
-              title="إلغاء النشر — إعادة الموقع إلى وضع الإنشاء"
-              className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition hover:border-danger/40 hover:text-danger disabled:opacity-50 cursor-pointer"
-            >
-              <EyeOff className="size-4" /> إلغاء النشر
-            </button>
+            <Tooltip label="إلغاء النشر — إعادة الموقع إلى وضع الإنشاء">
+              <button
+                onClick={unpublish}
+                disabled={publishing}
+                className="inline-flex items-center gap-1.5 rounded-md border border-line px-3 py-1.5 text-sm font-medium text-muted transition hover:border-danger/40 hover:text-danger disabled:opacity-50 cursor-pointer"
+              >
+                <EyeOff className="size-4" /> إلغاء النشر
+              </button>
+            </Tooltip>
           )}
           {canPublish && (
             <button

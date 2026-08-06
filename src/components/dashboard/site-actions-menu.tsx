@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -28,28 +29,62 @@ export function SiteActionsMenu({
 }) {
   const toast = useToast();
   const router = useRouter();
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // The menu is PORTALED (fixed positioning) so a table's overflow container
+  // can't clip it — z-index alone can't escape `overflow: hidden/auto`.
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; left: number; maxHeight: number } | null>(null);
 
   const liveUrl = siteUrl(site.slug);
   const isPublished = site.status === "published";
 
+  // Position the fixed menu against the button: aligned to its inline-end (right
+  // edge in RTL), opening downward — or flipping up when there's more room above.
+  const place = useCallback(() => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (!r) return;
+    const width = 224; // w-56
+    const margin = 8;
+    const left = Math.max(margin, Math.min(r.right - width, window.innerWidth - width - margin));
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    const openUp = spaceBelow < 280 && spaceAbove > spaceBelow;
+    setPos({
+      left,
+      maxHeight: Math.max(160, (openUp ? spaceAbove : spaceBelow) - margin - 4),
+      ...(openUp ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
+
   useEffect(() => {
+    if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!btnRef.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    const reposition = () => place();
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    // capture:true so scrolls of ancestor overflow containers reposition too.
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
     };
-  }, []);
+  }, [open, place]);
 
   async function copyLink() {
     setOpen(false);
@@ -78,8 +113,9 @@ export function SiteActionsMenu({
     "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink transition hover:bg-black/[0.04] dark:hover:bg-white/6 cursor-pointer";
 
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={btnRef}
         onClick={() => setOpen((o) => !o)}
         className="rounded-md p-1.5 text-muted transition hover:bg-black/[0.04] dark:hover:bg-white/6 hover:text-ink cursor-pointer"
         aria-haspopup="menu"
@@ -89,11 +125,15 @@ export function SiteActionsMenu({
         <MoreVertical className="size-5" />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute end-0 z-50 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface p-1 shadow-lg"
-        >
+      {open &&
+        pos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            style={{ position: "fixed", left: pos.left, top: pos.top, bottom: pos.bottom, width: 224, maxHeight: pos.maxHeight }}
+            className="z-100 overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
+          >
           <Link href={`/dashboard/sites/${site.id}`} onClick={() => setOpen(false)} className={itemCls}>
             <Pencil className="size-4 text-muted" /> تحرير
           </Link>
@@ -154,8 +194,10 @@ export function SiteActionsMenu({
               </button>
             </>
           )}
-        </div>
-      )}
+          </div>,
+          // Portal into the themed shell wrapper so the menu inherits dark/light.
+          (typeof document !== "undefined" && document.getElementById("sw-app")) || document.body,
+        )}
 
       <Modal
         open={confirmOpen}
@@ -178,6 +220,6 @@ export function SiteActionsMenu({
           وسجل نشره نهائيًا. لا يمكن التراجع عن هذا الإجراء.
         </p>
       </Modal>
-    </div>
+    </>
   );
 }

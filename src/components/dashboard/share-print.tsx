@@ -5,6 +5,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Download, Printer, QrCode, IdCard, Info } from "lucide-react";
 import { Field, Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { PALETTES } from "@/lib/palette";
 import { cn } from "@/lib/cn";
 
@@ -296,27 +297,29 @@ export function SharePrint({
               <p className="mb-2 text-sm font-medium text-ink">اللون</p>
               <div className="flex flex-wrap items-center gap-2">
                 {PALETTES.map((p) => (
-                  <button
-                    key={p.key}
-                    type="button"
-                    onClick={() => setAccent(p.swatch)}
-                    title={p.label}
-                    aria-label={p.label}
-                    className={cn(
-                      "size-8 rounded-full transition cursor-pointer",
-                      accent === p.swatch ? "ring-2 ring-ink ring-offset-2" : "hover:scale-110",
-                    )}
-                    style={{ backgroundColor: p.swatch }}
-                  />
+                  <Tooltip key={p.key} label={p.label}>
+                    <button
+                      type="button"
+                      onClick={() => setAccent(p.swatch)}
+                      aria-label={p.label}
+                      className={cn(
+                        "size-8 rounded-full transition cursor-pointer",
+                        accent === p.swatch ? "ring-2 ring-ink ring-offset-2" : "hover:scale-110",
+                      )}
+                      style={{ backgroundColor: p.swatch }}
+                    />
+                  </Tooltip>
                 ))}
-                <label className="ms-1 flex size-8 cursor-pointer items-center justify-center rounded-full border border-dashed border-line text-xs text-muted" title="لون مخصّص">
-                  +
-                  <input
-                    type="color"
-                    className="absolute size-0 opacity-0"
-                    onChange={(e) => setAccent(e.target.value)}
-                  />
-                </label>
+                <Tooltip label="لون مخصّص">
+                  <label className="ms-1 flex size-8 cursor-pointer items-center justify-center rounded-full border border-dashed border-line text-xs text-muted" aria-label="لون مخصّص">
+                    +
+                    <input
+                      type="color"
+                      className="absolute size-0 opacity-0"
+                      onChange={(e) => setAccent(e.target.value)}
+                    />
+                  </label>
+                </Tooltip>
               </div>
             </div>
 

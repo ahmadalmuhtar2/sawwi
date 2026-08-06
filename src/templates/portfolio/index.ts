@@ -21,8 +21,8 @@ const defaults = {
     email: "",
     whatsapp: "",
     phone: "",
-    heroPhoto: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_ixlz03ixlz03ixlz.png",
-    aboutPhoto: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_n1xxwvn1xxwvn1xx.png",
+    heroPhoto: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_ixlz03ixlz03ixlz.webp",
+    aboutPhoto: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_n1xxwvn1xxwvn1xx.webp",
     heroCaption: "المكتب، منتصف مشروع",
     socials: {
       instagram: "https://www.instagram.com/ahmadalmuhtar/",
@@ -34,8 +34,8 @@ const defaults = {
   works: [
     { title: "سوّي — منصة بناء مواقع متعددة المستأجرين", meta: "2026 · SaaS · مؤسس ومطوّر منفرد", outcome: "موقع كامل جاهز للنشر في أقل من ٣٠ دقيقة، دون كتابة سطر كود واحد.", desc: "منصة تتيح للوكالات وأصحاب الأعمال بناء مواقع عربية بالكامل عبر محرر مرئي، مع مساحات عمل متعددة المستخدمين وصلاحيات مقيّدة لكل موقع. كل موقع له هويته وخطوطه وإعداداته، مع سجل نسخ كامل وإمكانية التراجع.", tags: ["Next.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_9sl9d69sl9d69sl9.png" },
     { title: "Commerly — إنشاء إعلانات ومنتجات بالذكاء الاصطناعي", meta: "2025 · تجارة إلكترونية · ذكاء اصطناعي", outcome: "أفكار وإعلانات جاهزة للنشر خلال ثوانٍ، بدل ساعات من العمل.", desc: "منصة تجارة إلكترونية مدعومة بالذكاء الاصطناعي: يصف التاجر منتجه، فتولّد المنصة أفكار حملات ونصوص إعلانات ومحتوى تسويقي جاهزًا. تحوّل صفحة منتج عادية إلى حملة متكاملة دون الحاجة إلى خبرة تسويقية.", tags: ["Next.js", "OpenAI", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Logos_Commerly_Black%20logo%20with%20white%20bg.png" },
-    { title: "متجر إلكتروني متكامل", meta: "2024 · تجارة إلكترونية · Full-stack", outcome: "زمن تحميل أقل من ثانية واحدة، وسلة شراء لا تفقد محتواها.", desc: "متجر كامل من الكتالوغ حتى إتمام الطلب: بحث وتصفية، إدارة مخزون، لوحة تحكم للطلبات، ودعم كامل للعربية واتجاه RTL. بُني ليتحمّل موجات الزيارات في مواسم العروض.", tags: ["React", "TypeScript", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_o4j8nxo4j8nxo4j8.png" },
-    { title: "لوحة تحليلات لحظية", meta: "2022 · بيانات · Full-stack", outcome: "ملايين السجلات تتحوّل إلى لوحة تُحدَّث كل ثانيتين.", desc: "لوحة تعرض تدفق البيانات لحظياً عبر WebSocket، مبنية فوق طبقة تجميع تعالج الأحداث قبل وصولها إلى الواجهة. الهدف كان أن يقرأ الفريق الرقم الصحيح دون انتظار.", tags: ["Node.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_gjw7v6gjw7v6gjw7.png" },
+    { title: "متجر إلكتروني متكامل", meta: "2024 · تجارة إلكترونية · Full-stack", outcome: "زمن تحميل أقل من ثانية واحدة، وسلة شراء لا تفقد محتواها.", desc: "متجر كامل من الكتالوغ حتى إتمام الطلب: بحث وتصفية، إدارة مخزون، لوحة تحكم للطلبات، ودعم كامل للعربية واتجاه RTL. بُني ليتحمّل موجات الزيارات في مواسم العروض.", tags: ["React", "TypeScript", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_o4j8nxo4j8nxo4j8." },
+    { title: "لوحة تحليلات لحظية", meta: "2022 · بيانات · Full-stack", outcome: "ملايين السجلات تتحوّل إلى لوحة تُحدَّث كل ثانيتين.", desc: "لوحة تعرض تدفق البيانات لحظياً عبر WebSocket، مبنية فوق طبقة تجميع تعالج الأحداث قبل وصولها إلى الواجهة. الهدف كان أن يقرأ الفريق الرقم الصحيح دون انتظار.", tags: ["Node.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_gjw7v6gjw7v6gjw7.webp" },
   ],
   about: {
     heading: "من الفكرة إلى الإطلاق، وحدي",
@@ -88,8 +88,8 @@ const enSeed = {
   works: [
     { title: "Sawwi — Multi-tenant website builder", meta: "2026 · SaaS · Founder & sole engineer", outcome: "A full site live in under 30 minutes, without writing a line of code.", desc: "A platform that lets agencies and business owners build fully Arabic sites through a visual editor, with multi-user workspaces and site-scoped permissions. Every site carries its own theme, fonts and settings, with full version history and rollback.", tags: ["Next.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_9sl9d69sl9d69sl9.png" },
     { title: "Commerly — AI product ads & ideas platform", meta: "2025 · E-commerce · AI", outcome: "Ready-to-publish ideas and ads for your products in seconds, not hours.", desc: "An AI-powered e-commerce platform: a merchant describes their product and it generates campaign ideas, ad copy, and marketing content ready to publish — turning a plain product page into a full campaign with no marketing expertise required.", tags: ["Next.js", "OpenAI", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Logos_Commerly_Black%20logo%20with%20white%20bg.png" },
-    { title: "Full e-commerce store", meta: "2024 · E-commerce · Full-stack", outcome: "Sub-second page loads and a cart that never loses its contents.", desc: "A complete store from catalog to checkout: search and filtering, inventory management, an order dashboard, and full Arabic/RTL support. Built to hold up under seasonal traffic spikes.", tags: ["React", "TypeScript", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_o4j8nxo4j8nxo4j8.png" },
-    { title: "Real-time analytics dashboard", meta: "2022 · Data · Full-stack", outcome: "Millions of records turned into a dashboard that refreshes every 2 seconds.", desc: "A dashboard streaming live data over WebSocket, built on an aggregation layer that processes events before they reach the UI. The goal was simple: the team reads the right number without waiting.", tags: ["Node.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_gjw7v6gjw7v6gjw7.png" },
+    { title: "Full e-commerce store", meta: "2024 · E-commerce · Full-stack", outcome: "Sub-second page loads and a cart that never loses its contents.", desc: "A complete store from catalog to checkout: search and filtering, inventory management, an order dashboard, and full Arabic/RTL support. Built to hold up under seasonal traffic spikes.", tags: ["React", "TypeScript", "PostgreSQL"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_o4j8nxo4j8nxo4j8." },
+    { title: "Real-time analytics dashboard", meta: "2022 · Data · Full-stack", outcome: "Millions of records turned into a dashboard that refreshes every 2 seconds.", desc: "A dashboard streaming live data over WebSocket, built on an aggregation layer that processes events before they reach the UI. The goal was simple: the team reads the right number without waiting.", tags: ["Node.js", "PostgreSQL", "Docker"], photo: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_gjw7v6gjw7v6gjw7.webp" },
   ],
   about: {
     heading: "From idea to launch, on my own.",
@@ -126,7 +126,7 @@ export const portfolio: TemplateModule = {
   vertical: "portfolio",
   description: "بورتفوليو من صفحة واحدة لأي مهنة — أعمال، خبرات، وتواصل. عربي أو إنجليزي، مع تأثيرات تمرير راقية.",
   tags: ["بورتفوليو", "أعمال شخصية", "مطوّر", "مصمم", "مصوّر", "سيرة ذاتية", "عربي وإنجليزي", "صفحة واحدة"],
-  cover: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_y1x4w1y1x4w1y1x4.png",
+  cover: "https://media.sawwi.online/production/templates/portfolio/Gemini_Generated_Image_y1x4w1y1x4w1y1x4.webp",
   Component: Component as unknown as TemplateModule["Component"],
   defaults,
   nameKey: "shop.name",
@@ -145,6 +145,8 @@ export const portfolio: TemplateModule = {
   palettes: [
     // ── Light ─────────────────────────────────────────────────────────────
     { key: "paper", label: "ورقي", tone: "light", isDefault: true, mood: "فاتح دافئ", colors: { accent: "oklch(0.5 0.08 165)", ground: "oklch(0.955 0.004 90)", ink: "oklch(0.26 0.012 70)" } },
+    // Platform-matched light — same accent/ground/ink as Sawwi's own light theme.
+    { key: "sawwi", label: "سَوّي", tone: "light", mood: "هوية سَوّي", colors: { accent: "#0b7a5f", ground: "#ffffff", ink: "#0d1b1e" } },
     { key: "ivory", label: "عاجي", tone: "light", mood: "أبيض نظيف", colors: { accent: "oklch(0.5 0.1 160)", ground: "oklch(0.98 0.003 95)", ink: "oklch(0.24 0.01 60)" } },
     { key: "sky", label: "سماوي", tone: "light", mood: "فاتح أزرق", colors: { accent: "oklch(0.52 0.12 245)", ground: "oklch(0.965 0.008 230)", ink: "oklch(0.26 0.02 250)" } },
     { key: "clay", label: "طيني", tone: "light", mood: "فاتح نحاسي", colors: { accent: "oklch(0.55 0.13 45)", ground: "oklch(0.96 0.014 70)", ink: "oklch(0.28 0.025 45)" } },
@@ -152,6 +154,8 @@ export const portfolio: TemplateModule = {
     { key: "sage", label: "ميرمية", tone: "light", mood: "فاتح أخضر", colors: { accent: "oklch(0.52 0.1 150)", ground: "oklch(0.96 0.012 140)", ink: "oklch(0.26 0.02 150)" } },
     // ── Dark ──────────────────────────────────────────────────────────────
     { key: "ink", label: "حِبر", tone: "dark", isDefault: true, mood: "داكن دافئ", colors: { accent: "oklch(0.64 0.1 165)", ground: "oklch(0.17 0.01 70)", ink: "oklch(0.93 0.008 85)" } },
+    // Platform-matched dark — same emerald accent + dark-teal ground/ink as Sawwi's dark theme.
+    { key: "sawwiDark", label: "سَوّي داكن", tone: "dark", mood: "هوية سَوّي", colors: { accent: "#16a37b", ground: "#0a1416", ink: "#ecf1f0" } },
     { key: "midnight", label: "منتصف الليل", tone: "dark", mood: "داكن أزرق", colors: { accent: "oklch(0.66 0.12 235)", ground: "oklch(0.16 0.025 250)", ink: "oklch(0.93 0.015 245)" } },
     { key: "ember", label: "جمر", tone: "dark", mood: "داكن نحاسي", colors: { accent: "oklch(0.68 0.14 45)", ground: "oklch(0.165 0.02 40)", ink: "oklch(0.93 0.015 70)" } },
     { key: "plum", label: "برقوقي", tone: "dark", mood: "أرجواني داكن", colors: { accent: "oklch(0.66 0.15 320)", ground: "oklch(0.165 0.03 315)", ink: "oklch(0.93 0.015 320)" } },

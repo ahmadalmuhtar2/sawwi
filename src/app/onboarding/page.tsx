@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getSessionClaims } from "@/lib/auth";
 import { Logo } from "@/components/logo";
+import { ThemeInit } from "@/components/dashboard/theme-toggle";
 
 // Self-serve workspace creation is DISABLED (accounts are admin-provisioned).
 // A user only lands here if they have no workspace and no site grant — i.e. an
@@ -12,8 +14,14 @@ export default async function OnboardingPage() {
   if (claims.workspace) redirect("/dashboard");
   if (claims.siteAccess.length > 0) redirect("/dashboard");
 
+  // Dark is the platform default; only an explicit `light` cookie opts out.
+  const saved = (await cookies()).get("sawwi_theme")?.value;
+  const theme = saved === "light" ? "light" : "dark";
+
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-10">
+    <div id="sw-app" data-theme={theme} style={{ display: "contents" }} suppressHydrationWarning>
+      <ThemeInit />
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-bg px-4 py-10">
       <Logo className="mb-8 h-10 w-auto" />
       <div className="w-full max-w-md rounded-xl border border-line bg-surface p-7 text-center">
         <h1 className="text-xl font-extrabold text-ink">الحساب قيد الإعداد</h1>
@@ -27,6 +35,7 @@ export default async function OnboardingPage() {
         >
           العودة لتسجيل الدخول
         </Link>
+      </div>
       </div>
     </div>
   );

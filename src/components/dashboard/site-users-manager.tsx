@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/feedback";
 import { MenuSelect } from "@/components/ui/dropdown";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Role = "manager" | "contributor" | "member";
 
@@ -173,12 +174,16 @@ export function SiteUsersManager({
                   onChange={(v) => changeRole(u.id, v as Role)}
                   className="w-32 shrink-0"
                 />
-                <button onClick={() => setPending({ kind: "reset", id: u.id, email: u.email })} disabled={busy === u.id} title="إعادة تعيين كلمة المرور" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-accent-100 hover:text-accent-900 disabled:opacity-40">
-                  <KeyRound className="size-4" />
-                </button>
-                <button onClick={() => setPending({ kind: "delete", id: u.id, email: u.email })} disabled={busy === u.id} title="حذف" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
-                  <Trash2 className="size-4" />
-                </button>
+                <Tooltip label="إعادة تعيين كلمة المرور">
+                  <button onClick={() => setPending({ kind: "reset", id: u.id, email: u.email })} disabled={busy === u.id} aria-label="إعادة تعيين كلمة المرور" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-accent-100 hover:text-accent-900 disabled:opacity-40">
+                    <KeyRound className="size-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="حذف">
+                  <button onClick={() => setPending({ kind: "delete", id: u.id, email: u.email })} disabled={busy === u.id} aria-label="حذف" className="shrink-0 rounded-md p-2 text-muted transition hover:bg-danger-100 hover:text-danger disabled:opacity-40">
+                    <Trash2 className="size-4" />
+                  </button>
+                </Tooltip>
               </Card>
             </li>
           ))}
@@ -230,13 +235,15 @@ export function SiteUsersManager({
           <code className="flex-1 select-all rounded-lg border border-line bg-black/[0.04] px-3 py-2.5 text-center text-lg font-bold tracking-wider text-ink dark:bg-white/6" dir="ltr">
             {reset?.password}
           </code>
-          <button
-            onClick={copyPassword}
-            title="نسخ"
-            className="shrink-0 rounded-lg border border-line p-2.5 text-muted transition hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/6"
-          >
-            {copied ? <Check className="size-5 text-emerald-600" /> : <Copy className="size-5" />}
-          </button>
+          <Tooltip label="نسخ">
+            <button
+              onClick={copyPassword}
+              aria-label="نسخ"
+              className="shrink-0 rounded-lg border border-line p-2.5 text-muted transition hover:bg-black/[0.04] hover:text-ink dark:hover:bg-white/6"
+            >
+              {copied ? <Check className="size-5 text-emerald-600" /> : <Copy className="size-5" />}
+            </button>
+          </Tooltip>
         </div>
       </Modal>
     </div>

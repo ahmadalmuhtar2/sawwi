@@ -15,7 +15,7 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: "rtl",
     lang: "ar",
     background_color: "#ffffff",
-    theme_color: "#111318",
+    theme_color: "#0b7a5f",
     // Installability requires a square 192px AND 512px icon; a maskable variant
     // (extra safe-zone padding) keeps Android's circle/squircle mask from clipping
     // the mark. The old 600x327 logo failed the square-size check, so Chrome never

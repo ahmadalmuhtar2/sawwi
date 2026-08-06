@@ -49,6 +49,16 @@ export const notificationsRepository = {
     return [...ids];
   },
 
+  /** Every platform admin's userId — the recipients for platform-wide events
+   *  (e.g. a new landing-page lead). */
+  async adminUserIds(): Promise<string[]> {
+    const admins = await getPrisma().user.findMany({
+      where: { platformRole: "admin" },
+      select: { id: true },
+    });
+    return admins.map((a) => a.id);
+  },
+
   createMany(rows: NewNotification[]) {
     if (!rows.length) return Promise.resolve({ count: 0 });
     return getPrisma().notification.createMany({ data: rows });

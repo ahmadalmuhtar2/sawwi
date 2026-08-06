@@ -12,8 +12,11 @@ import { OnboardingWizard } from "./onboarding-wizard";
 // One minimal wizard for every template: name + optional logo + subdomain. All
 // the real content is edited inline in the builder after the site is created.
 
-export function NewSiteFlow() {
-  const [templateKey, setTemplateKey] = React.useState<string | null>(null);
+export function NewSiteFlow({ initialTemplateKey = null }: { initialTemplateKey?: string | null }) {
+  // A preselected template (e.g. arriving from the public /templates gallery via
+  // ?template=<key>) jumps straight to the wizard; "تغيير القالب" clears it back
+  // to the gallery.
+  const [templateKey, setTemplateKey] = React.useState<string | null>(initialTemplateKey);
 
   if (templateKey) {
     return (

@@ -5,6 +5,7 @@ import { Trash2, Plus, ChevronUp, ChevronDown } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 
@@ -207,13 +208,15 @@ function ItemRow({
             <ChevronDown className="size-4" />
           </button>
         </div>
-        <button
-          onClick={() => onRemove(item.id)}
-          className="text-faint transition hover:text-danger"
-          title="حذف"
-        >
-          <Trash2 className="size-4" />
-        </button>
+        <Tooltip label="حذف">
+          <button
+            onClick={() => onRemove(item.id)}
+            aria-label="حذف"
+            className="text-faint transition hover:text-danger"
+          >
+            <Trash2 className="size-4" />
+          </button>
+        </Tooltip>
       </div>
       <div className="space-y-3">
         {fields.map((f) => (

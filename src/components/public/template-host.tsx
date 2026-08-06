@@ -134,8 +134,10 @@ function PoweredBySawwi() {
         href={appUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-[12px] text-neutral-500 transition hover:text-neutral-800"
+        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-500 transition hover:text-neutral-800"
       >
+        {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset */}
+        <img src="/brand/mark-primary.svg" alt="سوّي" width={16} height={16} className="rounded-[4px]" />
         أنشئ موقعك مع <span className="font-semibold text-neutral-700">سوّي</span>
       </a>
     </div>

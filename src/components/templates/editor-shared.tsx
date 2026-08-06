@@ -17,7 +17,7 @@ export const normColor = (s: unknown) => String(s ?? "").replace(/\s+/g, " ").tr
 // value is a non-hex (e.g. an oklch default), fall back to a neutral so the
 // swatch still renders (the real default is applied by the template anyway).
 export function toHex(v: string): string {
-  return /^#[0-9a-fA-F]{6}$/.test(v) ? v : "#2b3a55";
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v : "#0b7a5f";
 }
 
 /** True below the `lg` breakpoint (phones/small tablets) — picks the mobile

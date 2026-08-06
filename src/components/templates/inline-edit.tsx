@@ -16,6 +16,7 @@ import { ImageUp, Loader2, Trash2 } from "lucide-react";
 import { setPath } from "@/templates/content";
 import { uploadStaging } from "./fields";
 import { cn } from "@/lib/cn";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Content = Record<string, unknown>;
 
@@ -161,25 +162,27 @@ export function EditableImage({
       {/* controls: hover-reveal on desktop; always shown (lighter scrim) on
           touch/coarse pointers, since there's no hover to reveal them. */}
       <span className="absolute inset-0 z-20 flex items-center justify-center gap-1.5 bg-black/45 opacity-0 transition-opacity group-hover/img:opacity-100 pointer-coarse:bg-black/25 pointer-coarse:opacity-100">
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={busy}
-          title="تغيير الصورة"
-          aria-label="تغيير الصورة"
-          className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow disabled:opacity-70"
-        >
-          {busy ? <Loader2 className="size-4 animate-spin" /> : <ImageUp className="size-4" />}
-        </button>
-        <button
-          type="button"
-          onClick={() => write("")}
-          title="إزالة الصورة"
-          aria-label="إزالة الصورة"
-          className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-red-600 shadow"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
+        <Tooltip label="تغيير الصورة">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+            aria-label="تغيير الصورة"
+            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-900 shadow disabled:opacity-70"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <ImageUp className="size-4" />}
+          </button>
+        </Tooltip>
+        <Tooltip label="إزالة الصورة">
+          <button
+            type="button"
+            onClick={() => write("")}
+            aria-label="إزالة الصورة"
+            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-red-600 shadow"
+          >
+            <Trash2 className="size-3.5" />
+          </button>
+        </Tooltip>
       </span>
       {error && (
         <span className="absolute inset-x-0 bottom-0 z-20 bg-red-600/90 px-2 py-1 text-center text-[11px] text-white">

@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  
-  <rect x="10" y="10" width="28" height="28" rx="7" fill="#2b3a55"></rect>
-  <text x="24" y="31" text-anchor="middle" font-family="Cairo, &#39;Readex Pro&#39;, sans-serif" font-size="17" font-weight="800" fill="#ffffff">س</text>
-  <circle cx="24" cy="24" r="21" fill="none" stroke="#2b3a55" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="33 99" opacity="0.9">
-    
+  <!-- Sawwi bar mark, centered (40px mark translated into the 48 viewBox). -->
+  <g transform="translate(4,4)" fill="#0b7a5f">
+    <rect x="7.6" y="27.8" width="24.8" height="4.6" rx="2.3"/>
+    <rect x="10.4" y="15.2" width="5.22" height="16" rx="2.61"/>
+    <rect x="17.38" y="17" width="5.22" height="14.2" rx="2.61"/>
+    <rect x="24.36" y="18.8" width="5.22" height="12.4" rx="2.61"/>
+  </g>
+  <!-- spinning ring around the mark -->
+  <circle cx="24" cy="24" r="21" fill="none" stroke="#0b7a5f" stroke-width="2.5"
+          stroke-linecap="round" stroke-dasharray="33 99" opacity="0.9">
+    <animateTransform attributeName="transform" type="rotate"
+                      from="0 24 24" to="360 24 24" dur="1s" repeatCount="indefinite"/>
   </circle>
 </svg>

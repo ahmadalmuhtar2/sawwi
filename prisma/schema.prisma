@@ -307,9 +307,29 @@ model Site {
   notifications Notification[]
   listings     Listing[]
   siteUsers    SiteUser[]
+  visits       SiteVisit[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// One counted visit to a published site, keyed by BROWSER SESSION: each new
+/// session (a fresh `sawwi_vid` session cookie) counts once per site. The unique
+/// (siteId, sessionKey) makes recording idempotent — repeat pageviews in the same
+/// session don't recount — so the per-site total is just COUNT(*). Cascades away
+/// with the site.
+model SiteVisit {
+  id         String   @id @default(cuid())
+  siteId     String
+  sessionKey String // opaque per-browser-session id (from the sawwi_vid cookie)
+  createdAt  DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // One visit per (site, session); (siteId) backs the count.
+  @@unique([siteId, sessionKey])
+  @@index([siteId])
+  @@map("site_visits")
 }
 
 /// An END-USER account on a published site (a customer/seller of the tenant's
@@ -647,4 +667,31 @@ model CommissionEntry {
 
   @@index([workspaceId])
   @@map("commission_entries")
+}
+
+/// A lead captured from the public landing page "free preview" form. Not tied to
+/// any account — a prospective customer leaves their business name + WhatsApp so
+/// an admin can reach out. Created by anyone (public POST); read/managed ONLY
+/// from the admin dashboard. New leads notify every platform admin.
+model Lead {
+  id           String     @id @default(cuid())
+  businessName String
+  whatsapp     String /// normalized digits incl. country code, e.g. 9639XXXXXXXX
+  email        String?
+  status       LeadStatus @default(new)
+  note         String? /// admin-only internal note
+  ipHash       String? /// coarse, non-reversible IP fingerprint — abuse signal only
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([status, createdAt])
+  @@index([ipHash, createdAt])
+  @@map("leads")
+}
+
+enum LeadStatus {
+  new
+  contacted
+  converted
+  archived
 }
