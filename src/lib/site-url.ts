@@ -12,6 +12,22 @@ export function siteHost(slug: string): string {
   return `${slug}.${ROOT_DOMAIN}`;
 }
 
+/** The effective site logo: the uploaded Site.logoUrl if present, else the
+ *  template content's `shop.logo` (what the create wizard / inline editor set —
+ *  it is never synced back to Site.logoUrl). Used for dashboard avatars so a site
+ *  shows its real logo instead of a letter tile. */
+export function siteLogo(logoUrl: string | null | undefined, content: unknown): string | null {
+  if (typeof logoUrl === "string" && logoUrl.trim()) return logoUrl;
+  if (content && typeof content === "object") {
+    const shop = (content as Record<string, unknown>).shop;
+    if (shop && typeof shop === "object") {
+      const logo = (shop as Record<string, unknown>).logo;
+      if (typeof logo === "string" && logo.trim()) return logo;
+    }
+  }
+  return null;
+}
+
 /** A tenant's full public URL, protocol-correct for dev (http/localhost) and
  *  production (https). Client-safe — reads NEXT_PUBLIC_ROOT_DOMAIN, inlined at
  *  build time. Use this for "visit website" links (never hardcode localhost). */
