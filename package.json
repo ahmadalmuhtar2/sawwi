@@ -16,6 +16,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
+    "db:check:destructive": "node scripts/check-destructive-migrations.mjs",
     "db:seed": "tsx src/scripts/seed.ts",
     "postinstall": "prisma generate"
   },
