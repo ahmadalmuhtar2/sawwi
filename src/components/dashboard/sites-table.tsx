@@ -126,6 +126,7 @@ export function SitesTable({
                         site={{ id: r.id, slug: r.slug, businessName: r.businessName, status: r.status }}
                         canDelete={r.canDelete}
                         unread={r.unread}
+                        newSubmissions={r.newSubmissions}
                         templateKey={r.templateKey}
                       />
                     </div>

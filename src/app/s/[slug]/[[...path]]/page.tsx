@@ -173,6 +173,13 @@ export default async function PublicSitePage({
   const token = (await cookies()).get(SITE_SESSION_COOKIE)?.value ?? null;
   const initialUser = authEnabled ? (await currentUser(host, token)).user : null;
 
+  // The floating contact button follows the site's brand: its accent (or the
+  // template's default accent when the site hasn't overridden it).
+  const brandAccent =
+    published.theme.accent ||
+    getTemplate(published.templateKey)?.tokens.find((t) => t.key === "accent")?.default ||
+    null;
+
   return (
     <>
       <TemplateHost
@@ -182,6 +189,7 @@ export default async function PublicSitePage({
         currency={currency}
         data={marketplaceData}
         slug={slug}
+        siteId={site.id}
         route={path ?? []}
         logoUrl={logoUrl}
         authEnabled={authEnabled}
@@ -196,6 +204,7 @@ export default async function PublicSitePage({
         businessName={displayName(site)}
         defaultName={initialUser?.name}
         defaultContact={initialUser?.phone}
+        accent={brandAccent}
       />
       {/* Count this pageview (deduped per browser session by the endpoint). */}
       <VisitBeacon slug={slug} />

@@ -135,11 +135,11 @@ model User {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
-  memberships   WorkspaceMember[]
-  siteAccess    SiteAccess[]
-  sessions      Session[]
-  accounts      Account[]
-  notifications Notification[]
+  memberships       WorkspaceMember[]
+  siteAccess        SiteAccess[]
+  sessions          Session[]
+  accounts          Account[]
+  notifications     Notification[]
   pushSubscriptions PushSubscription[]
 
   @@map("users")
@@ -219,17 +219,17 @@ model Verification {
 // ============================================================================
 
 model Workspace {
-  id            String        @id @default(cuid())
-  name          String
-  kind          WorkspaceKind @default(reseller)
-  commissionPct Float         @default(0)
-  status        String        @default("active")
+  id              String        @id @default(cuid())
+  name            String
+  kind            WorkspaceKind @default(reseller)
+  commissionPct   Float         @default(0)
+  status          String        @default("active")
   /// Shown to site-scoped business owners as the "contact your provider" target
   /// on the expiry banner/tab (the reseller who sold them the site).
   contactName     String?
   contactWhatsapp String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   members     WorkspaceMember[]
   invites     WorkspaceInvite[]
@@ -275,42 +275,219 @@ model WorkspaceInvite {
 // ============================================================================
 
 model Site {
-  id           String       @id @default(cuid())
-  workspaceId  String
-  slug         String       @unique // validated [a-z0-9-]{3,40}, see src/server/slug.ts
-  businessName String
-  verticalKey  String // e.g. "barbershop"
-  templateKey  String?
-  language     SiteLanguage @default(ar)
-  status       SiteStatus   @default(draft)
+  id              String       @id @default(cuid())
+  workspaceId     String
+  slug            String       @unique // validated [a-z0-9-]{3,40}, see src/server/slug.ts
+  businessName    String
+  verticalKey     String // e.g. "barbershop"
+  templateKey     String?
+  language        SiteLanguage @default(ar)
+  status          SiteStatus   @default(draft)
   /// Admin/reseller "pause": when true the public domain serves the branded
   /// holding page instead of the site, even if published. Drafts show the same
   /// page automatically (served from minute 0 until first publish).
-  maintenanceMode Boolean   @default(false)
-  logoUrl      String? // uploaded logo/avatar — shown in the dashboard list and the site header
-  seo          Json         @default("{}") // site-wide SEO defaults, see src/shared/seo.ts
-  content      Json         @default("{}") // editable template data (see src/templates); merged over the template defaults at render
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  maintenanceMode Boolean      @default(false)
+  logoUrl         String? // uploaded logo/avatar — shown in the dashboard list and the site header
+  seo             Json         @default("{}") // site-wide SEO defaults, see src/shared/seo.ts
+  content         Json         @default("{}") // editable template data (see src/templates); merged over the template defaults at render
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  settings     SiteSettings?
-  theme        SiteTheme?
-  subscription Subscription?
-  access       SiteAccess[]
-  services     Service[]
-  team         TeamMember[]
-  testimonials Testimonial[]
-  faq          FaqItem[]
-  snapshots    PublishSnapshot[]
-  messages     SiteMessage[]
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  settings      SiteSettings?
+  theme         SiteTheme?
+  subscription  Subscription?
+  access        SiteAccess[]
+  services      Service[]
+  team          TeamMember[]
+  testimonials  Testimonial[]
+  faq           FaqItem[]
+  snapshots     PublishSnapshot[]
+  messages      SiteMessage[]
   notifications Notification[]
-  listings     Listing[]
-  siteUsers    SiteUser[]
-  visits       SiteVisit[]
+  listings      Listing[]
+  siteUsers     SiteUser[]
+  visits        SiteVisit[]
+  submissions   Submission[]
+  providers     Provider[]
 
   @@index([workspaceId])
   @@map("sites")
+}
+
+/// A public form submission on a Shaghleh-style marketplace site. PROVIDER and
+/// CUSTOMER share this one table (separated by `kind`) so there is a single inbox
+/// and one set of admin screens. Scoped to the site; unauthenticated visitors
+/// create these via POST /api/sites/[siteId]/submissions. We store the raw phone
+/// exactly as typed AND a normalized form used for duplicate detection — and
+/// nothing beyond the declared fields (no IP, no user-agent, no fingerprinting).
+model Submission {
+  id         String           @id @default(cuid())
+  siteId     String
+  kind       SubmissionKind
+  status     SubmissionStatus @default(NEW)
+  name       String
+  phone      String // normalized E.164, e.g. +9639XXXXXXXX
+  phoneRaw   String // exactly as the visitor typed it
+  category   String
+  area       String
+  details    String? // portfolio link (provider) or job details (customer)
+  /// Uploaded image URLs (e.g. a provider's work samples). Public-form uploads go
+  /// through the site-scoped, rate-limited submissions upload endpoint (≤2MB each).
+  images     String[]         @default([])
+  adminNote  String?
+  /// How it arrived: "web" (the public form) or "manual" (a collaborator entered
+  /// someone who replied on WhatsApp). One list, not a form list + a chat history.
+  source     String           @default("web")
+  /// utm_source from the landing URL, if present. The ONLY visitor attribution we
+  /// keep — no IP, no user-agent, no fingerprinting.
+  utmSource  String?
+  /// Lightweight status audit: which platform user last changed the status, when.
+  statusById String?
+  statusAt   DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, kind, status, createdAt])
+  @@index([siteId, phone])
+  @@map("submissions")
+}
+
+enum SubmissionKind {
+  PROVIDER
+  CUSTOMER
+}
+
+enum SubmissionStatus {
+  NEW
+  REVIEWING
+  ACCEPTED
+  REJECTED
+  CONTACTED
+}
+
+/// A vetted service provider (حرفي/مستقل) on a marketplace site. Built now but kept
+/// dark: public profiles only render once `SiteSettings.publicProfilesEnabled` is on
+/// AND the provider opts in AND is ACTIVE+verified (see src/server/providers/visibility).
+/// `phone`/`phoneRaw` are internal and NEVER serialized publicly. Rating aggregates
+/// are denormalized and recomputed in-transaction after every Job/Rating write.
+model Provider {
+  id            String         @id @default(cuid())
+  siteId        String
+  submissionId  String?        @unique // promoted from a Submission (PROVIDER, ACCEPTED)
+  slug          String // URL slug, unique per site
+  name          String // internal, real name
+  displayName   String? // public, may be "أبو محمد"
+  phone         String // normalized E.164, NEVER public
+  phoneRaw      String
+  categories    String[] // from site config, not hardcoded
+  areas         String[]
+  bio           String? // max 400 chars
+  status        ProviderStatus @default(DRAFT)
+  verifiedAt    DateTime?
+  profilePublic Boolean        @default(false) // per-provider opt-in
+
+  jobsCompleted Int      @default(0) // denormalized, recomputed
+  ratingCount   Int      @default(0)
+  ratingSum     Int      @default(0)
+  ratingAvg     Decimal? @db.Decimal(3, 2)
+
+  internalNote String? // private quality notes, never public
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  site   Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  jobs   Job[]
+  photos ProviderPhoto[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, status])
+  @@map("providers")
+}
+
+model ProviderPhoto {
+  id         String   @id @default(cuid())
+  providerId String
+  key        String // R2 object key (not a full URL)
+  caption    String?
+  sortOrder  Int      @default(0)
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, sortOrder])
+  @@map("provider_photos")
+}
+
+/// A brokered match between a provider and a customer. Recorded by hand from day one
+/// so ratings always trace back to a real job. `customerPhone` is internal, never public.
+model Job {
+  id                   String    @id @default(cuid())
+  siteId               String
+  providerId           String
+  customerSubmissionId String? // if the customer arrived via a form
+  customerName         String
+  customerPhone        String // normalized, NEVER public
+  category             String
+  area                 String
+  description          String?
+  status               JobStatus @default(MATCHED)
+  matchedAt            DateTime  @default(now())
+  completedAt          DateTime?
+  followedUpAt         DateTime? // the follow-up call actually happened
+  createdByUserId      String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  rating   Rating?
+
+  @@index([siteId, status, matchedAt])
+  @@index([providerId, status])
+  @@map("jobs")
+}
+
+/// A single rating for a COMPLETED, followed-up Job. There is NO public endpoint that
+/// creates one — only an authenticated collaborator recording a follow-up result.
+/// `publicComment` renders only when `commentApproved`. `privateNote` is never public.
+model Rating {
+  id               String       @id @default(cuid())
+  siteId           String
+  jobId            String       @unique // one rating per job, enforced by DB + service
+  providerId       String
+  score            Int // 1..5
+  publicComment    String? // max 200 chars, only rendered if approved
+  commentApproved  Boolean      @default(false)
+  privateNote      String? // never rendered publicly
+  source           RatingSource
+  recordedByUserId String
+  recordedAt       DateTime     @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([providerId, recordedAt])
+  @@map("ratings")
+}
+
+enum ProviderStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  REMOVED
+}
+
+enum JobStatus {
+  MATCHED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum RatingSource {
+  FOLLOW_UP_CALL
+  WHATSAPP
+  IN_PERSON
 }
 
 /// One counted visit to a published site, keyed by BROWSER SESSION: each new
@@ -386,29 +563,29 @@ model SiteUserSession {
 /// the marketplace can grow new fields without a migration (see the generative-
 /// architecture direction). Hot filter/sort keys are promoted to columns.
 model Listing {
-  id          String          @id @default(cuid())
-  siteId      String
-  vertical    ListingVertical
-  title       String
-  price       Float? // integer amount; render applies currency + separators. null = "on request"
-  offer       String? // homes: "rent" | "buy" (a filter); null for cars
-  place       String? // city / area — a filter + shown on the card
-  description String?
-  images      Json            @default("[]") // string[] of storage URLs; first = cover
-  features    Json            @default("[]") // string[] extras (the `multi` filter)
-  specs       Json            @default("{}") // all other vertical fields, keyed by field key
-  published   Boolean         @default(false)
+  id               String          @id @default(cuid())
+  siteId           String
+  vertical         ListingVertical
+  title            String
+  price            Float? // integer amount; render applies currency + separators. null = "on request"
+  offer            String? // homes: "rent" | "buy" (a filter); null for cars
+  place            String? // city / area — a filter + shown on the card
+  description      String?
+  images           Json            @default("[]") // string[] of storage URLs; first = cover
+  features         Json            @default("[]") // string[] extras (the `multi` filter)
+  specs            Json            @default("{}") // all other vertical fields, keyed by field key
+  published        Boolean         @default(false)
   /// Merchandising/monetization lever: featured listings sort first and show a
   /// "مميّز" badge — the dealer's way to push high-margin stock (or a paid boost).
-  featured    Boolean         @default(false)
+  featured         Boolean         @default(false)
   /// available | reserved | sold — keeps the showroom credible + creates urgency.
-  status      String          @default("available")
+  status           String          @default("available")
   /// The site-user (seller/contributor) who authored this listing, when posted
   /// on-site. null = owner-authored from the dashboard. onDelete SetNull so
   /// removing a seller account never deletes their listings.
   authorSiteUserId String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
   site   Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   author SiteUser? @relation(fields: [authorSiteUserId], references: [id], onDelete: SetNull)
@@ -465,17 +642,17 @@ model Notification {
 
 /// Site-scoped invite: how a business owner edits ONLY their one site.
 model SiteAccess {
-  id           String      @id @default(cuid())
-  siteId       String
-  userId       String? // null until the invite is accepted
-  invitedEmail String
-  level        AccessLevel @default(editor)
-  builderAccess Boolean    @default(false) // editors edit settings; builder (pages/sections) + publish require this
-  token        String?     @unique // invite-accept link; consumed on accept (mirrors WorkspaceInvite)
-  invitedBy    String
-  acceptedAt   DateTime?
-  revokedAt    DateTime?
-  createdAt    DateTime    @default(now())
+  id            String      @id @default(cuid())
+  siteId        String
+  userId        String? // null until the invite is accepted
+  invitedEmail  String
+  level         AccessLevel @default(editor)
+  builderAccess Boolean     @default(false) // editors edit settings; builder (pages/sections) + publish require this
+  token         String?     @unique // invite-accept link; consumed on accept (mirrors WorkspaceInvite)
+  invitedBy     String
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime    @default(now())
 
   site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -486,23 +663,27 @@ model SiteAccess {
 }
 
 model SiteSettings {
-  id             String  @id @default(cuid())
-  siteId         String  @unique
-  whatsappNumber String?
-  phone          String?
-  socials        Json    @default("{}")
-  googleMapsUrl  String?
-  address        String?
-  openingHours   Json    @default("{}") // structured, see src/server/hours.ts
-  currency       String  @default("SYP") // site-wide price currency, see src/shared/currency.ts
-  logoMediaId    String?
-  loadingIconId  String?
+  id                    String  @id @default(cuid())
+  siteId                String  @unique
+  whatsappNumber        String?
+  phone                 String?
+  socials               Json    @default("{}")
+  googleMapsUrl         String?
+  address               String?
+  openingHours          Json    @default("{}") // structured, see src/server/hours.ts
+  currency              String  @default("SYP") // site-wide price currency, see src/shared/currency.ts
+  logoMediaId           String?
+  loadingIconId         String?
   /// End-user auth: when true the published site shows sign-in/up and accepts
   /// SiteUser accounts. Off by default so existing sites are unchanged.
-  authEnabled    Boolean @default(false)
+  authEnabled           Boolean @default(false)
   /// Owner's custom display labels for the 3 SiteUserRole values, e.g.
   /// { "manager": "مدير", "contributor": "بائع", "member": "زبون" }.
-  roleLabels     Json    @default("{}")
+  roleLabels            Json    @default("{}")
+  /// Master switch for public provider profiles (/p/[slug]). Off by default: while
+  /// false every public profile route 404s. Reveal only once there is real job
+  /// history behind the ratings. See src/server/providers/visibility.ts.
+  publicProfilesEnabled Boolean @default(false)
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
@@ -510,17 +691,17 @@ model SiteSettings {
 }
 
 model SiteTheme {
-  id           String  @id @default(cuid())
-  siteId       String  @unique
-  paletteKey   String? // curated palette key
-  primaryColor String?
+  id             String  @id @default(cuid())
+  siteId         String  @unique
+  paletteKey     String? // curated palette key
+  primaryColor   String?
   secondaryColor String?
-  bgColor      String?
-  fontKey      String  @default("readex")
-  headerVariant String? // universal header layout: A|B|C
-  headerScheme  String? // header color scheme: light|dark|glass
-  footerVariant String? // universal footer layout: A|B|C
-  footerScheme  String? // footer color scheme: dark|light|accent
+  bgColor        String?
+  fontKey        String  @default("readex")
+  headerVariant  String? // universal header layout: A|B|C
+  headerScheme   String? // header color scheme: light|dark|glass
+  footerVariant  String? // universal footer layout: A|B|C
+  footerScheme   String? // footer color scheme: dark|light|accent
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
@@ -532,15 +713,15 @@ model SiteTheme {
 // ============================================================================
 
 model Service {
-  id          String  @id @default(cuid())
-  siteId      String
-  name        String
-  description String?
-  price       String? // free text, e.g. "من 5000 ل.س"
-  duration    String?
+  id           String  @id @default(cuid())
+  siteId       String
+  name         String
+  description  String?
+  price        String? // free text, e.g. "من 5000 ل.س"
+  duration     String?
   imageMediaId String?
-  order       Int     @default(0)
-  visible     Boolean @default(true)
+  order        Int     @default(0)
+  visible      Boolean @default(true)
 
   site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
@@ -614,18 +795,18 @@ model PublishSnapshot {
 // ============================================================================
 
 model Subscription {
-  id        String             @id @default(cuid())
-  siteId    String             @unique
-  plan      String             @default("annual")
-  price     Float?
-  currency  Currency           @default(SYP)
-  expiry    DateTime
-  status    SubscriptionStatus @default(active)
+  id              String             @id @default(cuid())
+  siteId          String             @unique
+  plan            String             @default("annual")
+  price           Float?
+  currency        Currency           @default(SYP)
+  expiry          DateTime
+  status          SubscriptionStatus @default(active)
   /// Smallest renewal-reminder threshold (days) already emailed for the CURRENT
   /// expiry; reset to null whenever expiry is extended. Prevents duplicate sends.
   lastReminderDay Int?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   site     Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
   payments PaymentRecord[]

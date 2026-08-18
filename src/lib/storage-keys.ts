@@ -5,7 +5,7 @@
 
 import { getEnv } from "./env";
 
-export type AssetKind = "logos" | "favicons" | "og" | "sections" | "avatars" | "templates";
+export type AssetKind = "logos" | "favicons" | "og" | "sections" | "avatars" | "templates" | "submissions" | "providers";
 
 function envPrefix(): string {
   const e = getEnv().NODE_ENV;

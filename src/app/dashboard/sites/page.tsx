@@ -4,6 +4,7 @@ import { listSites } from "@/server/sites/sites.service";
 import { displayStatus, daysUntil } from "@/server/billing/billing.rules";
 import { unreadCountsForSites } from "@/server/messages/messages.service";
 import { visitCountsForSites } from "@/server/visits/visits.service";
+import { newSubmissionCountsForSites } from "@/server/submissions/submissions.service";
 import { canManageWorkspace } from "@/server/access/access.rules";
 import { getTemplate } from "@/templates/registry";
 import { formatArabicDate } from "@/lib/expiry-format";
@@ -27,10 +28,11 @@ export default async function SitesPage({
   const claims = await getSessionClaims();
   const sites = claims ? await listSites(claims) : [];
   const siteIds = sites.map((s) => s.id);
-  // Unread visitor-message counts (row menu) + counted visits (الزيارات column).
-  const [unreadBySite, visitsBySite] = sites.length
-    ? await Promise.all([unreadCountsForSites(siteIds), visitCountsForSites(siteIds)])
-    : [{} as Record<string, number>, {} as Record<string, number>];
+  // Unread visitor-message counts (row menu) + counted visits (الزيارات column)
+  // + NEW leads counts (row menu badge, submission templates).
+  const [unreadBySite, visitsBySite, newSubsBySite] = sites.length
+    ? await Promise.all([unreadCountsForSites(siteIds), visitCountsForSites(siteIds), newSubmissionCountsForSites(siteIds)])
+    : [{} as Record<string, number>, {} as Record<string, number>, {} as Record<string, number>];
   // Resellers create freely; a direct owner may create only their first site;
   // business owners (no workspace) never create.
   const canCreate =
@@ -48,6 +50,7 @@ export default async function SitesPage({
     templateLabel: getTemplate(s.templateKey)?.label ?? s.verticalKey,
     logoUrl: siteLogo(s.logoUrl, s.content),
     unread: unreadBySite[s.id] ?? 0,
+    newSubmissions: newSubsBySite[s.id] ?? 0,
     visits: visitsBySite[s.id] ?? 0,
     canDelete: claims ? canManageWorkspace(claims, s.workspaceId) : false,
     expiry: s.subscription

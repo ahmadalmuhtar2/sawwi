@@ -4,28 +4,47 @@
 // leaves their name + a way to reach them + a message; it POSTs to the public
 // endpoint (/api/public/messages) and lands in the owner's dashboard inbox.
 //
-// Deliberately self-contained: it renders OUTSIDE the template scope (a sibling
-// of <TemplateHost> on the public page), so it never inherits a template's
-// palette and looks consistent across every template. Neutral dark styling +
-// its own RTL wrapper. No dashboard UI primitives — this ships to the public.
+// Renders OUTSIDE the template scope (a sibling of <TemplateHost> on the public
+// page) so its structure is consistent across every template — but its brand
+// colour FOLLOWS the site: the button/header/submit use the site accent (passed
+// in), with a readable foreground picked from the accent's luminance. No dashboard
+// UI primitives — this ships to the public.
 
 import * as React from "react";
 import { MessageCircle, X, Send, CheckCircle2 } from "lucide-react";
 
 type State = "idle" | "sending" | "sent";
 
+const SLATE = "#0F172A";
+
+/** Relative luminance of a #rrggbb color (WCAG), or null if not hex. */
+function hexLum(hex: string): number | null {
+  const m = hex.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{6}$/.test(m)) return null;
+  const ch = [0, 2, 4].map((i) => parseInt(m.slice(i, i + 2), 16) / 255);
+  const f = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * f(ch[0]) + 0.7152 * f(ch[1]) + 0.0722 * f(ch[2]);
+}
+
 export function ContactWidget({
   slug,
   businessName,
   defaultName,
   defaultContact,
+  accent,
 }: {
   slug: string;
   businessName?: string | null;
   /** Prefilled from the signed-in site-user (when the site has accounts). */
   defaultName?: string | null;
   defaultContact?: string | null;
+  /** The site's brand accent (hex). The button/header/submit adopt it. */
+  accent?: string | null;
 }) {
+  // Fall back to the neutral slate if no (usable) accent is provided.
+  const brand = accent && hexLum(accent) != null ? accent : SLATE;
+  const lum = hexLum(brand) ?? 0;
+  const onBrand = lum > 0.62 ? "#0F172A" : "#FFFFFF"; // readable text on the accent
   const [open, setOpen] = React.useState(false);
   const [state, setState] = React.useState<State>("idle");
   const [error, setError] = React.useState<string | null>(null);
@@ -79,10 +98,10 @@ export function ContactWidget({
   }
 
   return (
-    <div dir="rtl" className="fixed bottom-4 left-4 z-9999 font-sans">
+    <div dir="rtl" className="fixed bottom-4 left-4 z-9999 font-sans" style={{ ["--cw-accent" as string]: brand } as React.CSSProperties}>
       {open && (
         <div className="mb-3 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-black/10 bg-white text-slate-900 shadow-2xl">
-          <div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-white">
+          <div className="flex items-center justify-between px-4 py-3" style={{ background: brand, color: onBrand }}>
             <span className="text-sm font-bold">
               {state === "sent" ? "تم الإرسال" : "راسلنا"}
             </span>
@@ -90,7 +109,7 @@ export function ContactWidget({
               type="button"
               onClick={() => setOpen(false)}
               aria-label="إغلاق"
-              className="rounded-md p-1 text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="rounded-md p-1 opacity-80 transition hover:bg-black/10 hover:opacity-100"
             >
               <X className="size-4" />
             </button>
@@ -124,7 +143,7 @@ export function ContactWidget({
                 placeholder="الاسم"
                 autoComplete="name"
                 maxLength={80}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--cw-accent)] focus:ring-1 focus:ring-[var(--cw-accent)]"
               />
               <input
                 value={form.contact}
@@ -132,7 +151,7 @@ export function ContactWidget({
                 placeholder="رقم الهاتف أو واتساب *"
                 inputMode="tel"
                 maxLength={60}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--cw-accent)] focus:ring-1 focus:ring-[var(--cw-accent)]"
               />
               <textarea
                 value={form.body}
@@ -140,7 +159,7 @@ export function ContactWidget({
                 placeholder="رسالتك…"
                 rows={3}
                 maxLength={1000}
-                className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+                className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--cw-accent)] focus:ring-1 focus:ring-[var(--cw-accent)]"
               />
 
               {/* Honeypot — off-screen, hidden from real users. Bots fill it. */}
@@ -159,7 +178,8 @@ export function ContactWidget({
               <button
                 type="submit"
                 disabled={state === "sending"}
-                className="mt-1 inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                style={{ background: brand, color: onBrand }}
+                className="mt-1 inline-flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-bold transition hover:opacity-90 disabled:opacity-60"
               >
                 <Send className="size-4" />
                 {state === "sending" ? "جارٍ الإرسال…" : "إرسال"}
@@ -174,7 +194,8 @@ export function ContactWidget({
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "إغلاق نموذج المراسلة" : "راسلنا"}
         aria-expanded={open}
-        className="flex size-14 items-center justify-center rounded-full bg-slate-900 text-white shadow-xl ring-1 ring-black/10 transition hover:scale-105 hover:bg-slate-800 active:scale-95"
+        style={{ background: brand, color: onBrand }}
+        className="flex size-14 items-center justify-center rounded-full shadow-xl ring-1 ring-black/10 transition hover:scale-105 active:scale-95"
       >
         {open ? <X className="size-6" /> : <MessageCircle className="size-6" />}
       </button>

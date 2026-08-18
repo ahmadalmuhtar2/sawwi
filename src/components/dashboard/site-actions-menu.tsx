@@ -5,10 +5,11 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users, UserCog,
+  MoreVertical, Pencil, Settings, Eye, History, ExternalLink, Link2, Trash2, MessageSquare, Tag, Users, UserCog, Inbox, HardHat, Briefcase,
 } from "lucide-react";
 import { api, ApiClientError } from "@/lib/api-client";
 import { authOnByDefault } from "@/templates/auth-defaults";
+import { templateCollectsSubmissions } from "@/templates/registry";
 import { siteUrl } from "@/lib/site-url";
 import { useToast } from "@/components/ui/toast";
 import { Modal } from "@/components/ui/modal";
@@ -18,12 +19,15 @@ export function SiteActionsMenu({
   site,
   canDelete = false,
   unread = 0,
+  newSubmissions = 0,
   templateKey = null,
 }: {
   site: { id: string; slug: string; businessName: string; status: string };
   canDelete?: boolean;
   /** Unread visitor messages — shows a count badge on the الرسائل item. */
   unread?: number;
+  /** NEW leads — shows a count badge on the الطلبات item (submission templates). */
+  newSubmissions?: number;
   /** Marketplace sites get an "الإعلانات" (listings) entry. */
   templateKey?: string | null;
 }) {
@@ -155,6 +159,25 @@ export function SiteActionsMenu({
           <Link href={`/dashboard/sites/${site.id}/collaborators`} onClick={() => setOpen(false)} className={itemCls}>
             <UserCog className="size-4 text-muted" /> المتعاونون
           </Link>
+          {templateCollectsSubmissions(templateKey) && (
+            <>
+              <Link href={`/dashboard/sites/${site.id}/submissions`} onClick={() => setOpen(false)} className={itemCls}>
+                <Inbox className="size-4 text-muted" />
+                <span className="flex-1">الطلبات</span>
+                {newSubmissions > 0 && (
+                  <span className="min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white">
+                    {newSubmissions > 99 ? "٩٩+" : newSubmissions.toLocaleString("ar-EG")}
+                  </span>
+                )}
+              </Link>
+              <Link href={`/dashboard/sites/${site.id}/providers`} onClick={() => setOpen(false)} className={itemCls}>
+                <HardHat className="size-4 text-muted" /> المزوّدون
+              </Link>
+              <Link href={`/dashboard/sites/${site.id}/jobs`} onClick={() => setOpen(false)} className={itemCls}>
+                <Briefcase className="size-4 text-muted" /> الشغلات
+              </Link>
+            </>
+          )}
           <Link href={`/dashboard/sites/${site.id}/messages`} onClick={() => setOpen(false)} className={itemCls}>
             <MessageSquare className="size-4 text-muted" />
             <span className="flex-1">الرسائل</span>

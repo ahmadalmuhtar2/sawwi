@@ -118,6 +118,7 @@ export const sitesRepository = {
     // never flip end-user auth off or wipe the labels.
     const authEnabled = data.authEnabled;
     const roleLabels = data.roleLabels as Prisma.InputJsonValue | undefined;
+    const publicProfilesEnabled = data.publicProfilesEnabled;
     return getPrisma().siteSettings.upsert({
       where: { siteId },
       create: {
@@ -126,12 +127,14 @@ export const sitesRepository = {
         currency: currency ?? "SYP",
         authEnabled: authEnabled ?? false,
         roleLabels: roleLabels ?? {},
+        publicProfilesEnabled: publicProfilesEnabled ?? false,
       },
       update: {
         ...fields,
         ...(currency ? { currency } : {}),
         ...(authEnabled !== undefined ? { authEnabled } : {}),
         ...(roleLabels !== undefined ? { roleLabels } : {}),
+        ...(publicProfilesEnabled !== undefined ? { publicProfilesEnabled } : {}),
       },
     });
   },

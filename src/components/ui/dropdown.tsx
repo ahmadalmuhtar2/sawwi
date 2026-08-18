@@ -18,8 +18,12 @@ export interface MenuOption {
 
 interface Pos {
   top: number;
-  left: number;
-  width: number;
+  /** Anchor to the button's inline-start (grow toward the free side). One of
+   *  left/right is set depending on which side has room. */
+  left?: number;
+  right?: number;
+  minWidth: number;
+  maxWidth: number;
   maxHeight: number;
 }
 
@@ -46,17 +50,24 @@ export function MenuSelect({
   const [pos, setPos] = React.useState<Pos | null>(null);
   const current = options.find((o) => o.value === value);
 
-  // Position the portaled menu just under the button; cap its height to the space
-  // left below so it scrolls internally instead of running off-screen.
+  // Position the portaled menu just under the button. The menu sizes to its OPTION
+  // text (min = button width, so it's never narrower than the trigger; max = the
+  // viewport), and grows toward whichever side has room — so long labels like
+  // «قيد المراجعة» are never truncated. Height is capped to scroll internally.
   const place = React.useCallback(() => {
     const r = btnRef.current?.getBoundingClientRect();
     if (!r) return;
-    setPos({
-      top: r.bottom + 4,
-      left: r.left,
-      width: r.width,
-      maxHeight: Math.max(160, window.innerHeight - r.bottom - 12),
-    });
+    const MARGIN = 8;
+    const MAXW = 320;
+    const maxHeight = Math.max(160, window.innerHeight - r.bottom - 12);
+    const spaceRight = window.innerWidth - r.left - MARGIN;
+    if (spaceRight >= 180) {
+      // Room to the right: anchor the menu's left edge to the button, grow right.
+      setPos({ top: r.bottom + 4, left: r.left, minWidth: r.width, maxWidth: Math.min(MAXW, spaceRight), maxHeight });
+    } else {
+      // Near the right edge: anchor the menu's right edge to the button, grow left.
+      setPos({ top: r.bottom + 4, right: Math.max(MARGIN, window.innerWidth - r.right), minWidth: r.width, maxWidth: Math.min(MAXW, r.right - MARGIN), maxHeight });
+    }
   }, []);
 
   React.useLayoutEffect(() => {
@@ -111,7 +122,7 @@ export function MenuSelect({
           <div
             ref={menuRef}
             role="listbox"
-            style={{ top: pos.top, left: pos.left, width: pos.width, maxHeight: pos.maxHeight }}
+            style={{ top: pos.top, left: pos.left, right: pos.right, minWidth: pos.minWidth, maxWidth: pos.maxWidth, maxHeight: pos.maxHeight, width: "max-content" }}
             className="fixed z-[100] overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-lg"
           >
             {options.map((o) => {

@@ -10,8 +10,9 @@ import { foulFatteh } from "./foul-fatteh";
 import { marketplace } from "./marketplace";
 import { portfolio } from "./portfolio";
 import { restaurantSplit } from "./restaurant-split";
+import { shaghleh } from "./shaghleh";
 
-export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, restaurantSplit, foulFatteh, marketplace, portfolio];
+export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, restaurantSplit, foulFatteh, marketplace, portfolio, shaghleh];
 
 const BY_KEY = new Map(TEMPLATES.map((t) => [t.key, t]));
 
@@ -24,6 +25,12 @@ export function getTemplate(key: string | null | undefined): TemplateModule | nu
  *  its template's chosen unit on every page. */
 export function defaultCurrencyOf(key: string | null | undefined): string {
   return getTemplate(key)?.defaultCurrency ?? DEFAULT_CURRENCY;
+}
+
+/** Does this site's template collect form submissions (→ show the «الطلبات»
+ *  inbox nav + NEW badge)? Sites whose template has no forms show nothing. */
+export function templateCollectsSubmissions(key: string | null | undefined): boolean {
+  return !!getTemplate(key)?.collectsSubmissions;
 }
 
 /** Lightweight list for pickers (no component/defaults payload). */

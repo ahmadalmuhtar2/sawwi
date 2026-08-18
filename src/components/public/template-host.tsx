@@ -23,6 +23,7 @@ export function TemplateHost({
   listings,
   data,
   slug,
+  siteId,
   route,
   logoUrl,
   authEnabled,
@@ -44,6 +45,9 @@ export function TemplateHost({
   data?: unknown;
   /** The public slug — forwarded so a template's enquiry form can reach the API. */
   slug?: string;
+  /** The Site id — forwarded so a template's form can POST to a site-scoped
+   *  endpoint (e.g. /api/sites/[siteId]/submissions). Undefined in the gallery. */
+  siteId?: string;
   /** URL path segments after the site root (e.g. ["properties","<id>"]). Only
    *  URL-routed templates (marketplace) read it; others ignore it. Undefined in
    *  the gallery/builder → the template uses its own internal-state navigation. */
@@ -89,7 +93,7 @@ export function TemplateHost({
   // `listings`/`slug` are extra props only data-backed templates read; others
   // ignore them. `listings` stays undefined for the gallery so those templates
   // fall back to their own demo data.
-  const rendered = <Component {...merged} currency={currency} listings={listings} data={data} slug={slug} route={route} logoUrl={logoUrl} />;
+  const rendered = <Component {...merged} currency={currency} listings={listings} data={data} slug={slug} siteId={siteId} route={route} logoUrl={logoUrl} />;
 
   // data-theme="light": templates are always light and own their palette; this
   // stops the dashboard's dark chrome from bleeding into the builder preview.

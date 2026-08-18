@@ -49,6 +49,8 @@ export const UpdateSettingsInput = z.object({
   // currency), so saving another settings tab never flips these off.
   authEnabled: z.boolean().optional(),
   roleLabels: z.record(z.string(), z.string().trim().max(40)).optional(),
+  // Master switch for public provider profiles (/p/[slug]). Preserve-on-omit.
+  publicProfilesEnabled: z.boolean().optional(),
 });
 export type UpdateSettingsInput = z.infer<typeof UpdateSettingsInput>;
 

@@ -75,6 +75,7 @@ export default async function PreviewPage({ params }: { params: Params }) {
         content={data.content}
         theme={data.theme}
         currency={data.currency}
+        siteId={id}
       />
     </div>
   );

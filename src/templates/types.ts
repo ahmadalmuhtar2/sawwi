@@ -138,6 +138,10 @@ export interface TemplateModule {
    *  so the host must NOT also render the floating SiteAuthWidget. Auth-first
    *  templates (marketplace) set this. */
   ownsAuthUI?: boolean;
+  /** The template's public page collects form submissions (leads) into the
+   *  Submission table. When true, the site gets the «الطلبات» inbox nav item +
+   *  NEW badge; sites without forms show no such item. */
+  collectsSubmissions?: boolean;
   /** Optional: offer a starting-variant choice in the create wizard (e.g. site
    *  LANGUAGE for a bilingual template). The chosen option's `seed` becomes the
    *  new site's initial content, with the typed name/logo merged over it. When

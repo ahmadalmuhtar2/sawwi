@@ -8,6 +8,7 @@
 
 import { CAR_MAKES } from "./car-data";
 import { formatArabicNumber as arGroup } from "@/shared/currency";
+import { SYRIAN_REGIONS, REGION_OTHER } from "@/shared/syria";
 
 export type Vertical = "car" | "home";
 // text: free text · number: numeric input (+ unit/currency) · select: dropdown
@@ -26,11 +27,9 @@ export const YEARS: string[] = (() => {
   return out;
 })();
 
-/** Syrian governorates — the city select enum. */
-export const CITIES = [
-  "دمشق", "ريف دمشق", "حلب", "حمص", "حماة", "اللاذقية", "طرطوس",
-  "إدلب", "درعا", "السويداء", "القنيطرة", "دير الزور", "الرقة", "الحسكة", "أخرى",
-];
+/** Syrian governorates — the city select enum. Sourced from the shared Syria
+ *  list (single source of truth) so it never drifts from other templates. */
+export const CITIES = [...SYRIAN_REGIONS, REGION_OTHER];
 
 export interface FieldDef {
   k: string;

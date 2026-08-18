@@ -14,6 +14,8 @@ export interface SiteRow {
   logoUrl: string | null;
   /** Unread visitor messages — not a column; passed through to the row menu. */
   unread: number;
+  /** NEW leads — not a column; passed through to the row menu badge. */
+  newSubmissions: number;
   /** Counted visits (per browser session) — the الزيارات column. */
   visits: number;
   canDelete: boolean;
