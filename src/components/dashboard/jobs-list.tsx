@@ -77,6 +77,13 @@ export function JobsList({
         onChange={(k) => setParams({ status: k === "all" ? "" : k })}
       />
 
+      {total > 0 && (
+        <div className="mb-2 text-[12.5px] text-faint">
+          عدد الشغلات: {toArabicDigits(total)}
+          {pageCount > 1 && <> · صفحة {toArabicDigits(page)} من {toArabicDigits(pageCount)}</>}
+        </div>
+      )}
+
       <Panel>
         {rows.length === 0 ? (
           <div className="px-6 py-16 text-center text-[14px] text-muted">لا شغلات مسجّلة بعد.</div>

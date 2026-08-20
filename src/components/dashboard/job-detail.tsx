@@ -50,13 +50,13 @@ const waHref = (phone: string) => `https://wa.me/${phone.replace(/\D/g, "")}`;
 export function JobDetail({ siteId, businessName, canManage, job }: { siteId: string; businessName: string; canManage: boolean; job: JobDetailData }) {
   const router = useRouter();
   const toast = useToast();
-  const base = `/dashboard/sites/${siteId}/jobs/${job.id}`;
+  const api = `/api/sites/${siteId}/jobs/${job.id}`; // REST endpoint (mutations)
   const [confirm, setConfirm] = React.useState(false);
   const eligibleToRate = job.status === "COMPLETED" && job.followedUpAt !== null;
 
   const patch = async (body: Record<string, unknown>, okMsg = "تم الحفظ ✓") => {
     try {
-      const res = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(api, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!(await res.json()).ok) throw new Error();
       toast(okMsg);
       router.refresh();
@@ -67,7 +67,7 @@ export function JobDetail({ siteId, businessName, canManage, job }: { siteId: st
 
   const del = async () => {
     try {
-      const res = await fetch(base, { method: "DELETE" });
+      const res = await fetch(api, { method: "DELETE" });
       if (!(await res.json()).ok) throw new Error();
       toast("تم الحذف ✓");
       router.push(`/dashboard/sites/${siteId}/jobs`);

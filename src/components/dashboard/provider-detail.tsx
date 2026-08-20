@@ -51,7 +51,7 @@ export function ProviderDetail({
 }) {
   const router = useRouter();
   const toast = useToast();
-  const base = `/dashboard/sites/${siteId}/providers/${provider.id}`;
+  const api = `/api/sites/${siteId}/providers/${provider.id}`; // REST endpoint (mutations)
 
   const [displayName, setDisplayName] = React.useState(provider.displayName ?? "");
   const [bio, setBio] = React.useState(provider.bio ?? "");
@@ -62,7 +62,7 @@ export function ProviderDetail({
 
   const patch = async (body: Record<string, unknown>, okMsg = "تم الحفظ ✓") => {
     try {
-      const res = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(api, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error?.message);
       toast(okMsg);
@@ -195,7 +195,7 @@ function PhotoManager({ siteId, providerId, photos, canManage, onChange }: {
   const toast = useToast();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [busy, setBusy] = React.useState(false);
-  const base = `/dashboard/sites/${siteId}/providers/${providerId}/photos`;
+  const base = `/api/sites/${siteId}/providers/${providerId}/photos`; // REST endpoint (mutations)
 
   const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
