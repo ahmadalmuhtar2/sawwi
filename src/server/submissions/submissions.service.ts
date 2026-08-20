@@ -13,6 +13,7 @@ import { siteAssetKey } from "@/lib/storage-keys";
 import { MAX_IMAGE_BYTES, maxSizeLabel } from "@/shared/uploads";
 import { templateCollectsSubmissions } from "@/templates/registry";
 import { KIND_LABEL, STATUS_LABEL, SOURCE_LABEL, type SubmissionKind as Kind, type SubmissionStatus as Status } from "@/shared/submissions";
+import { convertSubmissionToProvider } from "@/server/providers/providers.service";
 import { submissionsRepository as repo } from "./submissions.repository";
 import { normalizeSubmissionPhone, isHoneypotTripped, withinRateLimit, withinUploadRateLimit } from "./submissions.rules";
 import { MAX_SUBMISSION_IMAGES, type SubmitInput, type ManualInput, type UpdateSubmissionInput, type ListQuery } from "./submissions.schema";
@@ -152,11 +153,22 @@ export async function updateSubmission(
   if (!row) throw errors.notFound("الطلب غير موجود");
   // Audit: record who/when only when the status actually changes.
   const statusChanged = input.status !== undefined && input.status !== row.status;
-  return repo.updateAdmin(id, {
+  const updated = await repo.updateAdmin(id, {
     status: input.status as Status | undefined,
     adminNote: input.adminNote === undefined ? undefined : input.adminNote.trim() || null,
     ...(statusChanged ? { statusById: claims.userId, statusAt: new Date() } : {}),
   });
+  // Accepting a provider lead promotes it into the directory automatically (idempotent:
+  // an already-converted submission just returns its provider). The status write above
+  // is the source of truth, so a convert hiccup never blocks the approval itself.
+  if (statusChanged && input.status === "ACCEPTED" && row.kind === "PROVIDER") {
+    try {
+      await convertSubmissionToProvider(claims, siteId, id);
+    } catch {
+      // Non-fatal: the lead is accepted; conversion can be retried from the detail page.
+    }
+  }
+  return updated;
 }
 
 export async function deleteSubmission(claims: SessionClaims, siteId: string, id: string) {
