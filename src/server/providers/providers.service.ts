@@ -97,6 +97,15 @@ export async function getProvider(claims: SessionClaims, siteId: string, id: str
   return provider;
 }
 
+/** The provider promoted from a given submission, if one exists (drives the
+ *  submission detail page's "open provider" link). Site-scoped: a provider from
+ *  another site is treated as absent, so nothing leaks across sites. */
+export async function getProviderForSubmission(claims: SessionClaims, siteId: string, submissionId: string) {
+  await loadForRead(claims, siteId);
+  const p = await repo.findBySubmissionId(submissionId);
+  return p && p.siteId === siteId ? p : null;
+}
+
 /** Belongs-to check reused by the jobs service. */
 export function providerExistsInSite(siteId: string, id: string) {
   return repo.existsInSite(siteId, id);

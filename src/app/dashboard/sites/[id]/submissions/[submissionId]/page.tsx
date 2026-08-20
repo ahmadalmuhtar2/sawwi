@@ -3,6 +3,7 @@ import { getSessionClaims } from "@/lib/auth";
 import { getSite } from "@/server/sites/sites.service";
 import { resolveSiteAccess } from "@/server/access/access.rules";
 import { getSubmission } from "@/server/submissions/submissions.service";
+import { getProviderForSubmission } from "@/server/providers/providers.service";
 import { templateCollectsSubmissions } from "@/templates/registry";
 import { SubmissionDetail, type Detail } from "@/components/dashboard/submission-detail";
 
@@ -49,5 +50,16 @@ export default async function SubmissionDetailPage({
     statusAt: row.statusAt ? row.statusAt.toISOString() : null,
   };
 
-  return <SubmissionDetail siteId={id} businessName={site.businessName} canManage={perms.canEditSettings} submission={detail} />;
+  // A provider lead that's already been promoted → link straight to its directory page.
+  const linked = row.kind === "PROVIDER" ? await getProviderForSubmission(claims, id, submissionId) : null;
+
+  return (
+    <SubmissionDetail
+      siteId={id}
+      businessName={site.businessName}
+      canManage={perms.canEditSettings}
+      submission={detail}
+      linkedProviderId={linked?.id ?? null}
+    />
+  );
 }

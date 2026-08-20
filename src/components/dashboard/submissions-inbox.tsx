@@ -74,21 +74,6 @@ export function SubmissionsInbox({
     router.push(`?${next.toString()}`, { scroll: false });
   };
 
-  const setStatus = async (id: string, status: string) => {
-    try {
-      const res = await fetch(`/api/sites/${siteId}/submissions/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!(await res.json()).ok) throw new Error();
-      toast("تم تحديث الحالة ✓");
-      router.refresh();
-    } catch {
-      toast("تعذّر تحديث الحالة", "error");
-    }
-  };
-
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
   const exportHref = `/api/sites/${siteId}/submissions/export?${new URLSearchParams(sp.toString()).toString()}`;
 
@@ -176,15 +161,9 @@ export function SubmissionsInbox({
                     <Td className="text-muted">{r.area}</Td>
                     <Td className="text-faint">{SOURCE_LABEL[r.source] ?? r.source}</Td>
                     <Td>
-                      {canManage ? (
-                        <MenuSelect
-                          value={r.status}
-                          onChange={(v) => setStatus(r.id, v)}
-                          options={STATUS_ORDER.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
-                        />
-                      ) : (
-                        <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
-                      )}
+                      {/* Read-only here — status is changed only from the submission's
+                          detail page (approving a provider there auto-adds it to the directory). */}
+                      <Badge tone={STATUS_TONE[r.status]}>{STATUS_LABEL[r.status]}</Badge>
                     </Td>
                   </tr>
                 ))}

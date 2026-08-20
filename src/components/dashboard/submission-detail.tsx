@@ -37,14 +37,15 @@ export interface Detail {
 
 const waHref = (phone: string, greeting: string) => `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(greeting)}`;
 
-export function SubmissionDetail({ siteId, businessName, canManage, submission }: { siteId: string; businessName: string; canManage: boolean; submission: Detail }) {
+export function SubmissionDetail({ siteId, businessName, canManage, submission, linkedProviderId }: { siteId: string; businessName: string; canManage: boolean; submission: Detail; linkedProviderId: string | null }) {
   const router = useRouter();
   const toast = useToast();
   const [status, setStatus] = React.useState(submission.status);
   const [note, setNote] = React.useState(submission.adminNote ?? "");
   const [confirm, setConfirm] = React.useState(false);
   const [converting, setConverting] = React.useState(false);
-  const base = `/dashboard/sites/${siteId}/submissions`;
+  const base = `/dashboard/sites/${siteId}/submissions`; // dashboard page (navigation)
+  const api = `/api/sites/${siteId}/submissions`; // REST endpoint (mutations)
 
   // Promote an ACCEPTED provider lead into a Provider (links this submission).
   const convert = async () => {
@@ -64,11 +65,15 @@ export function SubmissionDetail({ siteId, businessName, canManage, submission }
       setConverting(false);
     }
   };
-  const canConvert = canManage && submission.kind === "PROVIDER" && submission.status === "ACCEPTED";
+  // Accepting a provider lead auto-adds it to the directory (server-side). So the
+  // usual state is "already linked" → offer a jump to its page. The manual convert
+  // only appears as a fallback: accepted provider whose auto-convert didn't land.
+  const isProvider = canManage && submission.kind === "PROVIDER";
+  const canConvert = isProvider && submission.status === "ACCEPTED" && !linkedProviderId;
 
   const patch = async (body: Record<string, unknown>, okMsg: string) => {
     try {
-      const res = await fetch(`${base}/${submission.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(`${api}/${submission.id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!(await res.json()).ok) throw new Error();
       toast(okMsg);
       router.refresh();
@@ -79,7 +84,7 @@ export function SubmissionDetail({ siteId, businessName, canManage, submission }
 
   const del = async () => {
     try {
-      const res = await fetch(`${base}/${submission.id}`, { method: "DELETE" });
+      const res = await fetch(`${api}/${submission.id}`, { method: "DELETE" });
       if (!(await res.json()).ok) throw new Error();
       toast("تم الحذف ✓");
       router.push(base);
@@ -103,6 +108,15 @@ export function SubmissionDetail({ siteId, businessName, canManage, submission }
         )}
         {!canManage && <Badge>{STATUS_LABEL[status]}</Badge>}
       </PageHeader>
+
+      {isProvider && linkedProviderId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
+          <span className="text-[13.5px] text-accent-400">هذا المزوّد مُضاف إلى الدليل.</span>
+          <Link href={`/dashboard/sites/${siteId}/providers/${linkedProviderId}`} className="inline-flex items-center gap-2 rounded-md bg-accent px-3.5 py-2 text-[13.5px] font-medium text-white transition hover:opacity-90">
+            <UserPlus className="size-4" /> فتح صفحة المزوّد
+          </Link>
+        </div>
+      )}
 
       {canConvert && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
