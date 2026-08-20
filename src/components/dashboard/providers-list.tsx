@@ -95,6 +95,13 @@ export function ProvidersList({
         </form>
       </div>
 
+      {total > 0 && (
+        <div className="mb-2 text-[12.5px] text-faint">
+          عدد المزوّدين: {toArabicDigits(total)}
+          {pageCount > 1 && <> · صفحة {toArabicDigits(page)} من {toArabicDigits(pageCount)}</>}
+        </div>
+      )}
+
       <Panel>
         {rows.length === 0 ? (
           <div className="px-6 py-16 text-center text-[14px] text-muted">
