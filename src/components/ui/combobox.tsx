@@ -81,13 +81,12 @@ export function Combobox({
     if (open) place();
   }, [open, place]);
 
-  // Reset the filter and focus the search box each time it opens.
+  // Focus the search box each time it opens (the filter is reset in the toggle
+  // handler, not here — keep this effect free of state updates).
   React.useEffect(() => {
-    if (open) {
-      setTerm("");
-      const id = window.setTimeout(() => inputRef.current?.focus(), 0);
-      return () => window.clearTimeout(id);
-    }
+    if (!open) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    return () => window.clearTimeout(id);
   }, [open]);
 
   React.useEffect(() => {
@@ -121,7 +120,7 @@ export function Combobox({
         ref={btnRef}
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => { if (!open) setTerm(""); setOpen((o) => !o); }}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
