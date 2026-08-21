@@ -179,53 +179,48 @@ function HeroSection({ name, hero, heroImage, wa }: { name: string; hero: Hero; 
 
 function ProductCard({ name, product, currency, wa }: { name: string; product: Product; currency: string; wa: string | null }) {
   return (
-    <section id="product" className="py-11 sm:py-16" style={{ background: "var(--zd-tint)" }}>
-      <Container>
-        <div className="overflow-hidden rounded-3xl border shadow-sm" style={{ borderColor: "var(--zd-border)", background: "var(--zd-surface)" }}>
-          <div className="aspect-[16/10] w-full overflow-hidden">
-            <EditableImage path="product.productImage" className="block h-full w-full">
-              {product.productImage ? (
-                // eslint-disable-next-line @next/next/no-img-element -- storage URL
-                <img src={product.productImage} alt={name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-              ) : (
-                <div className="grid h-full w-full place-items-center" style={{ background: "linear-gradient(135deg, var(--zd-tint), color-mix(in srgb, var(--zd-brand) 18%, var(--zd-tint)))" }} aria-hidden>
-                  <Droplets className="size-10 opacity-40" style={{ color: "var(--zd-brand)" }} />
-                </div>
-              )}
-            </EditableImage>
-          </div>
-          <div className="p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <EditableText path="brand.name" value={name} as="h2" className="text-[22px] font-extrabold" style={{ fontFamily: HEAD, color: "var(--zd-brand)" }} />
-                <EditableText
-                  path="product.tin"
-                  value={product.tin ?? ""}
-                  as="span"
-                  placeholder="حجم التنكة"
-                  className="mt-1.5 inline-block rounded-full px-3 py-1 text-[13px] font-bold"
-                  style={{ background: "color-mix(in srgb, var(--zd-accent) 12%, var(--zd-surface))", color: "var(--zd-accent)" }}
-                />
+    // The whole section IS one premium card (no colored band). The product image
+    // spans the full card width; the order area sits beneath it.
+    <section id="product" className="px-5 py-12 sm:py-16" style={{ background: "var(--zd-surface)" }}>
+      <div className="mx-auto w-full max-w-[880px] overflow-hidden rounded-[32px] border shadow-xl" style={{ borderColor: "var(--zd-border)", background: "var(--zd-surface)" }}>
+        {/* full-width product image with a soft scrim + a floating tin chip */}
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 10" }}>
+          <EditableImage path="product.productImage" className="absolute inset-0 block">
+            {product.productImage ? (
+              // eslint-disable-next-line @next/next/no-img-element -- storage URL
+              <img src={product.productImage} alt={name} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+            ) : (
+              <div className="absolute inset-0 grid place-items-center" style={{ background: "linear-gradient(135deg, var(--zd-tint), color-mix(in srgb, var(--zd-brand) 20%, var(--zd-tint)))" }} aria-hidden>
+                <Droplets className="size-12 opacity-40" style={{ color: "var(--zd-brand)" }} />
               </div>
-              {/* price: inline-editable NUMBER (auto Latin→Arabic on commit) + the
-                  site currency symbol from the app currency enum. */}
-              <div className="text-end">
-                <div className="flex items-baseline justify-end gap-1">
-                  <EditableText path="product.price" value={product.price ?? ""} as="span" placeholder="٠" className="text-[27px] leading-none font-extrabold" style={{ color: "var(--zd-accent)" }} />
-                  <span className="text-[15px] font-bold" style={{ color: "var(--zd-accent)" }}>{currency}</span>
-                </div>
-                <div className="mt-1 text-[12.5px]" style={{ color: "var(--zd-ink)" }}>للتنكة</div>
-              </div>
-            </div>
-            <EditableText path="product.desc" value={product.desc ?? ""} as="p" multiline placeholder="وصف قصير للمنتج…" className="mt-4 text-[15px] leading-relaxed" style={{ color: "var(--zd-ink)" }} />
-            {wa && (
-              <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl text-[16.5px] font-bold" style={{ background: "var(--zd-success)", color: "var(--zd-surface)" }}>
-                <MessageCircle className="size-5" /> اطلب التنكة عبر واتساب
-              </a>
             )}
-          </div>
+          </EditableImage>
+          <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(41,40,16,0.3), transparent 28%)" }} />
+          <span className="absolute start-4 top-4 inline-flex items-center rounded-full px-3.5 py-1.5 text-[12.5px] font-bold shadow-sm backdrop-blur-sm" style={{ background: "rgba(253,246,233,0.92)", color: "var(--zd-accent)" }}>
+            <EditableText path="product.tin" value={product.tin ?? ""} placeholder="حجم التنكة" />
+          </span>
         </div>
-      </Container>
+
+        {/* order area */}
+        <div className="p-6 sm:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <EditableText path="brand.name" value={name} as="h2" className="text-[26px] font-extrabold sm:text-[30px]" style={{ fontFamily: HEAD, color: "var(--zd-brand)" }} />
+            {/* price: inline-editable NUMBER (auto Latin→Arabic on commit) + the
+                site currency symbol from the app currency enum. */}
+            <div className="flex items-baseline gap-1.5">
+              <EditableText path="product.price" value={product.price ?? ""} as="span" placeholder="٠" className="text-[30px] leading-none font-extrabold sm:text-[34px]" style={{ color: "var(--zd-accent)" }} />
+              <span className="text-[16px] font-bold" style={{ color: "var(--zd-accent)" }}>{currency}</span>
+              <span className="text-[13px]" style={{ color: "var(--zd-ink)" }}>/ للتنكة</span>
+            </div>
+          </div>
+          <EditableText path="product.desc" value={product.desc ?? ""} as="p" multiline placeholder="وصف قصير للمنتج…" className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "var(--zd-ink)" }} />
+          {wa && (
+            <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-[56px] w-full items-center justify-center gap-2.5 rounded-2xl text-[17px] font-bold shadow-lg transition-transform hover:scale-[1.01]" style={{ background: "var(--zd-success)", color: "var(--zd-surface)" }}>
+              <MessageCircle className="size-5" /> اطلب التنكة عبر واتساب
+            </a>
+          )}
+        </div>
+      </div>
     </section>
   );
 }
