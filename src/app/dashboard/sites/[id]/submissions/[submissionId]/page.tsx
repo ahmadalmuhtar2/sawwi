@@ -4,6 +4,7 @@ import { getSite } from "@/server/sites/sites.service";
 import { resolveSiteAccess } from "@/server/access/access.rules";
 import { getSubmission } from "@/server/submissions/submissions.service";
 import { getProviderForSubmission } from "@/server/providers/providers.service";
+import { getCustomerForSubmission } from "@/server/customers/customers.service";
 import { templateCollectsSubmissions } from "@/templates/registry";
 import { SubmissionDetail, type Detail } from "@/components/dashboard/submission-detail";
 
@@ -50,8 +51,9 @@ export default async function SubmissionDetailPage({
     statusAt: row.statusAt ? row.statusAt.toISOString() : null,
   };
 
-  // A provider lead that's already been promoted → link straight to its directory page.
-  const linked = row.kind === "PROVIDER" ? await getProviderForSubmission(claims, id, submissionId) : null;
+  // A lead that's already been promoted → link straight to its list page.
+  const linkedProvider = row.kind === "PROVIDER" ? await getProviderForSubmission(claims, id, submissionId) : null;
+  const linkedCustomer = row.kind === "CUSTOMER" ? await getCustomerForSubmission(claims, id, submissionId) : null;
 
   return (
     <SubmissionDetail
@@ -59,7 +61,8 @@ export default async function SubmissionDetailPage({
       businessName={site.businessName}
       canManage={perms.canEditSettings}
       submission={detail}
-      linkedProviderId={linked?.id ?? null}
+      linkedProviderId={linkedProvider?.id ?? null}
+      linkedCustomerId={linkedCustomer?.id ?? null}
     />
   );
 }

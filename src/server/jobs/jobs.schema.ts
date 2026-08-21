@@ -6,9 +6,11 @@ import { RATING_COMMENT_MAX } from "@/shared/providers";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().or(z.literal(""));
 
-/** Record a brokered match. */
+/** Record a brokered match. `customerId` links a picked Customer (from the approved
+ *  list); name/phone are still stored denormalized so job history stays stable. */
 export const CreateJobInput = z.object({
   providerId: z.string().min(1),
+  customerId: z.string().optional(),
   customerName: z.string().trim().min(2, "الاسم قصير كتير").max(80, "الاسم طويل كتير"),
   customerPhone: z.string().trim().min(1, "الرقم مطلوب").max(40),
   category: z.string().trim().min(1, "اختر خدمة").max(80),

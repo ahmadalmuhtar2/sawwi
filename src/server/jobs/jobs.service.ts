@@ -13,6 +13,7 @@ import { getSite } from "@/server/sites/sites.service";
 import { resolveSiteAccess, type SessionClaims } from "@/server/access/access.rules";
 import { normalizeSubmissionPhone } from "@/server/submissions/submissions.rules";
 import { providerExistsInSite } from "@/server/providers/providers.service";
+import { customerExistsInSite } from "@/server/customers/customers.service";
 import { jobsRepository as repo } from "./jobs.repository";
 import type { CreateJobInput, UpdateJobInput, RecordRatingInput, UpdateRatingInput, JobListQuery } from "./jobs.schema";
 
@@ -65,6 +66,10 @@ export async function getJob(claims: SessionClaims, siteId: string, id: string) 
 export async function createJob(claims: SessionClaims, siteId: string, input: CreateJobInput) {
   await requireManage(claims, siteId);
   if (!(await providerExistsInSite(siteId, input.providerId))) throw errors.notFound("المزوّد غير موجود");
+  // A picked customer must belong to this site (wrong id → 404, never leaks).
+  if (input.customerId && !(await customerExistsInSite(siteId, input.customerId))) {
+    throw errors.notFound("الزبون غير موجود");
+  }
   // Normalize the customer phone (internal, never public); keep the given digits
   // if it isn't a parseable Syrian mobile so a legit landline isn't blocked.
   const customerPhone = normalizeSubmissionPhone(input.customerPhone) ?? input.customerPhone.trim();
@@ -74,6 +79,7 @@ export async function createJob(claims: SessionClaims, siteId: string, input: Cr
       data: {
         siteId,
         providerId: input.providerId,
+        customerId: input.customerId || null,
         customerSubmissionId: input.customerSubmissionId || null,
         customerName: input.customerName,
         customerPhone,

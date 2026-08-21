@@ -37,7 +37,7 @@ export interface Detail {
 
 const waHref = (phone: string, greeting: string) => `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(greeting)}`;
 
-export function SubmissionDetail({ siteId, businessName, canManage, submission, linkedProviderId }: { siteId: string; businessName: string; canManage: boolean; submission: Detail; linkedProviderId: string | null }) {
+export function SubmissionDetail({ siteId, businessName, canManage, submission, linkedProviderId, linkedCustomerId }: { siteId: string; businessName: string; canManage: boolean; submission: Detail; linkedProviderId: string | null; linkedCustomerId: string | null }) {
   const router = useRouter();
   const toast = useToast();
   const [status, setStatus] = React.useState(submission.status);
@@ -47,29 +47,32 @@ export function SubmissionDetail({ siteId, businessName, canManage, submission, 
   const base = `/dashboard/sites/${siteId}/submissions`; // dashboard page (navigation)
   const api = `/api/sites/${siteId}/submissions`; // REST endpoint (mutations)
 
-  // Promote an ACCEPTED provider lead into a Provider (links this submission).
-  const convert = async () => {
+  // Promote an ACCEPTED lead into its list: PROVIDER → the directory, CUSTOMER → the
+  // customer list. Links this submission; idempotent server-side. Navigates to the row.
+  const convert = async (kind: "providers" | "customers") => {
     setConverting(true);
     try {
-      const res = await fetch(`/api/sites/${siteId}/providers`, {
+      const res = await fetch(`/api/sites/${siteId}/${kind}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ submissionId: submission.id }),
       });
       const json = await res.json();
       if (!json.ok) throw new Error(json.error?.message);
-      toast("تم التحويل لمزوّد ✓");
-      router.push(`/dashboard/sites/${siteId}/providers/${json.data.id}`);
+      toast(kind === "providers" ? "تم التحويل لمزوّد ✓" : "تم التحويل لزبون ✓");
+      router.push(`/dashboard/sites/${siteId}/${kind}/${json.data.id}`);
     } catch (e) {
       toast(e instanceof Error && e.message ? e.message : "تعذّر التحويل", "error");
       setConverting(false);
     }
   };
-  // Accepting a provider lead auto-adds it to the directory (server-side). So the
-  // usual state is "already linked" → offer a jump to its page. The manual convert
-  // only appears as a fallback: accepted provider whose auto-convert didn't land.
+  // Accepting a lead auto-adds it to its list (server-side). So the usual state is
+  // "already linked" → offer a jump to its page. The manual convert only appears as a
+  // fallback: an accepted lead whose auto-convert didn't land.
   const isProvider = canManage && submission.kind === "PROVIDER";
+  const isCustomer = canManage && submission.kind === "CUSTOMER";
   const canConvert = isProvider && submission.status === "ACCEPTED" && !linkedProviderId;
+  const canConvertCustomer = isCustomer && submission.status === "ACCEPTED" && !linkedCustomerId;
 
   const patch = async (body: Record<string, unknown>, okMsg: string) => {
     try {
@@ -121,8 +124,26 @@ export function SubmissionDetail({ siteId, businessName, canManage, submission, 
       {canConvert && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
           <span className="text-[13.5px] text-accent-400">هذا الطلب مقبول — حوّله إلى مزوّد لإضافته إلى الدليل.</span>
-          <Button onClick={convert} loading={converting} className="gap-2">
+          <Button onClick={() => convert("providers")} loading={converting} className="gap-2">
             <UserPlus className="size-4" /> تحويل لمزوّد
+          </Button>
+        </div>
+      )}
+
+      {isCustomer && linkedCustomerId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
+          <span className="text-[13.5px] text-accent-400">هذا الزبون مُضاف إلى قائمة الزبائن.</span>
+          <Link href={`/dashboard/sites/${siteId}/customers/${linkedCustomerId}`} className="inline-flex items-center gap-2 rounded-md bg-accent px-3.5 py-2 text-[13.5px] font-medium text-white transition hover:opacity-90">
+            <UserPlus className="size-4" /> فتح صفحة الزبون
+          </Link>
+        </div>
+      )}
+
+      {canConvertCustomer && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent-200 bg-accent-50 px-4 py-3">
+          <span className="text-[13.5px] text-accent-400">هذا الطلب مقبول — حوّله إلى زبون لإضافته إلى قائمة الزبائن.</span>
+          <Button onClick={() => convert("customers")} loading={converting} className="gap-2">
+            <UserPlus className="size-4" /> تحويل لزبون
           </Button>
         </div>
       )}
