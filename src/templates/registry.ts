@@ -11,8 +11,9 @@ import { marketplace } from "./marketplace";
 import { portfolio } from "./portfolio";
 import { restaurantSplit } from "./restaurant-split";
 import { shaghleh } from "./shaghleh";
+import { zeitElDar } from "./zeit-eldar";
 
-export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, restaurantSplit, foulFatteh, marketplace, portfolio, shaghleh];
+export const TEMPLATES: TemplateModule[] = [barbershopFiveStar, restaurant, restaurantSplit, foulFatteh, marketplace, portfolio, shaghleh, zeitElDar];
 
 const BY_KEY = new Map(TEMPLATES.map((t) => [t.key, t]));
 

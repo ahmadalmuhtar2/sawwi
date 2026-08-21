@@ -310,6 +310,7 @@ model Site {
   visits        SiteVisit[]
   submissions   Submission[]
   providers     Provider[]
+  customers     Customer[]
 
   @@index([workspaceId])
   @@map("sites")
@@ -425,6 +426,7 @@ model Job {
   id                   String    @id @default(cuid())
   siteId               String
   providerId           String
+  customerId           String? // the picked Customer (approved list); name/phone kept denormalized for history
   customerSubmissionId String? // if the customer arrived via a form
   customerName         String
   customerPhone        String // normalized, NEVER public
@@ -439,11 +441,13 @@ model Job {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   rating   Rating?
 
   @@index([siteId, status, matchedAt])
   @@index([providerId, status])
+  @@index([customerId])
   @@map("jobs")
 }
 
@@ -467,6 +471,35 @@ model Rating {
 
   @@index([providerId, recordedAt])
   @@map("ratings")
+}
+
+/// A customer in the brokered-services flow — the demand side mirror of Provider.
+/// Promoted from an ACCEPTED customer Submission (same approve flow as providers),
+/// then picked when recording a match. name/phone are INTERNAL, never public.
+model Customer {
+  id           String         @id @default(cuid())
+  siteId       String
+  submissionId String?        @unique // promoted from a Submission (CUSTOMER, ACCEPTED)
+  name         String
+  phone        String // normalized E.164, internal — never public
+  phoneRaw     String
+  area         String? // where they are (from the submission), used to prefill a match
+  status       CustomerStatus @default(DRAFT)
+  internalNote String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  jobs Job[]
+
+  @@index([siteId, status])
+  @@map("customers")
+}
+
+enum CustomerStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
 }
 
 enum ProviderStatus {

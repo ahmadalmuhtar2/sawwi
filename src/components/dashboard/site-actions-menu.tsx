@@ -173,6 +173,9 @@ export function SiteActionsMenu({
               <Link href={`/dashboard/sites/${site.id}/providers`} onClick={() => setOpen(false)} className={itemCls}>
                 <HardHat className="size-4 text-muted" /> المزوّدون
               </Link>
+              <Link href={`/dashboard/sites/${site.id}/customers`} onClick={() => setOpen(false)} className={itemCls}>
+                <Users className="size-4 text-muted" /> الزبائن
+              </Link>
               <Link href={`/dashboard/sites/${site.id}/jobs`} onClick={() => setOpen(false)} className={itemCls}>
                 <Briefcase className="size-4 text-muted" /> الشغلات
               </Link>
